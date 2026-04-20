@@ -1,0 +1,655 @@
+/* ═══════════════════════════════════════════════════════════
+   style.css — Ryokan of The Spirits
+   Sections: TOKENS · BASE · APP · SHARED · VIEW: LANDING
+             VIEW: GENDER · VIEW: QUIZ · VIEW: BENTO
+             VIEW: LOADING · VIEW: RESULT
+═══════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════
+   1. DESIGN TOKENS
+════════════════════════════════════════ */
+:root {
+  --primary:           #B02B2B;
+  --primary-container: #E8A0A0;
+  --secondary:         #1B4F72;
+  --bg:                #FDF6E3;
+  --surface-low:       #F5EAD0;
+  --surface-lowest:    #EFE0C0;
+  --on-surface:        #1A120A;
+  --outline-variant:   rgba(26,18,10,0.15);
+  --shadow-ambient:    0 8px 32px rgba(26,18,10,0.06);
+  --shadow-float:      0 8px 40px rgba(26,18,10,0.10);
+  --font-display:      'Kaisei Decol', Georgia, serif;
+  --font-body:         'M PLUS Rounded 1c', Arial, sans-serif;
+  --font-kanji:        'Noto Serif JP', serif;
+  --max-w:             480px;
+}
+
+/* ════════════════════════════════════════
+   2. RESET + BASE
+════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  font-weight: 500;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: var(--font-body); cursor: pointer; border: none; background: none; }
+
+/* ════════════════════════════════════════
+   3. APP WRAPPER + VIEW SYSTEM
+════════════════════════════════════════ */
+.app {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.view        { display: none; min-height: 100dvh; background: var(--bg); }
+.view.active { display: block; }
+
+/* ════════════════════════════════════════
+   4. SHARED COMPONENTS
+════════════════════════════════════════ */
+
+/* Primary CTA button — pill, gradient */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 40px;
+  background: linear-gradient(135deg, var(--primary) 0%, #C94040 100%);
+  color: var(--bg);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  border-radius: 3rem;
+  box-shadow: var(--shadow-float);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  text-decoration: none;
+}
+.btn-primary:hover  { transform: scale(1.02); box-shadow: 0 12px 48px rgba(176,43,43,0.2); }
+.btn-primary:active { transform: scale(0.98); }
+
+/* Ornamental divider — line ✦ line */
+.ornament-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--secondary);
+  font-family: var(--font-kanji);
+  font-size: 0.8rem;
+  opacity: 0.6;
+  margin: 24px 0;
+}
+.ornament-divider::before,
+.ornament-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--secondary), transparent);
+  opacity: 0.5;
+}
+
+/* Texture strip — red/pink/cream wave */
+.texture-strip {
+  height: 6px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--primary)           0px, var(--primary)           6px,
+    var(--primary-container) 6px, var(--primary-container) 10px,
+    var(--bg)               10px, var(--bg)                14px
+  );
+  opacity: 0.4;
+}
+
+/* ════════════════════════════════════════
+   5. VIEW: LANDING
+════════════════════════════════════════ */
+
+/* Art banner */
+.art-section {
+  position: relative;
+  width: 100%;
+  height: 60dvh;
+  min-height: 300px;
+  overflow: hidden;
+}
+
+/* Real art — swap placeholder div for <img class="art-hero"> when ready */
+.art-hero {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+.art-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(160deg, #D4B8A0 0%, #A07850 40%, #6B3020 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.art-placeholder-kanji {
+  font-family: var(--font-kanji);
+  font-size: 6rem;
+  color: rgba(253,246,227,0.12);
+  letter-spacing: 0.2em;
+  user-select: none;
+}
+
+/* Gradient fade — art into bg */
+.art-fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 35%, var(--bg) 90%);
+  pointer-events: none;
+}
+
+/* Nav overlaid on art */
+.landing-nav {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+}
+.nav-logo {
+  font-family: var(--font-kanji);
+  font-size: 0.8rem;
+  color: rgba(253,246,227,0.85);
+  letter-spacing: 0.2em;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.4);
+}
+.nav-bgm-btn {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(253,246,227,0.15);
+  border: 1px solid rgba(253,246,227,0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: rgba(253,246,227,0.85);
+  transition: transform 0.18s;
+}
+.nav-bgm-btn:hover { transform: scale(1.08); }
+
+/* Hero content */
+.hero-content {
+  position: relative;
+  padding: 4px 28px 40px;
+  text-align: center;
+}
+.kanji-watermark {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-kanji);
+  font-size: 9rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  opacity: 0.04;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+.hero-eyebrow {
+  font-family: var(--font-kanji);
+  font-size: 0.72rem;
+  color: var(--secondary);
+  letter-spacing: 0.28em;
+  margin-bottom: 14px;
+  opacity: 0.9;
+}
+.hero-title {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  line-height: 1.12;
+  color: var(--on-surface);
+  margin-bottom: 8px;
+}
+.hero-title .spirits { color: var(--primary); }
+.hero-kanji {
+  font-family: var(--font-kanji);
+  font-size: 0.9rem;
+  color: var(--on-surface);
+  opacity: 0.4;
+  letter-spacing: 0.3em;
+  margin-bottom: 8px;
+}
+.hero-body {
+  font-size: 0.88rem;
+  line-height: 1.9;
+  color: var(--on-surface);
+  opacity: 0.7;
+  font-style: italic;
+  margin-bottom: 32px;
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Lorebook grid */
+.lorebook-section { padding: 0 20px 56px; }
+.lorebook-label {
+  font-family: var(--font-kanji);
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  color: var(--on-surface);
+  opacity: 0.38;
+  text-align: center;
+  margin-bottom: 14px;
+}
+.lorebook-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.lorebook-card {
+  background: var(--surface-lowest);
+  border-radius: 12px;
+  padding: 12px 6px 10px;
+  text-align: center;
+  box-shadow: var(--shadow-ambient);
+  transition: transform 0.15s ease;
+}
+.lorebook-card:hover { transform: translateY(-3px); }
+.lc-emoji { font-size: 1.4rem; display: block; margin-bottom: 5px; }
+.lc-name  { font-size: 0.58rem; font-weight: 700; color: var(--on-surface); opacity: 0.65; letter-spacing: 0.04em; display: block; }
+.lc-mbti  { font-size: 0.52rem; color: var(--secondary); opacity: 0.75; margin-top: 2px; }
+
+/* ════════════════════════════════════════
+   6. VIEW: GENDER
+════════════════════════════════════════ */
+
+/* Journey progress bar — sits at very top of each view */
+.journey-progress {
+  width: 100%;
+  height: 3px;
+  background: var(--surface-low);
+  position: relative;
+  overflow: hidden;
+}
+.journey-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-container) 100%);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* Shimmer sweep on fill */
+.journey-progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%);
+  animation: progressShimmer 2.2s ease-in-out infinite;
+}
+@keyframes progressShimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+/* Step dots row */
+.journey-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 24px 0;
+}
+.jd-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--outline-variant);
+  transition: background 0.3s, transform 0.3s;
+}
+.jd-dot.active {
+  background: var(--primary);
+  transform: scale(1.35);
+}
+.jd-dot.done {
+  background: var(--primary-container);
+}
+.jd-label {
+  font-family: var(--font-kanji);
+  font-size: 0.52rem;
+  letter-spacing: 0.22em;
+  color: var(--on-surface);
+  opacity: 0.32;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+/* Mirror art placeholder */
+.mirror-placeholder {
+  position: relative;
+  margin: 24px auto 0;
+  width: 140px;
+  height: 196px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Oval frame shape */
+.mirror-placeholder::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50% 50% 46% 46% / 44% 44% 56% 56%;
+  background: linear-gradient(160deg, var(--surface-low) 0%, var(--surface-lowest) 100%);
+  box-shadow:
+    0 0 0 2px var(--outline-variant),
+    inset 0 2px 12px rgba(26,18,10,0.04),
+    0 12px 32px rgba(26,18,10,0.07);
+}
+/* Stand base */
+.mirror-placeholder::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 10px;
+  background: var(--surface-lowest);
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 0 0 1.5px var(--outline-variant);
+}
+/* Inner content */
+.mirror-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.mirror-kanji {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  color: var(--on-surface);
+  opacity: 0.06;
+  line-height: 1;
+  animation: mirrorPulse 3.5s ease-in-out infinite;
+  user-select: none;
+}
+@keyframes mirrorPulse {
+  0%, 100% { opacity: 0.06; }
+  50%       { opacity: 0.11; }
+}
+.mirror-hint {
+  font-family: var(--font-kanji);
+  font-size: 0.45rem;
+  letter-spacing: 0.18em;
+  color: var(--on-surface);
+  opacity: 0.2;
+  text-align: center;
+  line-height: 1.6;
+}
+/* Gold ornament arcs on mirror frame */
+.mirror-arc-top,
+.mirror-arc-bot {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  color: var(--secondary);
+  opacity: 0.22;
+  z-index: 2;
+}
+.mirror-arc-top { top: 14px; }
+.mirror-arc-bot { bottom: 18px; }
+
+/* Shared view header */
+.view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 0;
+}
+.btn-back {
+  font-family: var(--font-kanji);
+  font-size: 0.75rem;
+  color: var(--on-surface);
+  opacity: 0.45;
+  letter-spacing: 0.08em;
+  transition: opacity 0.18s;
+  padding: 8px 0;
+}
+.btn-back:hover { opacity: 0.8; }
+.event-badge {
+  font-family: var(--font-kanji);
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  color: var(--secondary);
+  opacity: 0.6;
+  text-transform: uppercase;
+}
+
+/* Scene banner */
+.scene-banner {
+  text-align: center;
+  padding: 28px 24px 0;
+}
+.scene-kanji-title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  color: var(--on-surface);
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.scene-subtitle {
+  font-family: var(--font-kanji);
+  font-size: 0.72rem;
+  color: var(--on-surface);
+  opacity: 0.4;
+  letter-spacing: 0.24em;
+}
+
+/* Story box with ✦ corner ornaments */
+.story-box {
+  position: relative;
+  background: var(--surface-lowest);
+  border-radius: 18px;
+  padding: 22px 26px;
+  margin: 24px 24px 0;
+  box-shadow: var(--shadow-ambient);
+}
+.story-box::before,
+.story-box::after {
+  content: '✦';
+  position: absolute;
+  font-family: var(--font-kanji);
+  font-size: 0.55rem;
+  color: var(--secondary);
+  opacity: 0.35;
+}
+.story-box::before { top: 10px; left: 12px; }
+.story-box::after  { bottom: 10px; right: 12px; }
+.story-box p {
+  font-size: 0.85rem;
+  line-height: 1.85;
+  color: var(--on-surface);
+  opacity: 0.78;
+  text-align: center;
+}
+.story-box em { font-style: italic; color: var(--primary); opacity: 1; }
+
+/* Choice prompt */
+.choice-prompt {
+  font-family: var(--font-kanji);
+  font-size: 0.68rem;
+  letter-spacing: 0.24em;
+  color: var(--on-surface);
+  opacity: 0.38;
+  text-align: center;
+  margin: 28px 0 16px;
+}
+
+/* Gender cards grid */
+.gender-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 0 20px 48px;
+  align-items: start;
+}
+
+/* Individual gender card */
+.gender-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 16px 10px 20px;
+  background: var(--surface-lowest);
+  border-radius: 20px;
+  min-height: 200px;
+  overflow: hidden;
+  box-shadow: var(--shadow-ambient);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.25s ease;
+  cursor: pointer;
+  opacity: 0;
+  animation: genderCardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.gender-card:nth-child(1) { animation-delay: 0.08s; min-height: 196px; }
+.gender-card:nth-child(2) { animation-delay: 0.18s; min-height: 220px; border-radius: 24px; }
+.gender-card:nth-child(3) { animation-delay: 0.28s; min-height: 196px; }
+
+@keyframes genderCardIn {
+  from { opacity: 0; transform: translateY(28px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.gender-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 16px 48px rgba(26,18,10,0.10);
+}
+.gender-card:active { transform: scale(0.97); }
+
+/* Candlelight shimmer overlay on hover */
+.gender-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 85%,
+    rgba(176,43,43,0.13) 0%, transparent 68%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.gender-card:hover::after { opacity: 1; }
+
+/* Watermark kanji — breathes slowly */
+.gc-kanji {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -52%);
+  font-family: var(--font-display);
+  font-size: 5.5rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  opacity: 0.065;
+  pointer-events: none;
+  user-select: none;
+  animation: kanjiBreath 4s ease-in-out infinite;
+  transition: opacity 0.3s;
+}
+.gender-card:nth-child(2) .gc-kanji { animation-delay: -1.5s; }
+.gender-card:nth-child(3) .gc-kanji { animation-delay: -2.8s; }
+
+@keyframes kanjiBreath {
+  0%, 100% { opacity: 0.065; }
+  50%       { opacity: 0.11; }
+}
+.gender-card:hover .gc-kanji { opacity: 0.14; }
+
+/* Symbol */
+.gc-symbol {
+  position: relative;
+  z-index: 1;
+  font-size: 1.6rem;
+  color: var(--secondary);
+  opacity: 0.55;
+  margin-bottom: 10px;
+  display: block;
+  transition: opacity 0.25s, transform 0.25s;
+}
+.gender-card:hover .gc-symbol { opacity: 0.85; transform: scale(1.1); }
+
+/* Label */
+.gc-label {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--on-surface);
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+  display: block;
+}
+
+/* Sub-label */
+.gc-sub {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-kanji);
+  font-size: 0.55rem;
+  color: var(--on-surface);
+  opacity: 0.38;
+  letter-spacing: 0.14em;
+  display: block;
+  transition: opacity 0.25s;
+}
+.gender-card:hover .gc-sub { opacity: 0.6; }
+
+/* Selected state */
+.gender-card.selected {
+  box-shadow: 0 0 0 2px var(--primary), var(--shadow-float);
+}
+.gender-card.selected .gc-symbol { opacity: 1; color: var(--primary); }
+.gender-card.selected .gc-kanji  { opacity: 0.18; }
+
+
+/* ════════════════════════════════════════
+   7. VIEW: QUIZ
+════════════════════════════════════════ */
+
+
+/* ════════════════════════════════════════
+   8. VIEW: BENTO
+════════════════════════════════════════ */
+
+
+/* ════════════════════════════════════════
+   9. VIEW: LOADING
+════════════════════════════════════════ */
+
+
+/* ════════════════════════════════════════
+   10. VIEW: RESULT
+════════════════════════════════════════ */

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ryokan of The Spirits · 妖怪の宿</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+
+    /* ═══════════════════════════════════════════════
+       DESIGN TOKENS
+    ═══════════════════════════════════════════════ */
+    :root {
+      --primary:           #B02B2B;
+      --primary-container: #E8A0A0;
+      --secondary:         #1B4F72;
+      --bg:                #FDF6E3;
+      --surface-low:       #F5EAD0;
+      --surface-lowest:    #EFE0C0;
+      --on-surface:        #1A120A;
+      --outline-variant:   rgba(26,18,10,0.15);
+      --shadow-ambient:    0 8px 32px rgba(26,18,10,0.06);
+      --shadow-float:      0 8px 40px rgba(26,18,10,0.10);
+      --font-display:      'Kaisei Decol', Georgia, serif;
+      --font-body:         'M PLUS Rounded 1c', Arial, sans-serif;
+      --font-kanji:        'Noto Serif JP', serif;
+      --max-w:             480px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       RESET + BASE
+    ═══════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--bg);
+      color: var(--on-surface);
+      font-family: var(--font-body);
+      font-weight: 500;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button { font-family: var(--font-body); cursor: pointer; border: none; background: none; }
+
+    /* ═══════════════════════════════════════════════
+       APP WRAPPER
+    ═══════════════════════════════════════════════ */
+    .app {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      min-height: 100dvh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ═══════════════════════════════════════════════
+       VIEW SYSTEM
+    ═══════════════════════════════════════════════ */
+    .view          { display: none; min-height: 100dvh; background: var(--bg); }
+    .view.active   { display: block; }
+
+    /* ═══════════════════════════════════════════════
+       SHARED COMPONENTS
+    ═══════════════════════════════════════════════ */
+
+    /* Primary CTA button — pill, gradient */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 40px;
+      background: linear-gradient(135deg, var(--primary) 0%, #C94040 100%);
+      color: var(--bg);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: 0.05em;
+      border-radius: 3rem;
+      box-shadow: var(--shadow-float);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      text-decoration: none;
+    }
+    .btn-primary:hover  { transform: scale(1.02); box-shadow: 0 12px 48px rgba(176,43,43,0.2); }
+    .btn-primary:active { transform: scale(0.98); }
+
+    /* Ornamental divider — line ✦ line */
+    .ornament-divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: var(--secondary);
+      font-family: var(--font-kanji);
+      font-size: 0.8rem;
+      opacity: 0.6;
+      margin: 24px 0;
+    }
+    .ornament-divider::before,
+    .ornament-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--secondary), transparent);
+      opacity: 0.5;
+    }
+
+    /* Texture strip — red/pink/cream wave */
+    .texture-strip {
+      height: 6px;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--primary)           0px, var(--primary)           6px,
+        var(--primary-container) 6px, var(--primary-container) 10px,
+        var(--bg)                10px, var(--bg)               14px
+      );
+      opacity: 0.4;
+    }
+
+    /* ═══════════════════════════════════════════════
+       VIEW — LANDING
+    ═══════════════════════════════════════════════ */
+
+    /* Art banner */
+    .art-section {
+      position: relative;
+      width: 100%;
+      height: 60dvh;
+      min-height: 300px;
+      overflow: hidden;
+    }
+
+    /* Swap this src for real art when ready */
+    .art-hero {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+    }
+
+    /* Placeholder shown when no <img> src */
+    .art-placeholder {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(160deg, #D4B8A0 0%, #A07850 40%, #6B3020 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .art-placeholder-kanji {
+      font-family: var(--font-kanji);
+      font-size: 6rem;
+      color: rgba(253,246,227,0.12);
+      letter-spacing: 0.2em;
+      user-select: none;
+    }
+
+    /* Gradient fade — art into bg */
+    .art-fade {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 35%, var(--bg) 90%);
+      pointer-events: none;
+    }
+
+    /* Nav — overlaid on art */
+    .landing-nav {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+    }
+    .nav-logo {
+      font-family: var(--font-kanji);
+      font-size: 0.8rem;
+      color: rgba(253,246,227,0.85);
+      letter-spacing: 0.2em;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.4);
+    }
+    .nav-bgm-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: rgba(253,246,227,0.15);
+      border: 1px solid rgba(253,246,227,0.25);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: rgba(253,246,227,0.85);
+      transition: transform 0.18s;
+    }
+    .nav-bgm-btn:hover { transform: scale(1.08); }
+
+    /* Hero content */
+    .hero-content {
+      position: relative;
+      padding: 4px 28px 40px;
+      text-align: center;
+    }
+    .kanji-watermark {
+      position: absolute;
+      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-kanji);
+      font-size: 9rem;
+      font-weight: 700;
+      color: var(--on-surface);
+      opacity: 0.04;
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .hero-eyebrow {
+      font-family: var(--font-kanji);
+      font-size: 0.72rem;
+      color: var(--secondary);
+      letter-spacing: 0.28em;
+      margin-bottom: 14px;
+      opacity: 0.9;
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      line-height: 1.12;
+      color: var(--on-surface);
+      margin-bottom: 8px;
+    }
+    .hero-title .spirits { color: var(--primary); }
+    .hero-kanji {
+      font-family: var(--font-kanji);
+      font-size: 0.9rem;
+      color: var(--on-surface);
+      opacity: 0.4;
+      letter-spacing: 0.3em;
+      margin-bottom: 8px;
+    }
+    .hero-body {
+      font-size: 0.88rem;
+      line-height: 1.9;
+      color: var(--on-surface);
+      opacity: 0.7;
+      font-style: italic;
+      margin-bottom: 32px;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Lorebook grid */
+    .lorebook-section { padding: 0 20px 56px; }
+    .lorebook-label {
+      font-family: var(--font-kanji);
+      font-size: 0.68rem;
+      letter-spacing: 0.22em;
+      color: var(--on-surface);
+      opacity: 0.38;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .lorebook-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .lorebook-card {
+      background: var(--surface-lowest);
+      border-radius: 12px;
+      padding: 12px 6px 10px;
+      text-align: center;
+      box-shadow: var(--shadow-ambient);
+      transition: transform 0.15s ease;
+    }
+    .lorebook-card:hover { transform: translateY(-3px); }
+    .lc-emoji  { font-size: 1.4rem; display: block; margin-bottom: 5px; }
+    .lc-name   { font-size: 0.58rem; font-weight: 700; color: var(--on-surface); opacity: 0.65; letter-spacing: 0.04em; display: block; }
+    .lc-mbti   { font-size: 0.52rem; color: var(--secondary); opacity: 0.75; margin-top: 2px; }
+
+    /* ═══════════════════════════════════════════════
+       VIEWS — empty shells (filled in later steps)
+    ═══════════════════════════════════════════════ */
+    #view-gender,
+    #view-quiz,
+    #view-bento,
+    #view-loading,
+    #view-result {
+      display: none;
+      min-height: 100dvh;
+      background: var(--bg);
+      padding: 24px;
+    }
+    #view-gender.active,
+    #view-quiz.active,
+    #view-bento.active,
+    #view-loading.active,
+    #view-result.active { display: block; }
+
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ════════════════════════════════════════
+       VIEW: LANDING
+  ════════════════════════════════════════ -->
+  <div id="view-landing" class="view active">
+
+    <section class="art-section">
+      <nav class="landing-nav">
+        <span class="nav-logo">妖怪の宿</span>
+        <button class="nav-bgm-btn" id="btn-bgm" aria-label="BGM toggle">♪</button>
+      </nav>
+
+      <!-- Art placeholder — replace div with <img class="art-hero" src="assets/ui/hero_art.png" alt=""> when ready -->
+      <div class="art-placeholder">
+        <span class="art-placeholder-kanji">妖</span>
+      </div>
+
+      <div class="art-fade"></div>
+    </section>
+
+    <section class="hero-content">
+      <div class="kanji-watermark" aria-hidden="true">妖怪</div>
+      <p class="hero-eyebrow">✦ A Spirit Awaits ✦</p>
+      <h1 class="hero-title">Ryokan of The<br><span class="spirits">Spirits</span></h1>
+      <p class="hero-kanji">妖怪の宿</p>
+      <div class="ornament-divider" aria-hidden="true">✦</div>
+      <p class="hero-body">
+        You are the last caretaker of a forgotten ryokan.<br>
+        The spirits are watching.<br>
+        One of them has been waiting for you.
+      </p>
+      <button class="btn-primary" onclick="showView('gender')">Begin Journey &nbsp;→</button>
+    </section>
+
+    <div class="texture-strip" aria-hidden="true"></div>
+
+    <section class="lorebook-section">
+      <p class="lorebook-label">— SPIRITS OF THE RYOKAN —</p>
+      <div class="lorebook-grid">
+        <div class="lorebook-card"><span class="lc-emoji">📜</span><span class="lc-name">Tenjin</span><div class="lc-mbti">INTJ</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">💤</span><span class="lc-name">Yumekui</span><div class="lc-mbti">INTP</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">🐉</span><span class="lc-name">Ryuu</span><div class="lc-mbti">ENTJ</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">👺</span><span class="lc-name">Tengu</span><div class="lc-mbti">ENTP</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">💀</span><span class="lc-name">Shinigami</span><div class="lc-mbti">INFJ</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">❄️</span><span class="lc-name">Yukionna</span><div class="lc-mbti">INFP</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">🦊</span><span class="lc-name">Kitsune</span><div class="lc-mbti">ENFJ</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">🍃</span><span class="lc-name">Tanuki</span><div class="lc-mbti">ENFP</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">👹</span><span class="lc-name">Oni</span><div class="lc-mbti">ISTJ</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">🧜</span><span class="lc-name">Ningyo</span><div class="lc-mbti">ISFJ</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">⚡</span><span class="lc-name">Raijin</span><div class="lc-mbti">ESTJ</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">🐕</span><span class="lc-name">Inugami</span><div class="lc-mbti">ESFJ</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">🐈‍⬛</span><span class="lc-name">Nekomata</span><div class="lc-mbti">ISTP</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">🐍</span><span class="lc-name">Hebi</span><div class="lc-mbti">ISFP</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">🕸️</span><span class="lc-name">Jorogumo</span><div class="lc-mbti">ESTP</div></div>
+        <div class="lorebook-card"><span class="lc-emoji">🌪️</span><span class="lc-name">Fuujin</span><div class="lc-mbti">ESFP</div></div>
+      </div>
+    </section>
+
+  </div><!-- /view-landing -->
+
+  <!-- ════════════════════════════════════════
+       VIEW: GENDER — Step 3
+  ════════════════════════════════════════ -->
+  <div id="view-gender" class="view"></div>
+
+  <!-- ════════════════════════════════════════
+       VIEW: QUIZ — Step 4
+  ════════════════════════════════════════ -->
+  <div id="view-quiz" class="view"></div>
+
+  <!-- ════════════════════════════════════════
+       VIEW: BENTO — Step 5
+  ════════════════════════════════════════ -->
+  <div id="view-bento" class="view"></div>
+
+  <!-- ════════════════════════════════════════
+       VIEW: LOADING — Step 6
+  ════════════════════════════════════════ -->
+  <div id="view-loading" class="view"></div>
+
+  <!-- ════════════════════════════════════════
+       VIEW: RESULT — Step 7
+  ════════════════════════════════════════ -->
+  <div id="view-result" class="view"></div>
+
+</div><!-- /app -->
+
+<script src="scoring-engine.js"></script>
+<script src="questions.js"></script>
+<script>
+
+// ── VIEW MANAGER ─────────────────────────────────────────────
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const target = document.getElementById('view-' + id);
+  if (!target) { console.error('[Ryokan] Unknown view:', id); return; }
+  target.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+// ── UI STUBS — filled in Steps 3–7 ───────────────────────────
+function loadQuestion()      { console.warn('[Ryokan] loadQuestion() stub'); }
+function showBentoQuestion() { console.warn('[Ryokan] showBentoQuestion() stub'); }
+function renderResult()      { console.warn('[Ryokan] renderResult() stub'); }
+
+// ── YOKAI DATA — filled in Step 7 ────────────────────────────
+const YOKAI_DATA = {};
+
+// ── BGM STUB — filled in Step 8 ──────────────────────────────
+document.getElementById('btn-bgm').addEventListener('click', () => {
+  console.info('[Ryokan] BGM toggle — stub');
+});
+
+</script>
+</body>
+</html>

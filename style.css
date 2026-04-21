@@ -40,6 +40,7 @@ html, body {
 }
 
 button { font-family: var(--font-body); cursor: pointer; border: none; background: none; }
+.hidden { display: none !important; }
 
 /* ════════════════════════════════════════
    3. APP WRAPPER + VIEW SYSTEM
@@ -799,6 +800,87 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
    8. VIEW: BENTO
 ════════════════════════════════════════ */
 
+/* Japanese tate-shima stripe background for bento view */
+#view-bento.active {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 22px,
+    rgba(176,43,43,0.028) 22px,
+    rgba(176,43,43,0.028) 23px
+  );
+}
+
+/* Intro overlay */
+.bento-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  background: var(--bg);
+  cursor: pointer;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 22px,
+    rgba(176,43,43,0.028) 22px,
+    rgba(176,43,43,0.028) 23px
+  );
+}
+.bento-intro.hidden { display: none; }
+.bento-intro-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1.25;
+  color: var(--on-surface);
+  text-align: center;
+  letter-spacing: 0.02em;
+  animation: bentoIntroFadeIn 0.7s ease forwards;
+}
+.bento-intro-tap {
+  font-family: var(--font-kanji);
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  color: var(--on-surface);
+  opacity: 0;
+  animation: bentoIntroFadeIn 0.7s ease 0.5s forwards;
+}
+@keyframes bentoIntroFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 0.45; transform: translateY(0); }
+}
+.bento-intro-title { animation-fill-mode: forwards; opacity: 0; }
+
+/* Bento main content */
+.bento-main { display: block; }
+.bento-main.hidden { display: none; }
+
+/* Red divider strip between bento zone and food palette */
+.bento-red-divider {
+  height: 3px;
+  margin: 14px 20px 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--primary) 20%,
+    var(--primary-container) 60%,
+    transparent 100%
+  );
+  opacity: 0.55;
+}
+
+/* Food palette — 3 columns = 2 rows */
+.bento-palette {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 0 20px;
+}
+
 .bento-scene-kana {
   font-family: var(--font-kanji);
   font-size: 0.78rem;
@@ -885,14 +967,6 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   opacity: 0.32;
   text-align: center;
   margin: 12px 0 8px;
-}
-
-/* Food palette — 6 items in one row */
-.bento-palette {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
-  padding: 0 20px;
 }
 
 .food-item {

@@ -196,34 +196,48 @@
   ════════════════════════════════════════ -->
   <div id="view-bento" class="view">
 
-    <header class="view-header">
-      <span class="bento-scene-kana">弁当の間</span>
-      <span class="event-badge">Intermission</span>
-    </header>
-
-    <!-- Bento art placeholder + drop zone -->
-    <div id="bento-drop-zone" class="bento-drop-zone">
-      <!-- swap for <img class="bento-art-img" src="assets/ui/bento_art.png"> when ready -->
-      <div class="bento-art-placeholder" aria-hidden="true">
-        <span class="bento-art-kanji">弁</span>
-      </div>
-      <div id="bento-placed-items" class="bento-placed-items"></div>
-      <div class="bento-compartments" aria-hidden="true">
-        <span></span><span></span><span></span><span></span>
-      </div>
+    <!-- Intro overlay — tap to dismiss -->
+    <div id="bento-intro" class="bento-intro" onclick="dismissBentoIntro()">
+      <p class="bento-intro-title">Time to prepare<br>some bento.</p>
+      <p class="bento-intro-tap">— tap to continue —</p>
     </div>
 
-    <p class="bento-instruction">— Place your offering —</p>
+    <!-- Main bento content (hidden until intro dismissed) -->
+    <div id="bento-main" class="bento-main">
 
-    <!-- Draggable food palette -->
-    <div class="bento-palette" id="bento-palette">
-      <div class="food-item" data-idx="0"><div class="food-img"></div><span class="food-label">TBA</span></div>
-      <div class="food-item" data-idx="1"><div class="food-img"></div><span class="food-label">TBA</span></div>
-      <div class="food-item" data-idx="2"><div class="food-img"></div><span class="food-label">TBA</span></div>
-      <div class="food-item" data-idx="3"><div class="food-img"></div><span class="food-label">TBA</span></div>
-      <div class="food-item" data-idx="4"><div class="food-img"></div><span class="food-label">TBA</span></div>
-      <div class="food-item" data-idx="5"><div class="food-img"></div><span class="food-label">TBA</span></div>
-    </div>
+      <header class="view-header">
+        <span class="bento-scene-kana">弁当の間</span>
+        <span class="event-badge">Intermission</span>
+      </header>
+
+      <!-- Bento art placeholder + drop zone -->
+      <div id="bento-drop-zone" class="bento-drop-zone">
+        <!-- swap for <img class="bento-art-img" src="assets/ui/bento_art.png"> when ready -->
+        <div class="bento-art-placeholder" aria-hidden="true">
+          <span class="bento-art-kanji">弁</span>
+        </div>
+        <div id="bento-placed-items" class="bento-placed-items"></div>
+        <div class="bento-compartments" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <!-- Red divider -->
+      <div class="bento-red-divider" aria-hidden="true"></div>
+
+      <p class="bento-instruction">— Place your offering —</p>
+
+      <!-- Draggable food palette — 3×2 grid -->
+      <div class="bento-palette" id="bento-palette">
+        <div class="food-item" data-idx="0"><div class="food-img"></div><span class="food-label">TBA</span></div>
+        <div class="food-item" data-idx="1"><div class="food-img"></div><span class="food-label">TBA</span></div>
+        <div class="food-item" data-idx="2"><div class="food-img"></div><span class="food-label">TBA</span></div>
+        <div class="food-item" data-idx="3"><div class="food-img"></div><span class="food-label">TBA</span></div>
+        <div class="food-item" data-idx="4"><div class="food-img"></div><span class="food-label">TBA</span></div>
+        <div class="food-item" data-idx="5"><div class="food-img"></div><span class="food-label">TBA</span></div>
+      </div>
+
+    </div><!-- /bento-main -->
 
     <!-- Question area — hidden until showBentoQuestion() -->
     <div id="bento-question-area" class="bento-question-area">
@@ -242,6 +256,7 @@
     </div>
 
   </div><!-- /view-bento -->
+
 
   <!-- ════════════════════════════════════════
        VIEW: LOADING — Step 6
@@ -378,9 +393,18 @@ let _bentoPendingYokai = null;
 let _bentoPhase = 'arrange'; // 'arrange' | 'question'
 
 function initBento() {
-  _bentoFoodPlaced  = 0;
+  // Show intro overlay first
+  document.getElementById('bento-intro').classList.remove('hidden');
+  document.getElementById('bento-main').classList.add('hidden');
+}
+
+function dismissBentoIntro() {
+  document.getElementById('bento-intro').classList.add('hidden');
+  document.getElementById('bento-main').classList.remove('hidden');
+  // Now set up the actual bento game
+  _bentoFoodPlaced   = 0;
   _bentoPendingYokai = null;
-  _bentoPhase       = 'arrange';
+  _bentoPhase        = 'arrange';
   document.getElementById('bento-placed-items').innerHTML = '';
   document.getElementById('bento-question-area').classList.remove('revealed');
   document.getElementById('btn-bento-next').disabled = true;

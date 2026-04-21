@@ -183,12 +183,65 @@
       <!-- Rendered by loadQuestion() -->
     </div>
 
+    <div class="quiz-next-wrap">
+      <button id="btn-quiz-next" class="btn-gender-next" onclick="confirmAnswer()" disabled>
+        Next &nbsp;→
+      </button>
+    </div>
+
   </div><!-- /view-quiz -->
 
   <!-- ════════════════════════════════════════
        VIEW: BENTO — Step 5
   ════════════════════════════════════════ -->
-  <div id="view-bento" class="view"></div>
+  <div id="view-bento" class="view">
+
+    <header class="view-header">
+      <span class="bento-scene-kana">弁当の間</span>
+      <span class="event-badge">Intermission</span>
+    </header>
+
+    <!-- Bento art placeholder + drop zone -->
+    <div id="bento-drop-zone" class="bento-drop-zone">
+      <!-- swap for <img class="bento-art-img" src="assets/ui/bento_art.png"> when ready -->
+      <div class="bento-art-placeholder" aria-hidden="true">
+        <span class="bento-art-kanji">弁</span>
+      </div>
+      <div id="bento-placed-items" class="bento-placed-items"></div>
+      <div class="bento-compartments" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <p class="bento-instruction">— Place your offering —</p>
+
+    <!-- Draggable food palette -->
+    <div class="bento-palette" id="bento-palette">
+      <div class="food-item" data-idx="0"><div class="food-img"></div><span class="food-label">TBA</span></div>
+      <div class="food-item" data-idx="1"><div class="food-img"></div><span class="food-label">TBA</span></div>
+      <div class="food-item" data-idx="2"><div class="food-img"></div><span class="food-label">TBA</span></div>
+      <div class="food-item" data-idx="3"><div class="food-img"></div><span class="food-label">TBA</span></div>
+      <div class="food-item" data-idx="4"><div class="food-img"></div><span class="food-label">TBA</span></div>
+      <div class="food-item" data-idx="5"><div class="food-img"></div><span class="food-label">TBA</span></div>
+    </div>
+
+    <!-- Question area — hidden until showBentoQuestion() -->
+    <div id="bento-question-area" class="bento-question-area">
+      <div class="bento-q-divider" aria-hidden="true">✦</div>
+      <p class="bento-q-eyebrow">— The spirit asks —</p>
+      <div class="story-box bento-story-box">
+        <p id="bento-question-text"></p>
+      </div>
+      <div class="bento-choices" id="bento-choices"></div>
+    </div>
+
+    <div class="bento-next-wrap">
+      <button id="btn-bento-next" class="btn-gender-next" onclick="handleBentoNext()" disabled>
+        Continue &nbsp;→
+      </button>
+    </div>
+
+  </div><!-- /view-bento -->
 
   <!-- ════════════════════════════════════════
        VIEW: LOADING — Step 6
@@ -216,6 +269,7 @@ function showView(id) {
   if (!target) { console.error('[Ryokan] Unknown view:', id); return; }
   target.classList.add('active');
   window.scrollTo({ top: 0, behavior: 'instant' });
+  if (id === 'bento') initBento();
 }
 
 // ── FADE TRANSITION ──────────────────────────────────────────
@@ -249,6 +303,16 @@ function confirmGender() {
 }
 
 // ── QUIZ ─────────────────────────────────────────────────────
+let _pendingAnswer = null;
+
+function confirmAnswer() {
+  if (!_pendingAnswer) return;
+  const { source, val } = _pendingAnswer;
+  _pendingAnswer = null;
+  document.getElementById('btn-quiz-next').disabled = true;
+  pickAnswer(source, val);
+}
+
 function loadQuestion() {
   const isStage2 = state.stage === 2;
   const source   = isStage2 ? 'yokai' : 'house';
@@ -276,26 +340,149 @@ function loadQuestion() {
   document.getElementById('quiz-scene').textContent = q.scene;
   document.getElementById('quiz-story').textContent = q.text;
 
+  // Reset next button for new question
+  _pendingAnswer = null;
+  document.getElementById('btn-quiz-next').disabled = true;
+
   // Choices
   const wrap = document.getElementById('quiz-choices');
   wrap.innerHTML = '';
   q.choices.forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
-    btn.textContent = c.text;
+
+    const img = document.createElement('div');
+    img.className = 'choice-img';
+
+    const txt = document.createElement('span');
+    txt.className = 'choice-text';
+    txt.textContent = c.text;
+
+    btn.appendChild(img);
+    btn.appendChild(txt);
+
     const val = isStage2 ? c.yokai : c.house;
     btn.addEventListener('click', () => {
-      wrap.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+      wrap.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
-      setTimeout(() => pickAnswer(source, val), 260);
+      _pendingAnswer = { source, val };
+      document.getElementById('btn-quiz-next').disabled = false;
     });
     wrap.appendChild(btn);
   });
 }
 
-// ── UI STUBS — filled in Steps 5–7 ───────────────────────────
-function showBentoQuestion() { console.warn('[Ryokan] showBentoQuestion() stub'); }
-function renderResult()      { console.warn('[Ryokan] renderResult() stub'); }
+// ── BENTO ─────────────────────────────────────────────────────
+let _bentoFoodPlaced = 0;
+let _bentoPendingYokai = null;
+let _bentoPhase = 'arrange'; // 'arrange' | 'question'
+
+function initBento() {
+  _bentoFoodPlaced  = 0;
+  _bentoPendingYokai = null;
+  _bentoPhase       = 'arrange';
+  document.getElementById('bento-placed-items').innerHTML = '';
+  document.getElementById('bento-question-area').classList.remove('revealed');
+  document.getElementById('btn-bento-next').disabled = true;
+  document.getElementById('btn-bento-next').textContent = 'Continue →';
+  document.querySelectorAll('.food-item').forEach(f => f.classList.remove('placed','food-ghost'));
+  initBentoDrag();
+}
+
+function handleBentoNext() {
+  if (_bentoPhase === 'arrange') {
+    onBentoContinue(); // scoring-engine: calcHouse → loadStage2 → showBentoQuestion
+  } else if (_bentoPhase === 'question' && _bentoPendingYokai) {
+    pickAnswer('yokai', _bentoPendingYokai);
+  }
+}
+
+function showBentoQuestion() {
+  _bentoPhase = 'question';
+  const q = QUESTIONS.yokai[state.winningHouse][0];
+  document.getElementById('bento-question-text').textContent = q.text;
+
+  const wrap = document.getElementById('bento-choices');
+  wrap.innerHTML = '';
+  q.choices.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'bento-choice-btn';
+
+    const img = document.createElement('div');
+    img.className = 'bento-choice-img';
+    const txt = document.createElement('span');
+    txt.className = 'bento-choice-text';
+    txt.textContent = c.text;
+    btn.appendChild(img);
+    btn.appendChild(txt);
+
+    btn.addEventListener('click', () => {
+      wrap.querySelectorAll('.bento-choice-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      _bentoPendingYokai = c.yokai;
+      const nextBtn = document.getElementById('btn-bento-next');
+      nextBtn.disabled = false;
+      nextBtn.textContent = 'Confirm →';
+    });
+    wrap.appendChild(btn);
+  });
+
+  const area = document.getElementById('bento-question-area');
+  area.classList.add('revealed');
+  document.getElementById('btn-bento-next').disabled = true;
+  document.getElementById('btn-bento-next').textContent = 'Confirm →';
+  setTimeout(() => area.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+}
+
+function initBentoDrag() {
+  const dropZone = document.getElementById('bento-drop-zone');
+
+  document.querySelectorAll('#bento-palette .food-item').forEach(food => {
+    food.addEventListener('pointerdown', e => {
+      if (food.classList.contains('placed')) return;
+      e.preventDefault();
+
+      const rect = food.getBoundingClientRect();
+      const size = rect.width;
+
+      const ghost = document.createElement('div');
+      ghost.className = 'food-drag-ghost';
+      ghost.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - size/2}px;top:${e.clientY - size/2}px`;
+      document.body.appendChild(ghost);
+      food.classList.add('food-ghost');
+
+      const onMove = e => {
+        ghost.style.left = (e.clientX - size/2) + 'px';
+        ghost.style.top  = (e.clientY - size/2) + 'px';
+      };
+      const onUp = e => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup',   onUp);
+        ghost.remove();
+        food.classList.remove('food-ghost');
+
+        const dz = dropZone.getBoundingClientRect();
+        const inside = e.clientX >= dz.left && e.clientX <= dz.right &&
+                       e.clientY >= dz.top  && e.clientY <= dz.bottom;
+        if (inside) {
+          food.classList.add('placed');
+          const dot = document.createElement('div');
+          dot.className = 'bento-placed-food';
+          dot.style.left = ((e.clientX - dz.left) / dz.width  * 100).toFixed(1) + '%';
+          dot.style.top  = ((e.clientY - dz.top)  / dz.height * 100).toFixed(1) + '%';
+          document.getElementById('bento-placed-items').appendChild(dot);
+          _bentoFoodPlaced++;
+          if (_bentoPhase === 'arrange') document.getElementById('btn-bento-next').disabled = false;
+        }
+      };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup',   onUp);
+    });
+  });
+}
+
+// ── UI STUBS — filled in Steps 6–7 ───────────────────────────
+function renderResult() { console.warn('[Ryokan] renderResult() stub'); }
 
 // ── YOKAI DATA — filled in Step 7 ────────────────────────────
 const YOKAI_DATA = {};

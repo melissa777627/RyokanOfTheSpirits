@@ -412,7 +412,7 @@ function dismissBentoIntro() {
   _bentoPendingYokai = null;
   _bentoPhase        = 'arrange';
   document.getElementById('bento-placed-items').innerHTML = '';
-  document.getElementById('bento-question-area').classList.remove('revealed');
+  document.getElementById('bento-q-modal').classList.remove('open');
   document.getElementById('btn-bento-next').disabled = true;
   document.getElementById('btn-bento-next').textContent = 'Continue →';
   document.querySelectorAll('.food-item').forEach(f => f.classList.remove('placed','food-ghost'));
@@ -461,45 +461,57 @@ function initBentoDrag() {
   const dropZone = document.getElementById('bento-drop-zone');
 
   document.querySelectorAll('#bento-palette .food-item').forEach(food => {
+    let ghost = null;
+    let dragSize = 0;
+
     food.addEventListener('pointerdown', e => {
       if (food.classList.contains('placed')) return;
       e.preventDefault();
 
-      const rect = food.getBoundingClientRect();
-      const size = rect.width;
+      dragSize = food.querySelector('.food-img').getBoundingClientRect().width || 60;
+      food.setPointerCapture(e.pointerId);
 
-      const ghost = document.createElement('div');
+      ghost = document.createElement('div');
       ghost.className = 'food-drag-ghost';
-      ghost.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - size/2}px;top:${e.clientY - size/2}px`;
+      ghost.style.width  = dragSize + 'px';
+      ghost.style.height = dragSize + 'px';
+      ghost.style.left   = (e.clientX - dragSize / 2) + 'px';
+      ghost.style.top    = (e.clientY - dragSize / 2) + 'px';
       document.body.appendChild(ghost);
       food.classList.add('food-ghost');
+    });
 
-      const onMove = e => {
-        ghost.style.left = (e.clientX - size/2) + 'px';
-        ghost.style.top  = (e.clientY - size/2) + 'px';
-      };
-      const onUp = e => {
-        document.removeEventListener('pointermove', onMove);
-        document.removeEventListener('pointerup',   onUp);
-        ghost.remove();
-        food.classList.remove('food-ghost');
+    food.addEventListener('pointermove', e => {
+      if (!ghost) return;
+      e.preventDefault();
+      ghost.style.left = (e.clientX - dragSize / 2) + 'px';
+      ghost.style.top  = (e.clientY - dragSize / 2) + 'px';
+    });
 
-        const dz = dropZone.getBoundingClientRect();
-        const inside = e.clientX >= dz.left && e.clientX <= dz.right &&
-                       e.clientY >= dz.top  && e.clientY <= dz.bottom;
-        if (inside) {
-          food.classList.add('placed');
-          const dot = document.createElement('div');
-          dot.className = 'bento-placed-food';
-          dot.style.left = ((e.clientX - dz.left) / dz.width  * 100).toFixed(1) + '%';
-          dot.style.top  = ((e.clientY - dz.top)  / dz.height * 100).toFixed(1) + '%';
-          document.getElementById('bento-placed-items').appendChild(dot);
-          _bentoFoodPlaced++;
-          if (_bentoPhase === 'arrange') document.getElementById('btn-bento-next').disabled = false;
-        }
-      };
-      document.addEventListener('pointermove', onMove);
-      document.addEventListener('pointerup',   onUp);
+    food.addEventListener('pointerup', e => {
+      if (!ghost) return;
+      ghost.remove(); ghost = null;
+      food.classList.remove('food-ghost');
+
+      const dz = dropZone.getBoundingClientRect();
+      const inside = e.clientX >= dz.left && e.clientX <= dz.right &&
+                     e.clientY >= dz.top  && e.clientY <= dz.bottom;
+      if (inside) {
+        food.classList.add('placed');
+        const dot = document.createElement('div');
+        dot.className = 'bento-placed-food';
+        dot.style.left = ((e.clientX - dz.left) / dz.width  * 100).toFixed(1) + '%';
+        dot.style.top  = ((e.clientY - dz.top)  / dz.height * 100).toFixed(1) + '%';
+        document.getElementById('bento-placed-items').appendChild(dot);
+        _bentoFoodPlaced++;
+        if (_bentoPhase === 'arrange') document.getElementById('btn-bento-next').disabled = false;
+      }
+    });
+
+    food.addEventListener('pointercancel', () => {
+      if (!ghost) return;
+      ghost.remove(); ghost = null;
+      food.classList.remove('food-ghost');
     });
   });
 }

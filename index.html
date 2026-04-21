@@ -237,22 +237,28 @@
         <div class="food-item" data-idx="5"><div class="food-img"></div><span class="food-label">TBA</span></div>
       </div>
 
+      <!-- Continue button -->
+      <div class="bento-next-wrap">
+        <button id="btn-bento-next" class="btn-gender-next" onclick="onBentoContinue()" disabled>
+          Continue &nbsp;→
+        </button>
+      </div>
+
     </div><!-- /bento-main -->
 
-    <!-- Question area — hidden until showBentoQuestion() -->
-    <div id="bento-question-area" class="bento-question-area">
-      <div class="bento-q-divider" aria-hidden="true">✦</div>
+    <!-- Question bottom sheet modal -->
+    <div id="bento-q-modal" class="bento-q-modal">
+      <div class="bento-q-modal-handle" aria-hidden="true"></div>
       <p class="bento-q-eyebrow">— The spirit asks —</p>
       <div class="story-box bento-story-box">
         <p id="bento-question-text"></p>
       </div>
       <div class="bento-choices" id="bento-choices"></div>
-    </div>
-
-    <div class="bento-next-wrap">
-      <button id="btn-bento-next" class="btn-gender-next" onclick="handleBentoNext()" disabled>
-        Continue &nbsp;→
-      </button>
+      <div class="bento-next-wrap" style="padding-bottom:env(safe-area-inset-bottom,24px)">
+        <button id="btn-bento-confirm" class="btn-gender-next" onclick="confirmBentoChoice()" disabled>
+          Confirm &nbsp;→
+        </button>
+      </div>
     </div>
 
   </div><!-- /view-bento -->
@@ -413,16 +419,14 @@ function dismissBentoIntro() {
   initBentoDrag();
 }
 
-function handleBentoNext() {
-  if (_bentoPhase === 'arrange') {
-    onBentoContinue(); // scoring-engine: calcHouse → loadStage2 → showBentoQuestion
-  } else if (_bentoPhase === 'question' && _bentoPendingYokai) {
-    pickAnswer('yokai', _bentoPendingYokai);
-  }
+function confirmBentoChoice() {
+  if (!_bentoPendingYokai) return;
+  document.getElementById('bento-q-modal').classList.remove('open');
+  pickAnswer('yokai', _bentoPendingYokai);
 }
 
 function showBentoQuestion() {
-  _bentoPhase = 'question';
+  _bentoPendingYokai = null;
   const q = QUESTIONS.yokai[state.winningHouse][0];
   document.getElementById('bento-question-text').textContent = q.text;
 
@@ -444,18 +448,13 @@ function showBentoQuestion() {
       wrap.querySelectorAll('.bento-choice-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       _bentoPendingYokai = c.yokai;
-      const nextBtn = document.getElementById('btn-bento-next');
-      nextBtn.disabled = false;
-      nextBtn.textContent = 'Confirm →';
+      document.getElementById('btn-bento-confirm').disabled = false;
     });
     wrap.appendChild(btn);
   });
 
-  const area = document.getElementById('bento-question-area');
-  area.classList.add('revealed');
-  document.getElementById('btn-bento-next').disabled = true;
-  document.getElementById('btn-bento-next').textContent = 'Confirm →';
-  setTimeout(() => area.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+  document.getElementById('btn-bento-confirm').disabled = true;
+  document.getElementById('bento-q-modal').classList.add('open');
 }
 
 function initBentoDrag() {

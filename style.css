@@ -220,10 +220,11 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 }
 .hero-title {
   font-family: var(--font-display);
-  font-size: 2.5rem;
+  font-size: clamp(1.7rem, 6vw, 2.4rem);
   line-height: 1.12;
   color: var(--on-surface);
   margin-bottom: 8px;
+  white-space: nowrap;
 }
 .hero-title .spirits { color: var(--primary); }
 .hero-kanji {
@@ -278,6 +279,15 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 /* ════════════════════════════════════════
    6. VIEW: GENDER
 ════════════════════════════════════════ */
+
+/* No-scroll: fills exactly one screen height */
+#view-gender.active {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  position: relative;
+}
 
 /* Journey progress bar — sits at very top of each view */
 .journey-progress {
@@ -338,85 +348,43 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   white-space: nowrap;
 }
 
-/* Mirror art placeholder */
+/* Mirror art placeholder — simple rect, swap for <img class="mirror-art-img"> when ready */
 .mirror-placeholder {
-  position: relative;
-  margin: 24px auto 0;
-  width: 140px;
-  height: 196px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+  flex: 1;
+  min-height: 120px;
+  max-height: 36dvh;
+  width: min(220px, 52vw);
+  margin: 10px auto 0;
+  background: transparent;
+  border-radius: 10px;
+  outline: 1.5px dashed var(--outline-variant);
 }
-/* Oval frame shape */
-.mirror-placeholder::before {
-  content: '';
-  position: absolute;
+.mirror-art-img {
+  display: block;
+  flex: 1;
+  min-height: 120px;
+  max-height: 36dvh;
+  width: min(220px, 52vw);
+  margin: 10px auto 0;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+/* ── Black fade curtain ─────────────────────────────────────── */
+#fade-curtain {
+  position: fixed;
   inset: 0;
-  border-radius: 50% 50% 46% 46% / 44% 44% 56% 56%;
-  background: linear-gradient(160deg, var(--surface-low) 0%, var(--surface-lowest) 100%);
-  box-shadow:
-    0 0 0 2px var(--outline-variant),
-    inset 0 2px 12px rgba(26,18,10,0.04),
-    0 12px 32px rgba(26,18,10,0.07);
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.55s ease;
+  z-index: 9999;
 }
-/* Stand base */
-.mirror-placeholder::after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 44px;
-  height: 10px;
-  background: var(--surface-lowest);
-  border-radius: 0 0 6px 6px;
-  box-shadow: 0 0 0 1.5px var(--outline-variant);
+#fade-curtain.visible {
+  opacity: 1;
+  pointer-events: all;
 }
-/* Inner content */
-.mirror-inner {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-.mirror-kanji {
-  font-family: var(--font-display);
-  font-size: 3rem;
-  color: var(--on-surface);
-  opacity: 0.06;
-  line-height: 1;
-  animation: mirrorPulse 3.5s ease-in-out infinite;
-  user-select: none;
-}
-@keyframes mirrorPulse {
-  0%, 100% { opacity: 0.06; }
-  50%       { opacity: 0.11; }
-}
-.mirror-hint {
-  font-family: var(--font-kanji);
-  font-size: 0.45rem;
-  letter-spacing: 0.18em;
-  color: var(--on-surface);
-  opacity: 0.2;
-  text-align: center;
-  line-height: 1.6;
-}
-/* Gold ornament arcs on mirror frame */
-.mirror-arc-top,
-.mirror-arc-bot {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.55rem;
-  color: var(--secondary);
-  opacity: 0.22;
-  z-index: 2;
-}
-.mirror-arc-top { top: 14px; }
-.mirror-arc-bot { bottom: 18px; }
 
 /* Shared view header */
 .view-header {
@@ -447,7 +415,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 /* Scene banner */
 .scene-banner {
   text-align: center;
-  padding: 28px 24px 0;
+  padding: 14px 24px 0;
 }
 .scene-kanji-title {
   display: block;
@@ -470,8 +438,8 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   position: relative;
   background: var(--surface-lowest);
   border-radius: 18px;
-  padding: 22px 26px;
-  margin: 24px 24px 0;
+  padding: 14px 22px;
+  margin: 10px 24px 0;
   box-shadow: var(--shadow-ambient);
 }
 .story-box::before,
@@ -502,15 +470,15 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   color: var(--on-surface);
   opacity: 0.38;
   text-align: center;
-  margin: 28px 0 16px;
+  margin: 12px 0 10px;
 }
 
 /* Gender cards grid */
 .gender-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  padding: 0 20px 48px;
+  gap: 8px;
+  padding: 0 16px 0;
   align-items: start;
 }
 
@@ -521,10 +489,10 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  padding: 16px 10px 20px;
+  padding: 12px 8px 16px;
   background: var(--surface-lowest);
   border-radius: 20px;
-  min-height: 200px;
+  min-height: 150px;
   overflow: hidden;
   box-shadow: var(--shadow-ambient);
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -533,9 +501,9 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   opacity: 0;
   animation: genderCardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-.gender-card:nth-child(1) { animation-delay: 0.08s; min-height: 196px; }
-.gender-card:nth-child(2) { animation-delay: 0.18s; min-height: 220px; border-radius: 24px; }
-.gender-card:nth-child(3) { animation-delay: 0.28s; min-height: 196px; }
+.gender-card:nth-child(1) { animation-delay: 0.08s; min-height: 148px; }
+.gender-card:nth-child(2) { animation-delay: 0.18s; min-height: 166px; border-radius: 24px; }
+.gender-card:nth-child(3) { animation-delay: 0.28s; min-height: 148px; }
 
 @keyframes genderCardIn {
   from { opacity: 0; transform: translateY(28px) scale(0.95); }
@@ -634,10 +602,105 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 .gender-card.selected .gc-symbol { opacity: 1; color: var(--primary); }
 .gender-card.selected .gc-kanji  { opacity: 0.18; }
 
+/* Gender confirm — Next button, always visible bottom-right */
+.gender-next-wrap {
+  position: absolute;
+  bottom: 28px;
+  right: 24px;
+}
+.btn-gender-next {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  color: var(--on-surface);
+  padding: 10px 22px;
+  border-radius: 3rem;
+  border: 1.5px solid var(--outline-variant);
+  background: var(--surface-lowest);
+  box-shadow: var(--shadow-ambient);
+  transition: opacity 0.2s, transform 0.2s, border-color 0.2s;
+}
+.btn-gender-next:not(:disabled):hover {
+  border-color: rgba(26,18,10,0.3);
+  transform: translateY(-1px);
+}
+.btn-gender-next:not(:disabled):active { transform: scale(0.97); }
+.btn-gender-next:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
+}
+
 
 /* ════════════════════════════════════════
    7. VIEW: QUIZ
 ════════════════════════════════════════ */
+
+/* Scene label */
+.quiz-scene-label {
+  font-family: var(--font-kanji);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--secondary);
+  opacity: 0.55;
+  text-align: center;
+  margin: 18px 24px 0;
+}
+
+/* Slightly more padding than gender story box */
+.quiz-story-box {
+  margin-top: 12px;
+}
+.quiz-story-box p {
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+/* Choice buttons stack */
+.quiz-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 20px 40px;
+}
+
+.choice-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 14px 18px;
+  background: var(--surface-lowest);
+  border-radius: 1.5rem;
+  border: 1.5px solid var(--outline-variant);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--on-surface);
+  line-height: 1.45;
+  box-shadow: var(--shadow-ambient);
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  cursor: pointer;
+}
+.choice-btn:not(:disabled):hover {
+  transform: translateX(4px);
+  border-color: rgba(26,18,10,0.28);
+  background: var(--surface-low);
+}
+.choice-btn:not(:disabled):active {
+  transform: scale(0.98);
+}
+.choice-btn.selected {
+  border-color: var(--primary);
+  background: var(--surface-low);
+  color: var(--primary);
+}
+.choice-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.choice-btn.selected:disabled {
+  opacity: 1;
+}
 
 
 /* ════════════════════════════════════════

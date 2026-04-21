@@ -34,7 +34,7 @@
     <section class="hero-content">
       <div class="kanji-watermark" aria-hidden="true">妖怪</div>
       <p class="hero-eyebrow">✦ A Spirit Awaits ✦</p>
-      <h1 class="hero-title">Ryokan of The<br><span class="spirits">Spirits</span></h1>
+      <h1 class="hero-title">Ryokan of The <span class="spirits">Spirits</span></h1>
       <p class="hero-kanji">妖怪の宿</p>
       <div class="ornament-divider" aria-hidden="true">✦</div>
       <p class="hero-body">
@@ -42,7 +42,7 @@
         The spirits are watching.<br>
         One of them has been waiting for you.
       </p>
-      <button class="btn-primary" onclick="showView('gender')">Begin Journey &nbsp;→</button>
+      <button class="btn-primary" onclick="fadeToView('gender')">Begin Journey &nbsp;→</button>
     </section>
 
     <div class="texture-strip" aria-hidden="true"></div>
@@ -95,7 +95,7 @@
     </div>
 
     <header class="view-header">
-      <button class="btn-back" onclick="showView('landing')">← 戻る</button>
+      <span></span>
       <span class="event-badge">Event 0</span>
     </header>
 
@@ -104,18 +104,9 @@
       <span class="scene-subtitle">The Mirror Room</span>
     </div>
 
-    <!-- Mirror art placeholder — replace inner img when artwork is ready -->
-    <!-- <img class="mirror-art" src="assets/ui/mirror_art.png" alt="The Mirror"> -->
-    <div class="mirror-placeholder" aria-hidden="true">
-      <span class="mirror-arc-top">✦</span>
-      <div class="mirror-inner">
-        <span class="mirror-kanji">鏡</span>
-        <span class="mirror-hint">art<br>here</span>
-      </div>
-      <span class="mirror-arc-bot">✦</span>
-    </div>
-
-    <div class="texture-strip" style="margin-top:24px;" aria-hidden="true"></div>
+    <!-- Mirror art placeholder — swap <div> for <img class="mirror-art-img"> when PNG is ready -->
+    <!-- <img class="mirror-art-img" src="assets/ui/mirror_art.png" alt="The Mirror"> -->
+    <div class="mirror-placeholder" aria-hidden="true"></div>
 
     <div class="story-box">
       <p>Before you could step inside, an ancient bronze mirror stopped you cold.<br>
@@ -127,27 +118,30 @@
 
     <div class="gender-grid">
 
-      <button class="gender-card" onclick="selectGender('male')">
+      <button class="gender-card" onclick="selectGender('male', this)">
         <span class="gc-kanji" aria-hidden="true">男</span>
         <span class="gc-symbol">♂</span>
         <span class="gc-label">Male</span>
-        <span class="gc-sub">The Wanderer</span>
       </button>
 
-      <button class="gender-card" onclick="selectGender('nonbinary')">
+      <button class="gender-card" onclick="selectGender('nonbinary', this)">
         <span class="gc-kanji" aria-hidden="true">双</span>
         <span class="gc-symbol">✧</span>
         <span class="gc-label">Non-binary</span>
-        <span class="gc-sub">The Drifter</span>
       </button>
 
-      <button class="gender-card" onclick="selectGender('female')">
+      <button class="gender-card" onclick="selectGender('female', this)">
         <span class="gc-kanji" aria-hidden="true">女</span>
         <span class="gc-symbol">♀</span>
         <span class="gc-label">Female</span>
-        <span class="gc-sub">The Keeper</span>
       </button>
 
+    </div>
+
+    <div class="gender-next-wrap">
+      <button id="btn-gender-next" class="btn-gender-next" onclick="confirmGender()" disabled>
+        Next &nbsp;→
+      </button>
     </div>
 
   </div><!-- /view-gender -->
@@ -155,7 +149,41 @@
   <!-- ════════════════════════════════════════
        VIEW: QUIZ — Step 4
   ════════════════════════════════════════ -->
-  <div id="view-quiz" class="view"></div>
+  <div id="view-quiz" class="view">
+
+    <div class="journey-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Journey progress">
+      <div class="journey-progress-fill" id="quiz-progress-fill" style="width:10%"></div>
+    </div>
+    <div class="journey-dots" id="quiz-dots" aria-hidden="true">
+      <span class="jd-dot active"></span>
+      <span class="jd-dot"></span>
+      <span class="jd-dot"></span>
+      <span class="jd-dot"></span>
+      <span class="jd-dot"></span>
+      <span class="jd-dot"></span>
+      <span class="jd-dot"></span>
+      <span class="jd-dot"></span>
+      <span class="jd-dot"></span>
+      <span class="jd-dot"></span>
+      <span class="jd-label" id="quiz-dot-label">1 / 10</span>
+    </div>
+
+    <header class="view-header">
+      <span></span>
+      <span class="event-badge" id="quiz-event-badge">Event 1</span>
+    </header>
+
+    <p class="quiz-scene-label" id="quiz-scene"></p>
+
+    <div class="story-box quiz-story-box">
+      <p id="quiz-story">TBA</p>
+    </div>
+
+    <div class="quiz-choices" id="quiz-choices">
+      <!-- Rendered by loadQuestion() -->
+    </div>
+
+  </div><!-- /view-quiz -->
 
   <!-- ════════════════════════════════════════
        VIEW: BENTO — Step 5
@@ -172,6 +200,9 @@
   ════════════════════════════════════════ -->
   <div id="view-result" class="view"></div>
 
+  <!-- Black fade curtain — used for cinematic view transitions -->
+  <div id="fade-curtain" aria-hidden="true"></div>
+
 </div><!-- /app -->
 
 <script src="scoring-engine.js"></script>
@@ -187,21 +218,82 @@ function showView(id) {
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
-// ── GENDER SELECTION ─────────────────────────────────────────
-function selectGender(gender) {
-  // Visual feedback — flash selected card
-  document.querySelectorAll('.gender-card').forEach(c => c.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
-
-  setTimeout(() => {
-    setPlayerGender(gender);  // scoring-engine.js
-    showView('quiz');
-    loadQuestion();
-  }, 320);
+// ── FADE TRANSITION ──────────────────────────────────────────
+// fadeToView(id) — black curtain drops, swaps view, curtain lifts
+function fadeToView(id, afterFade) {
+  const curtain = document.getElementById('fade-curtain');
+  curtain.classList.add('visible');
+  curtain.addEventListener('transitionend', function handler() {
+    curtain.removeEventListener('transitionend', handler);
+    showView(id);
+    if (afterFade) afterFade();
+    requestAnimationFrame(() => requestAnimationFrame(() => curtain.classList.remove('visible')));
+  }, { once: true });
 }
 
-// ── UI STUBS — filled in Steps 4–7 ───────────────────────────
-function loadQuestion()      { console.warn('[Ryokan] loadQuestion() stub'); }
+// ── GENDER SELECTION ─────────────────────────────────────────
+let _pendingGender = null;
+
+function selectGender(gender, cardEl) {
+  _pendingGender = gender;
+  document.querySelectorAll('.gender-card').forEach(c => c.classList.remove('selected'));
+  cardEl.classList.add('selected');
+  document.getElementById('btn-gender-next').disabled = false;
+}
+
+function confirmGender() {
+  if (!_pendingGender) return;
+  setPlayerGender(_pendingGender);
+  showView('quiz');
+  loadQuestion();
+}
+
+// ── QUIZ ─────────────────────────────────────────────────────
+function loadQuestion() {
+  const isStage2 = state.stage === 2;
+  const source   = isStage2 ? 'yokai' : 'house';
+  const pool     = isStage2 ? QUESTIONS.yokai[state.winningHouse] : QUESTIONS.house;
+  const q        = pool[state.currentQ];
+
+  // eventNum: stage1 Q0–Q4 = events 1–5, stage2 Q1–Q4 = events 7–10
+  const eventNum = isStage2 ? 6 + state.currentQ : state.currentQ + 1;
+  const progress = (eventNum / 10) * 100;
+
+  // Progress bar
+  document.getElementById('quiz-progress-fill').style.width = progress + '%';
+
+  // Dots
+  const dots = document.querySelectorAll('#quiz-dots .jd-dot');
+  dots.forEach((d, i) => {
+    d.classList.toggle('done',   i < eventNum - 1);
+    d.classList.toggle('active', i === eventNum - 1);
+    d.classList.remove(i < eventNum - 1 ? 'active' : 'done');
+  });
+  document.getElementById('quiz-dot-label').textContent = eventNum + ' / 10';
+
+  // Header + scene
+  document.getElementById('quiz-event-badge').textContent = 'Event ' + eventNum;
+  document.getElementById('quiz-scene').textContent = q.scene;
+  document.getElementById('quiz-story').textContent = q.text;
+
+  // Choices
+  const wrap = document.getElementById('quiz-choices');
+  wrap.innerHTML = '';
+  q.choices.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = c.text;
+    const val = isStage2 ? c.yokai : c.house;
+    btn.addEventListener('click', () => {
+      wrap.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+      btn.classList.add('selected');
+      setTimeout(() => pickAnswer(source, val), 260);
+    });
+    wrap.appendChild(btn);
+  });
+}
+
+// ── UI STUBS — filled in Steps 5–7 ───────────────────────────
 function showBentoQuestion() { console.warn('[Ryokan] showBentoQuestion() stub'); }
 function renderResult()      { console.warn('[Ryokan] renderResult() stub'); }
 

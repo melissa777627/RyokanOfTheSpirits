@@ -491,20 +491,23 @@ function initBentoDrag() {
   document.querySelectorAll('#bento-palette .food-item').forEach(food => {
     let ghost = null;
     let dragSize = 0;
+    let foodBg = '';
 
     food.addEventListener('pointerdown', e => {
       if (food.classList.contains('placed')) return;
       e.preventDefault();
 
       dragSize = food.querySelector('.food-img').getBoundingClientRect().width || 60;
+      foodBg   = food.querySelector('.food-img').style.backgroundImage;
       food.setPointerCapture(e.pointerId);
 
       ghost = document.createElement('div');
       ghost.className = 'food-drag-ghost';
-      ghost.style.width  = dragSize + 'px';
-      ghost.style.height = dragSize + 'px';
-      ghost.style.left   = (e.clientX - dragSize / 2) + 'px';
-      ghost.style.top    = (e.clientY - dragSize / 2) + 'px';
+      ghost.style.width           = dragSize + 'px';
+      ghost.style.height          = dragSize + 'px';
+      ghost.style.left            = (e.clientX - dragSize / 2) + 'px';
+      ghost.style.top             = (e.clientY - dragSize / 2) + 'px';
+      ghost.style.backgroundImage = foodBg;
       document.body.appendChild(ghost);
       food.classList.add('food-ghost');
     });
@@ -528,8 +531,9 @@ function initBentoDrag() {
         food.classList.add('placed');
         const dot = document.createElement('div');
         dot.className = 'bento-placed-food';
-        dot.style.left = ((e.clientX - dz.left) / dz.width  * 100).toFixed(1) + '%';
-        dot.style.top  = ((e.clientY - dz.top)  / dz.height * 100).toFixed(1) + '%';
+        dot.style.left            = ((e.clientX - dz.left) / dz.width  * 100).toFixed(1) + '%';
+        dot.style.top             = ((e.clientY - dz.top)  / dz.height * 100).toFixed(1) + '%';
+        dot.style.backgroundImage = foodBg;
         document.getElementById('bento-placed-items').appendChild(dot);
         _bentoFoodPlaced++;
         if (_bentoPhase === 'arrange') document.getElementById('btn-bento-next').disabled = false;

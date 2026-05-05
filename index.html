@@ -649,13 +649,24 @@ function renderResult() {
       <div id="omikuji-modal" class="omikuji-modal" onclick="closeOmikuji()" role="dialog" aria-modal="true">
         <div class="omikuji-card" onclick="event.stopPropagation()">
           <button class="omikuji-close" onclick="closeOmikuji()" aria-label="Close">✕</button>
-          <p class="omikuji-eyebrow">お御籤 · Omikuji</p>
-          <div class="omikuji-ornament" aria-hidden="true">✦</div>
-          <p class="omikuji-rank" id="omikuji-rank"></p>
-          <p class="omikuji-rank-en" id="omikuji-rank-en"></p>
-          <div class="omikuji-slip-divider" aria-hidden="true"></div>
-          <p class="omikuji-fortune-text" id="omikuji-text"></p>
-          <p class="omikuji-footer">— Tie it to the pine —<br>let the wind carry what you cannot hold —</p>
+
+          <div id="omikuji-pick">
+            <p class="omikuji-eyebrow">お御籤 · Omikuji</p>
+            <div class="omikuji-ornament" aria-hidden="true">✦</div>
+            <p class="omikuji-pick-question">Are you currently in love?</p>
+            <button class="omikuji-pick-btn" onclick="drawOmikuji('taken')">💑 &nbsp;I have someone</button>
+            <button class="omikuji-pick-btn" onclick="drawOmikuji('single')">🌸 &nbsp;I am on my own</button>
+          </div>
+
+          <div id="omikuji-result" hidden>
+            <p class="omikuji-eyebrow">お御籤 · Omikuji</p>
+            <div class="omikuji-ornament" aria-hidden="true">✦</div>
+            <p class="omikuji-rank" id="omikuji-rank"></p>
+            <p class="omikuji-rank-en" id="omikuji-rank-en"></p>
+            <div class="omikuji-slip-divider" aria-hidden="true"></div>
+            <p class="omikuji-fortune-text" id="omikuji-text"></p>
+            <p class="omikuji-footer">— Tie it to the pine —<br>let the wind carry what you cannot hold —</p>
+          </div>
         </div>
       </div>
     </div>`;
@@ -668,43 +679,55 @@ function renderResult() {
 }
 
 // ── OMIKUJI ───────────────────────────────────────────────────
-const OMIKUJI_LIST = [
-  { rank:'大吉', rankEn:'Great Fortune',     color:'#B02B2B',
-    text:'The shadow you have been avoiding holds the key. Stop running — it has always been yours.' },
-  { rank:'大吉', rankEn:'Great Fortune',     color:'#B02B2B',
-    text:'You have carried this wound long enough. Your spirit companion sees your whole self — and chooses to stay.' },
-  { rank:'吉',   rankEn:'Good Fortune',      color:'#1B6B3A',
-    text:'A gentle tide is turning in your favor. What you planted in silence begins to bloom.' },
-  { rank:'吉',   rankEn:'Good Fortune',      color:'#1B6B3A',
-    text:'Trust is returning to you slowly. Let it come without questioning whether you deserve it.' },
-  { rank:'中吉', rankEn:'Moderate Fortune',  color:'#1B4F72',
-    text:'Neither lost nor found — you stand at a crossing. The spirit who waits does not hurry you.' },
-  { rank:'中吉', rankEn:'Moderate Fortune',  color:'#1B4F72',
-    text:'The answers you seek are closer than they appear. Look inward before the next moon.' },
-  { rank:'小吉', rankEn:'Small Fortune',     color:'#7D6608',
-    text:'Small blessings move quietly through your life today. Learn to receive what you did not ask for.' },
-  { rank:'小吉', rankEn:'Small Fortune',     color:'#7D6608',
-    text:'Your spirit companion sees the part of you that hides. Tonight, let it speak.' },
-  { rank:'末吉', rankEn:'Uncertain Fortune', color:'#6C3483',
-    text:'The mist has not lifted yet. Patience is not weakness — it is the deepest kind of trust.' },
-  { rank:'末吉', rankEn:'Uncertain Fortune', color:'#6C3483',
-    text:'Hesitation is not weakness. The bridge you fear to cross is shorter than it looks from here.' },
-  { rank:'凶',   rankEn:'Caution',           color:'#5A4A4A',
-    text:'Something old is breaking apart inside you. Do not fear it — this is how the light gets in.' },
-  { rank:'凶',   rankEn:'Caution',           color:'#5A4A4A',
-    text:'Before the flower, the root must deepen in darkness. Your season of growth is not yet over.' }
-];
+const OMIKUJI_LIST = {
+  taken: [
+    { rank:'大吉', rankEn:'Great Fortune',     color:'#B02B2B',
+      text:'The love between you is entering its most luminous season. Let yourself be fully seen — your person has already chosen to stay.' },
+    { rank:'吉',   rankEn:'Good Fortune',      color:'#1B6B3A',
+      text:'A small act of tenderness today carries more weight than you know. The love you have is real — do not let busyness make it invisible.' },
+    { rank:'中吉', rankEn:'Moderate Fortune',  color:'#1B4F72',
+      text:'You are in a quiet chapter, not a fading one. Roots grow deepest in still seasons. Trust what you have built together.' },
+    { rank:'小吉', rankEn:'Small Fortune',     color:'#7D6608',
+      text:'Something between you two has been left unsaid. The words are not dangerous — the silence is. Speak gently.' },
+    { rank:'末吉', rankEn:'Uncertain Fortune', color:'#6C3483',
+      text:'The distance you feel right now is not permanent. But it will not close on its own. One step toward each other is enough.' },
+    { rank:'凶',   rankEn:'Caution',           color:'#5A4A4A',
+      text:'Love is asking you to be honest — with your partner, and with yourself. Comfort is not the same as connection. Look closer.' }
+  ],
+  single: [
+    { rank:'大吉', rankEn:'Great Fortune',     color:'#B02B2B',
+      text:'The one you are waiting for is closer than the loneliness makes it feel. Keep your heart open — this is not the end of the story.' },
+    { rank:'吉',   rankEn:'Good Fortune',      color:'#1B6B3A',
+      text:'Something is shifting in your favor. A meeting, a moment, a glance — it is already in motion. Stay present.' },
+    { rank:'中吉', rankEn:'Moderate Fortune',  color:'#1B4F72',
+      text:'Love is possible right now, but it requires you to show up differently than before. What old pattern are you ready to release?' },
+    { rank:'小吉', rankEn:'Small Fortune',     color:'#7D6608',
+      text:'You are learning what you truly need from love. This season of knowing is not empty — it is preparation.' },
+    { rank:'末吉', rankEn:'Uncertain Fortune', color:'#6C3483',
+      text:'The timing is not wrong, but something in you is still healing. Be patient with yourself. Love waits for readiness.' },
+    { rank:'凶',   rankEn:'Caution',           color:'#5A4A4A',
+      text:'You cannot build love on a foundation you have not repaired yet. The work you are avoiding is the work that sets you free.' }
+  ]
+};
 
 function openOmikuji() {
-  const o = OMIKUJI_LIST[Math.floor(Math.random() * OMIKUJI_LIST.length)];
-  const rank = document.getElementById('omikuji-rank');
+  document.getElementById('omikuji-pick').hidden   = false;
+  document.getElementById('omikuji-result').hidden = true;
+  document.getElementById('omikuji-modal').classList.add('open');
+}
+
+function drawOmikuji(status) {
+  const pool = OMIKUJI_LIST[status];
+  const o    = pool[Math.floor(Math.random() * pool.length)];
+  const rank   = document.getElementById('omikuji-rank');
   const rankEn = document.getElementById('omikuji-rank-en');
   rank.textContent    = o.rank;
   rank.style.color    = o.color;
   rankEn.textContent  = o.rankEn;
   rankEn.style.color  = o.color;
   document.getElementById('omikuji-text').textContent = o.text;
-  document.getElementById('omikuji-modal').classList.add('open');
+  document.getElementById('omikuji-pick').hidden   = true;
+  document.getElementById('omikuji-result').hidden = false;
 }
 
 function closeOmikuji() {

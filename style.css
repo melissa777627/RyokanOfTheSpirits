@@ -1012,13 +1012,9 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   position: fixed;
   z-index: 9998;
   pointer-events: none;
-  border-radius: 10px;
-  background-color: var(--surface-lowest);
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
-  outline: 1.5px dashed var(--outline-variant);
-  box-shadow: 0 12px 32px rgba(26,18,10,0.2);
   opacity: 0.9;
   transform: scale(1.12) rotate(4deg);
 }

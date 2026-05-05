@@ -227,14 +227,20 @@
 
       <p class="bento-instruction">— Place your offering —</p>
 
-      <!-- Draggable food palette — 3×2 grid -->
+      <!-- Draggable food palette — 3×4 grid, scrollable -->
       <div class="bento-palette" id="bento-palette">
-        <div class="food-item" data-idx="0"><div class="food-img"></div><span class="food-label">TBA</span></div>
-        <div class="food-item" data-idx="1"><div class="food-img"></div><span class="food-label">TBA</span></div>
-        <div class="food-item" data-idx="2"><div class="food-img"></div><span class="food-label">TBA</span></div>
-        <div class="food-item" data-idx="3"><div class="food-img"></div><span class="food-label">TBA</span></div>
-        <div class="food-item" data-idx="4"><div class="food-img"></div><span class="food-label">TBA</span></div>
-        <div class="food-item" data-idx="5"><div class="food-img"></div><span class="food-label">TBA</span></div>
+        <div class="food-item" data-idx="0"><div class="food-img"></div><span class="food-label">おにぎり</span></div>
+        <div class="food-item" data-idx="1"><div class="food-img"></div><span class="food-label">たまごやき</span></div>
+        <div class="food-item" data-idx="2"><div class="food-img"></div><span class="food-label">から揚げ</span></div>
+        <div class="food-item" data-idx="3"><div class="food-img"></div><span class="food-label">ちくわ</span></div>
+        <div class="food-item" data-idx="4"><div class="food-img"></div><span class="food-label">たこさん</span></div>
+        <div class="food-item" data-idx="5"><div class="food-img"></div><span class="food-label">えだまめ</span></div>
+        <div class="food-item" data-idx="6"><div class="food-img"></div><span class="food-label">いなり</span></div>
+        <div class="food-item" data-idx="7"><div class="food-img"></div><span class="food-label">かまぼこ</span></div>
+        <div class="food-item" data-idx="8"><div class="food-img"></div><span class="food-label">ブロッコリー</span></div>
+        <div class="food-item" data-idx="9"><div class="food-img"></div><span class="food-label">こんにゃく</span></div>
+        <div class="food-item" data-idx="10"><div class="food-img"></div><span class="food-label">うめぼし</span></div>
+        <div class="food-item" data-idx="11"><div class="food-img"></div><span class="food-label">たくあん</span></div>
       </div>
 
       <!-- Continue button -->
@@ -267,7 +273,17 @@
   <!-- ════════════════════════════════════════
        VIEW: LOADING — Step 6
   ════════════════════════════════════════ -->
-  <div id="view-loading" class="view"></div>
+  <div id="view-loading" class="view">
+    <div class="loading-inner">
+      <div class="loading-orb">
+        <div class="orb-ring orb-ring-1"></div>
+        <div class="orb-ring orb-ring-2"></div>
+        <div class="orb-core"></div>
+      </div>
+      <p class="loading-kanji" id="loading-kanji">運</p>
+      <p class="loading-caption">Your spirit is awakening…</p>
+    </div>
+  </div>
 
   <!-- ════════════════════════════════════════
        VIEW: RESULT — Step 7
@@ -290,7 +306,9 @@ function showView(id) {
   if (!target) { console.error('[Ryokan] Unknown view:', id); return; }
   target.classList.add('active');
   window.scrollTo({ top: 0, behavior: 'instant' });
-  if (id === 'bento') initBento();
+  if (id === 'bento')   initBento();
+  if (id === 'loading') initLoading();
+  if (id === 'result')  renderResult();
 }
 
 // ── FADE TRANSITION ──────────────────────────────────────────
@@ -321,6 +339,15 @@ function confirmGender() {
   setPlayerGender(_pendingGender);
   showView('quiz');
   loadQuestion();
+}
+
+function shuffled(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 // ── QUIZ ─────────────────────────────────────────────────────
@@ -368,7 +395,7 @@ function loadQuestion() {
   // Choices
   const wrap = document.getElementById('quiz-choices');
   wrap.innerHTML = '';
-  q.choices.forEach(c => {
+  shuffled(q.choices).forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
 
@@ -423,6 +450,7 @@ function confirmBentoChoice() {
   if (!_bentoPendingYokai) return;
   document.getElementById('bento-q-modal').classList.remove('open');
   pickAnswer('yokai', _bentoPendingYokai);
+  if (!state.winningYokai) fadeToView('quiz');
 }
 
 function showBentoQuestion() {
@@ -432,7 +460,7 @@ function showBentoQuestion() {
 
   const wrap = document.getElementById('bento-choices');
   wrap.innerHTML = '';
-  q.choices.forEach(c => {
+  shuffled(q.choices).forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'bento-choice-btn';
 
@@ -516,11 +544,261 @@ function initBentoDrag() {
   });
 }
 
-// ── UI STUBS — filled in Steps 6–7 ───────────────────────────
-function renderResult() { console.warn('[Ryokan] renderResult() stub'); }
+// ── LOADING ───────────────────────────────────────────────────
+function initLoading() {
+  const kanji = ['運', '縁', '霊', '契', '魂', '妖', '絆', '愛'];
+  let i = 0;
+  const el = document.getElementById('loading-kanji');
+  el.textContent = kanji[0];
 
-// ── YOKAI DATA — filled in Step 7 ────────────────────────────
-const YOKAI_DATA = {};
+  const interval = setInterval(() => {
+    el.classList.add('swapping');
+    setTimeout(() => {
+      i = (i + 1) % kanji.length;
+      el.textContent = kanji[i];
+      el.classList.remove('swapping');
+    }, 120);
+  }, 440);
+
+  setTimeout(() => {
+    clearInterval(interval);
+    fadeToView('result');
+  }, 3520);
+}
+
+// ── RESULT ────────────────────────────────────────────────────
+function renderResult() {
+  if (!guardState(2)) return;
+  const r = getResult();
+
+  const houseTints  = { purple:'rgba(107,79,160,0.14)', green:'rgba(45,122,79,0.12)', blue:'rgba(27,79,114,0.12)', yellow:'rgba(181,138,0,0.10)' };
+  const houseLabels = { purple:'Analysts', green:'Diplomats', blue:'Sentinels', yellow:'Explorers' };
+
+  const tint            = houseTints[r.house]  || 'transparent';
+  const houseLabel      = houseLabels[r.house] || r.house;
+  const otherGenderText = state.resultGenderShown === 'male' ? '♀ Female version' : '♂ Male version';
+
+  const hasArt  = r.image && r.image.trim() !== '';
+  const webmSrc = hasArt ? r.image : '';
+  const mp4Src  = hasArt ? r.image.replace(/\.webm$/i, '.mp4') : '';
+
+  const artHTML = hasArt
+    ? `<video class="result-art-video" autoplay loop muted playsinline>
+         <source src="${webmSrc}" type="video/webm; codecs=vp9">
+         <source src="${mp4Src}" type='video/mp4; codecs="hvc1"'>
+       </video>`
+    : `<div class="result-art-emoji" aria-hidden="true">${r.emoji}</div>`;
+
+  const compatHTML = r.compat.map(c => `
+    <div class="compat-row">
+      <div class="compat-header">
+        <span class="compat-label">${c.label}</span>
+        <span class="compat-value">${c.value}%</span>
+      </div>
+      <div class="compat-track">
+        <div class="compat-fill" data-value="${c.value}" style="transform:scaleX(0)"></div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('view-result').innerHTML = `
+    <div class="result-wrap">
+      <div class="result-art-section" style="--house-tint:${tint}">
+        <div class="result-art-bg"></div>
+        ${artHTML}
+        <div class="result-art-fade"></div>
+      </div>
+      <div class="result-content">
+        <div class="result-identity">
+          <div class="result-mbti-row">
+            <span class="result-house-label">${houseLabel}</span>
+            <span class="result-mbti">${r.mbti}</span>
+          </div>
+          <h2 class="result-name">${r.name}</h2>
+          <p class="result-title">${r.title}</p>
+          <p class="result-tagline">${r.tagline}</p>
+        </div>
+        <button class="result-gender-pill" onclick="toggleResultGender()" aria-label="${otherGenderText}">
+          <svg viewBox="0 0 24 24"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+          ${otherGenderText}
+        </button>
+        <div class="result-section">
+          <p class="result-section-eyebrow">— Why you matched —</p>
+          <p class="result-why">${r.why}</p>
+        </div>
+        <div class="result-quote-block">
+          <p class="result-quote">${r.quote}</p>
+        </div>
+        <div class="result-section">
+          <p class="result-section-eyebrow">— Compatibility —</p>
+          <div class="result-compat-bars">${compatHTML}</div>
+        </div>
+        <div class="result-actions">
+          <button class="btn-primary" onclick="resetGame()">Play Again &nbsp;↺</button>
+          <button class="omikuji-btn" onclick="openOmikuji()" aria-label="Draw your Omikuji fortune">
+            <div class="omikuji-btn-img" aria-hidden="true">御</div>
+            <span class="omikuji-btn-label">御籤を引く</span>
+            <span class="omikuji-btn-sub">Draw your fortune</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="omikuji-modal" class="omikuji-modal" onclick="closeOmikuji()" role="dialog" aria-modal="true">
+        <div class="omikuji-card" onclick="event.stopPropagation()">
+          <button class="omikuji-close" onclick="closeOmikuji()" aria-label="Close">✕</button>
+          <p class="omikuji-eyebrow">お御籤 · Omikuji</p>
+          <div class="omikuji-ornament" aria-hidden="true">✦</div>
+          <p class="omikuji-rank" id="omikuji-rank"></p>
+          <p class="omikuji-rank-en" id="omikuji-rank-en"></p>
+          <div class="omikuji-slip-divider" aria-hidden="true"></div>
+          <p class="omikuji-fortune-text" id="omikuji-text"></p>
+          <p class="omikuji-footer">— Tie it to the pine —<br>let the wind carry what you cannot hold —</p>
+        </div>
+      </div>
+    </div>`;
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelectorAll('.compat-fill').forEach(fill => {
+      fill.style.transform = `scaleX(${parseInt(fill.dataset.value, 10) / 100})`;
+    });
+  }));
+}
+
+// ── OMIKUJI ───────────────────────────────────────────────────
+const OMIKUJI_LIST = [
+  { rank:'大吉', rankEn:'Great Fortune',     color:'#B02B2B',
+    text:'The shadow you have been avoiding holds the key. Stop running — it has always been yours.' },
+  { rank:'大吉', rankEn:'Great Fortune',     color:'#B02B2B',
+    text:'You have carried this wound long enough. Your spirit companion sees your whole self — and chooses to stay.' },
+  { rank:'吉',   rankEn:'Good Fortune',      color:'#1B6B3A',
+    text:'A gentle tide is turning in your favor. What you planted in silence begins to bloom.' },
+  { rank:'吉',   rankEn:'Good Fortune',      color:'#1B6B3A',
+    text:'Trust is returning to you slowly. Let it come without questioning whether you deserve it.' },
+  { rank:'中吉', rankEn:'Moderate Fortune',  color:'#1B4F72',
+    text:'Neither lost nor found — you stand at a crossing. The spirit who waits does not hurry you.' },
+  { rank:'中吉', rankEn:'Moderate Fortune',  color:'#1B4F72',
+    text:'The answers you seek are closer than they appear. Look inward before the next moon.' },
+  { rank:'小吉', rankEn:'Small Fortune',     color:'#7D6608',
+    text:'Small blessings move quietly through your life today. Learn to receive what you did not ask for.' },
+  { rank:'小吉', rankEn:'Small Fortune',     color:'#7D6608',
+    text:'Your spirit companion sees the part of you that hides. Tonight, let it speak.' },
+  { rank:'末吉', rankEn:'Uncertain Fortune', color:'#6C3483',
+    text:'The mist has not lifted yet. Patience is not weakness — it is the deepest kind of trust.' },
+  { rank:'末吉', rankEn:'Uncertain Fortune', color:'#6C3483',
+    text:'Hesitation is not weakness. The bridge you fear to cross is shorter than it looks from here.' },
+  { rank:'凶',   rankEn:'Caution',           color:'#5A4A4A',
+    text:'Something old is breaking apart inside you. Do not fear it — this is how the light gets in.' },
+  { rank:'凶',   rankEn:'Caution',           color:'#5A4A4A',
+    text:'Before the flower, the root must deepen in darkness. Your season of growth is not yet over.' }
+];
+
+function openOmikuji() {
+  const o = OMIKUJI_LIST[Math.floor(Math.random() * OMIKUJI_LIST.length)];
+  const rank = document.getElementById('omikuji-rank');
+  const rankEn = document.getElementById('omikuji-rank-en');
+  rank.textContent    = o.rank;
+  rank.style.color    = o.color;
+  rankEn.textContent  = o.rankEn;
+  rankEn.style.color  = o.color;
+  document.getElementById('omikuji-text').textContent = o.text;
+  document.getElementById('omikuji-modal').classList.add('open');
+}
+
+function closeOmikuji() {
+  document.getElementById('omikuji-modal').classList.remove('open');
+}
+
+// ── YOKAI DATA ────────────────────────────────────────────────
+const YOKAI_DATA = {
+
+  // ── Purple · Analysts (NT) ───────────────────────────────────
+  Tenjin: {
+    house:'purple', mbti:'INTJ', emoji:'📜', name:'Tenjin', title:'เทพแห่งปัญญา',
+    male:   { image:'', tagline:'The God of Knowledge',    why:'[เหตุผลที่คุณคู่กับ Tenjin เพศชาย]',   quote:'"[คำพูดของ Tenjin เพศชาย]"',   compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] },
+    female: { image:'', tagline:'The Goddess of Knowledge',why:'[เหตุผลที่คุณคู่กับ Tenjin เพศหญิง]', quote:'"[คำพูดของ Tenjin เพศหญิง]"', compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] }
+  },
+  Yumekui: {
+    house:'purple', mbti:'INTP', emoji:'💤', name:'Yumekui', title:'ปีศาจกินฝัน',
+    male:   { image:'', tagline:'The Dream Devourer', why:'[เหตุผลที่คุณคู่กับ Yumekui เพศชาย]',   quote:'"[คำพูดของ Yumekui เพศชาย]"',   compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] },
+    female: { image:'', tagline:'The Dream Devourer', why:'[เหตุผลที่คุณคู่กับ Yumekui เพศหญิง]', quote:'"[คำพูดของ Yumekui เพศหญิง]"', compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] }
+  },
+  Ryuu: {
+    house:'purple', mbti:'ENTJ', emoji:'🐉', name:'Ryuu', title:'มังกรเทพเจ้า',
+    male:   { image:'', tagline:'The Dragon God',     why:'[เหตุผลที่คุณคู่กับ Ryuu เพศชาย]',   quote:'"[คำพูดของ Ryuu เพศชาย]"',   compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] },
+    female: { image:'', tagline:'The Dragon Goddess', why:'[เหตุผลที่คุณคู่กับ Ryuu เพศหญิง]', quote:'"[คำพูดของ Ryuu เพศหญิง]"', compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] }
+  },
+  Tengu: {
+    house:'purple', mbti:'ENTP', emoji:'👺', name:'Tengu', title:'เทนกุ',
+    male:   { image:'', tagline:'The Mountain Trickster', why:'[เหตุผลที่คุณคู่กับ Tengu เพศชาย]',   quote:'"[คำพูดของ Tengu เพศชาย]"',   compat:[{label:'Wit & Banter',value:94},{label:'Adventure',value:78},{label:'Stability',value:35}] },
+    female: { image:'', tagline:'The Mountain Trickster', why:'[เหตุผลที่คุณคู่กับ Tengu เพศหญิง]', quote:'"[คำพูดของ Tengu เพศหญิง]"', compat:[{label:'Wit & Banter',value:94},{label:'Adventure',value:78},{label:'Stability',value:35}] }
+  },
+
+  // ── Green · Diplomats (NF) ───────────────────────────────────
+  Shinigami: {
+    house:'green', mbti:'INFJ', emoji:'💀', name:'Shinigami', title:'ยมทูต',
+    male:   { image:'', tagline:'The Soul Guide', why:'[เหตุผลที่คุณคู่กับ Shinigami เพศชาย]',   quote:'"[คำพูดของ Shinigami เพศชาย]"',   compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] },
+    female: { image:'', tagline:'The Soul Guide', why:'[เหตุผลที่คุณคู่กับ Shinigami เพศหญิง]', quote:'"[คำพูดของ Shinigami เพศหญิง]"', compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] }
+  },
+  Yukionna: {
+    house:'green', mbti:'INFP', emoji:'❄️', name:'Yukionna', title:'ปีศาจหิมะ',
+    male:   { image:'', tagline:'The Snow Spirit', why:'[เหตุผลที่คุณคู่กับ Yukionna เพศชาย]',   quote:'"[คำพูดของ Yukionna เพศชาย]"',   compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] },
+    female: { image:'', tagline:'The Snow Spirit', why:'[เหตุผลที่คุณคู่กับ Yukionna เพศหญิง]', quote:'"[คำพูดของ Yukionna เพศหญิง]"', compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] }
+  },
+  Kitsune: {
+    house:'green', mbti:'ENFJ', emoji:'🦊', name:'Kitsune', title:'จิ้งจอกเก้าหาง',
+    male:   { image:'', tagline:'The Nine-Tailed Fox', why:'[เหตุผลที่คุณคู่กับ Kitsune เพศชาย]',   quote:'"[คำพูดของ Kitsune เพศชาย]"',   compat:[{label:'Warmth',value:93},{label:'Charisma',value:91},{label:'Honesty',value:62}] },
+    female: { image:'', tagline:'The Nine-Tailed Fox', why:'[เหตุผลที่คุณคู่กับ Kitsune เพศหญิง]', quote:'"[คำพูดของ Kitsune เพศหญิง]"', compat:[{label:'Warmth',value:93},{label:'Charisma',value:91},{label:'Honesty',value:62}] }
+  },
+  Tanuki: {
+    house:'green', mbti:'ENFP', emoji:'🍃', name:'Tanuki', title:'ทานุกิ',
+    male:   { image:'', tagline:'The Shapeshifting Tanuki', why:'[เหตุผลที่คุณคู่กับ Tanuki เพศชาย]',   quote:'"[คำพูดของ Tanuki เพศชาย]"',   compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] },
+    female: { image:'', tagline:'The Shapeshifting Tanuki', why:'[เหตุผลที่คุณคู่กับ Tanuki เพศหญิง]', quote:'"[คำพูดของ Tanuki เพศหญิง]"', compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] }
+  },
+
+  // ── Blue · Sentinels (SJ) ────────────────────────────────────
+  Oni: {
+    house:'blue', mbti:'ISTJ', emoji:'👹', name:'Oni', title:'ยักษ์โอนิ',
+    male:   { image:'', tagline:'The Iron Guardian', why:'[เหตุผลที่คุณคู่กับ Oni เพศชาย]',   quote:'"[คำพูดของ Oni เพศชาย]"',   compat:[{label:'Loyalty',value:98},{label:'Reliability',value:94},{label:'Spontaneity',value:22}] },
+    female: { image:'', tagline:'The Iron Guardian', why:'[เหตุผลที่คุณคู่กับ Oni เพศหญิง]', quote:'"[คำพูดของ Oni เพศหญิง]"', compat:[{label:'Loyalty',value:98},{label:'Reliability',value:94},{label:'Spontaneity',value:22}] }
+  },
+  Ningyo: {
+    house:'blue', mbti:'ISFJ', emoji:'🧜', name:'Ningyo', title:'เงือกญี่ปุ่น',
+    male:   { image:'', tagline:'The Eternal Mermaid', why:'[เหตุผลที่คุณคู่กับ Ningyo เพศชาย]',   quote:'"[คำพูดของ Ningyo เพศชาย]"',   compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] },
+    female: { image:'', tagline:'The Eternal Mermaid', why:'[เหตุผลที่คุณคู่กับ Ningyo เพศหญิง]', quote:'"[คำพูดของ Ningyo เพศหญิง]"', compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] }
+  },
+  Raijin: {
+    house:'blue', mbti:'ESTJ', emoji:'⚡', name:'Raijin', title:'เทพสายฟ้า',
+    male:   { image:'', tagline:'The God of Thunder',     why:'[เหตุผลที่คุณคู่กับ Raijin เพศชาย]',   quote:'"[คำพูดของ Raijin เพศชาย]"',   compat:[{label:'Dependability',value:95},{label:'Passion',value:80},{label:'Flexibility',value:35}] },
+    female: { image:'', tagline:'The Goddess of Thunder', why:'[เหตุผลที่คุณคู่กับ Raijin เพศหญิง]', quote:'"[คำพูดของ Raijin เพศหญิง]"', compat:[{label:'Dependability',value:95},{label:'Passion',value:80},{label:'Flexibility',value:35}] }
+  },
+  Inugami: {
+    house:'blue', mbti:'ESFJ', emoji:'🐕', name:'Inugami', title:'เทพสุนัข',
+    male:   { image:'', tagline:'The Spirit Hound', why:'[เหตุผลที่คุณคู่กับ Inugami เพศชาย]',   quote:'"[คำพูดของ Inugami เพศชาย]"',   compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] },
+    female: { image:'', tagline:'The Spirit Hound', why:'[เหตุผลที่คุณคู่กับ Inugami เพศหญิง]', quote:'"[คำพูดของ Inugami เพศหญิง]"', compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] }
+  },
+
+  // ── Yellow · Explorers (SP) ──────────────────────────────────
+  Nekomata: {
+    house:'yellow', mbti:'ISTP', emoji:'🐈‍⬛', name:'Nekomata', title:'แมวปีศาจสองหาง',
+    male:   { image:'', tagline:'The Twin-Tailed Cat Demon', why:'[เหตุผลที่คุณคู่กับ Nekomata เพศชาย]',   quote:'"[คำพูดของ Nekomata เพศชาย]"',   compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] },
+    female: { image:'', tagline:'The Twin-Tailed Cat Demon', why:'[เหตุผลที่คุณคู่กับ Nekomata เพศหญิง]', quote:'"[คำพูดของ Nekomata เพศหญิง]"', compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] }
+  },
+  Hebi: {
+    house:'yellow', mbti:'ISFP', emoji:'🐍', name:'Hebi', title:'ปีศาจงูขาว',
+    male:   { image:'', tagline:'The White Serpent', why:'[เหตุผลที่คุณคู่กับ Hebi เพศชาย]',   quote:'"[คำพูดของ Hebi เพศชาย]"',   compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] },
+    female: { image:'', tagline:'The White Serpent', why:'[เหตุผลที่คุณคู่กับ Hebi เพศหญิง]', quote:'"[คำพูดของ Hebi เพศหญิง]"', compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] }
+  },
+  Jorogumo: {
+    house:'yellow', mbti:'ESTP', emoji:'🕸️', name:'Jorogumo', title:'ปีศาจแมงมุม',
+    male:   { image:'', tagline:'The Spider Enchantress', why:'[เหตุผลที่คุณคู่กับ Jorogumo เพศชาย]',   quote:'"[คำพูดของ Jorogumo เพศชาย]"',   compat:[{label:'Electric Tension',value:93},{label:'Excitement',value:89},{label:'Stability',value:25}] },
+    female: { image:'', tagline:'The Spider Enchantress', why:'[เหตุผลที่คุณคู่กับ Jorogumo เพศหญิง]', quote:'"[คำพูดของ Jorogumo เพศหญิง]"', compat:[{label:'Electric Tension',value:93},{label:'Excitement',value:89},{label:'Stability',value:25}] }
+  },
+  Fuujin: {
+    house:'yellow', mbti:'ESFP', emoji:'🌪️', name:'Fuujin', title:'เทพวายุ',
+    male:   { image:'', tagline:'The Wind God',     why:'[เหตุผลที่คุณคู่กับ Fuujin เพศชาย]',   quote:'"[คำพูดของ Fuujin เพศชาย]"',   compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] },
+    female: { image:'', tagline:'The Wind Goddess', why:'[เหตุผลที่คุณคู่กับ Fuujin เพศหญิง]', quote:'"[คำพูดของ Fuujin เพศหญิง]"', compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] }
+  }
+
+};
 
 // ── BGM STUB — filled in Step 8 ──────────────────────────────
 document.getElementById('btn-bgm').addEventListener('click', () => {

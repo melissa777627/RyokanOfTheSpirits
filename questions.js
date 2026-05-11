@@ -15,13 +15,13 @@ const QUESTIONS = {
   house: [
     {
       id: 'h1',
-      scene: '🌅 [SCENE 1]',
-      text: '[คำถามข้อ 1 — เขียนสถานการณ์ที่นี่]',
+      scene: '🏮 The Dark Hallway',
+      text: 'The hallway leading into the ryokan is pitch black, as if it could swallow all the light. In front of you, there are 4 types of lanterns to choose from.\n\n"Which one will you pick to walk through this darkness?"',
       choices: [
-        { text: '[ตัวเลือก A — บ้าน Purple · Analysts]',  house: 'purple' },
-        { text: '[ตัวเลือก B — บ้าน Green · Diplomats]',  house: 'green'  },
-        { text: '[ตัวเลือก C — บ้าน Blue · Sentinels]',   house: 'blue'   },
-        { text: '[ตัวเลือก D — บ้าน Yellow · Explorers]', house: 'yellow' }
+        { text: '[ตัวเลือก A — บ้าน Purple · Analysts]',  house: 'purple', image: 'assets/ui/choice/choiceevent1/PurpleHouse.PNG' },
+        { text: '[ตัวเลือก B — บ้าน Green · Diplomats]',  house: 'green',  image: 'assets/ui/choice/choiceevent1/GreenHouse.PNG'  },
+        { text: '[ตัวเลือก C — บ้าน Blue · Sentinels]',   house: 'blue',   image: 'assets/ui/choice/choiceevent1/BlueHouse.PNG'   },
+        { text: '[ตัวเลือก D — บ้าน Yellow · Explorers]', house: 'yellow', image: 'assets/ui/choice/choiceevent1/YellowHouse.PNG' }
       ]
     },
     {

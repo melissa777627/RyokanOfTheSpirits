@@ -281,13 +281,136 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
    6. VIEW: GENDER
 ════════════════════════════════════════ */
 
-/* No-scroll: fills exactly one screen height */
+/* Scene banner — starts hidden, cinematic intro animation */
+#view-gender .scene-banner {
+  opacity: 0;
+  position: relative;
+  z-index: 2;
+}
+/* Sakura hanko stamp — shared template */
+.sakura-stamp {
+  position: absolute;
+  width: 74px;
+  height: 74px;
+  border: 2.5px solid rgba(176,43,43,0.65);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  color: var(--primary);
+  opacity: 0;
+  animation: none;
+  pointer-events: none;
+}
+.sakura-stamp::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(176,43,43,0.3);
+  border-radius: 50%;
+}
+.ss-flower { font-size: 1.65rem; line-height: 1; }
+.ss-text {
+  font-family: var(--font-kanji);
+  font-size: 0.5rem;
+  letter-spacing: 0.18em;
+  color: var(--primary);
+  opacity: 0.75;
+}
+@keyframes stampPress {
+  0%   { opacity: 0; transform: var(--stamp-rot, rotate(18deg)) scale(1.6); }
+  55%  { opacity: 0.9; transform: var(--stamp-rot, rotate(18deg)) scale(0.88); }
+  80%  { opacity: 0.95; transform: var(--stamp-rot, rotate(18deg)) scale(1.05); }
+  100% { opacity: 0.9; transform: var(--stamp-rot, rotate(18deg)) scale(1); }
+}
+
+/* Gender view stamp */
+#view-gender .sakura-stamp {
+  top: -18px;
+  right: 14px;
+  --stamp-rot: rotate(18deg);
+}
+#view-gender .scene-banner.gender-title-intro .sakura-stamp {
+  animation: stampPress 0.45s cubic-bezier(0.22, 1, 0.36, 1) 1.05s forwards;
+}
+
+/* Bento intro title wrapper — frosted white + stamp anchor */
+.bento-intro-title-wrap {
+  position: relative;
+  padding: 20px 36px;
+  opacity: 0;
+  animation: bentoIntroFadeIn 0.7s ease 0.1s forwards;
+}
+.bento-intro-title-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.88);
+  filter: blur(20px);
+  border-radius: 6px;
+  z-index: -1;
+}
+.bento-intro-title-wrap .sakura-stamp {
+  bottom: -22px;
+  right: 20px;
+  top: auto;
+  --stamp-rot: rotate(-14deg);
+  animation: stampPress 0.45s cubic-bezier(0.22, 1, 0.36, 1) 1s forwards;
+}
+
+/* Rectangular frosted glow behind title text */
+#view-gender .scene-banner::before {
+  content: '';
+  position: absolute;
+  inset: -20px -36px;
+  background: rgba(255,255,255,0.88);
+  filter: blur(20px);
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: -1;
+}
+#view-gender .scene-banner.gender-title-intro {
+  animation: genderTitleIn 3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes genderTitleIn {
+  0%   { opacity: 0; transform: translateY(36vh) scale(0.92); }
+  34%  { opacity: 1; transform: translateY(36vh) scale(1.04); }
+  62%  { opacity: 1; transform: translateY(36vh) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* BG image — starts hidden, fades in as title rises (synced to 62% of 3s ≈ 1.86s delay) */
+.gender-bg {
+  position: absolute;
+  inset: 0;
+  background: url('assets/ui/event0_mirror/BG.PNG') center/cover no-repeat;
+  z-index: 0;
+  opacity: 0;
+}
+.gender-bg.gender-bg-reveal {
+  animation: genderBgReveal 3s ease forwards;
+}
+@keyframes genderBgReveal {
+  0%   { opacity: 0; }
+  62%  { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* No-scroll: fills exactly one screen height, dark base for cinematic intro */
 #view-gender.active {
   display: flex;
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
   position: relative;
+  background: #fff;
+}
+/* All direct children sit above .gender-bg */
+#view-gender > *:not(.gender-bg) {
+  position: relative;
+  z-index: 1;
 }
 
 /* Journey progress bar — sits at very top of each view */
@@ -603,11 +726,63 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 .gender-card.selected .gc-symbol { opacity: 1; color: var(--primary); }
 .gender-card.selected .gc-kanji  { opacity: 0.18; }
 
-/* Gender confirm — Next button, always visible bottom-right */
-.gender-next-wrap {
+/* Bottom panel — pushed to foot of screen, fader behind it, starts hidden */
+.gender-bottom-panel {
+  margin-top: auto;
+  position: relative;
+  z-index: 1;
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+  opacity: 0;
+}
+.gender-bottom-panel.gender-panel-reveal {
+  animation: genderBgReveal 3s ease forwards;
+}
+.gender-bottom-panel::before {
+  content: '';
   position: absolute;
-  bottom: 28px;
-  right: 24px;
+  inset: -32px 0 0 0;
+  background: linear-gradient(to bottom,
+    rgba(253,246,227,0)   0%,
+    rgba(253,246,227,0.60) 40%,
+    rgba(253,246,227,0.88) 100%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Image-based gender buttons — transparent, no box, image only */
+.gender-img-btn {
+  background: transparent !important;
+  border-radius: 0;
+  padding: 0;
+  min-height: unset;
+  box-shadow: none !important;
+  overflow: visible;
+}
+.gender-img-btn::after,
+.gender-img-btn::before { display: none !important; }
+.gender-img-btn:hover,
+.gender-img-btn:active  { transform: none; box-shadow: none !important; background: transparent !important; }
+.gender-img-btn img {
+  width: 100%;
+  display: block;
+  object-fit: contain;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              filter 0.2s ease;
+  filter: drop-shadow(0 4px 12px rgba(26,18,10,0.18));
+}
+.gender-img-btn:hover img  { transform: translateY(-6px) scale(1.04); }
+.gender-img-btn:active img { transform: scale(0.96); }
+.gender-img-btn.selected   { box-shadow: none !important; }
+.gender-img-btn.selected img {
+  filter: drop-shadow(0 0 14px var(--primary)) drop-shadow(0 4px 12px rgba(26,18,10,0.18));
+  transform: translateY(-4px) scale(1.03);
+}
+
+/* Gender confirm — Next button */
+.gender-next-wrap {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 16px 16px;
 }
 .btn-gender-next {
   font-family: var(--font-body);
@@ -636,6 +811,75 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 /* ════════════════════════════════════════
    7. VIEW: QUIZ
 ════════════════════════════════════════ */
+
+/* Stage 1 base */
+#view-quiz.quiz-stage1 {
+  overflow: hidden;
+}
+
+/* Event 1 only — BG image + glassmorphism */
+#view-quiz.quiz-event1 {
+  background: url('assets/ui/event1_lamp/Phone_size_Bg.PNG') center center / cover no-repeat;
+}
+#view-quiz.quiz-event1 .quiz-story-box {
+  background: rgba(255, 255, 255, 0.48);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: none;
+}
+#view-quiz.quiz-event1 .choice-btn {
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: none;
+}
+#view-quiz.quiz-event1 .choice-text {
+  color: #1a1a1a;
+  text-shadow: none;
+  background: transparent;
+}
+#view-quiz.quiz-event1 .quiz-next-wrap {
+  background: transparent;
+}
+
+/* Event 1 — black overlay fades out revealing BG (position:fixed covers all) */
+#view-quiz.quiz-event1.quiz-vn-enter::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 1000;
+  pointer-events: none;
+  animation: quizBlackReveal 1.4s ease forwards;
+}
+@keyframes quizBlackReveal {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Visual-novel reveal — BG fades 0.55s, then story slides up, choices follow */
+#view-quiz.quiz-vn-enter .quiz-scene-label,
+#view-quiz.quiz-vn-enter .quiz-story-box {
+  animation: quizVnStory 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.85s;
+}
+#view-quiz.quiz-vn-enter .quiz-choices {
+  animation: quizVnFade 0.55s ease both;
+  animation-delay: 1.65s;
+}
+#view-quiz.quiz-vn-enter .quiz-next-wrap {
+  animation: quizVnFade 0.4s ease both;
+  animation-delay: 1.9s;
+}
+@keyframes quizVnStory {
+  from { opacity: 0; transform: translateY(80vh); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes quizVnFade {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* Scene label — thin kanji eyebrow */
 .quiz-scene-label {
@@ -746,12 +990,14 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 /* Image area — top half of card */
 .choice-img {
   width: 100%;
-  height: 110px;
+  aspect-ratio: 4 / 3;
   background: linear-gradient(160deg, var(--surface-low) 0%, var(--bg) 100%);
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
   border-radius: 0;
   flex-shrink: 0;
   position: relative;
-  overflow: hidden;
 }
 /* Subtle spirit shimmer in placeholder */
 .choice-img::after {
@@ -803,13 +1049,9 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   height: 100dvh;
   overflow: hidden;
   position: relative;
-  background-image: repeating-linear-gradient(
-    0deg,
-    transparent 0px,
-    transparent 22px,
-    rgba(176,43,43,0.028) 22px,
-    rgba(176,43,43,0.028) 23px
-  );
+  background:
+    url('assets/ui/food/bento/Cover.PNG') top center / contain no-repeat,
+    url('assets/ui/food/bento/BGmaipai.PNG') center center / cover no-repeat;
 }
 
 /* Glassmorphism intro overlay */
@@ -828,7 +1070,8 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   cursor: pointer;
   border-radius: inherit;
 }
-.bento-intro.hidden { display: none; }
+.bento-intro { transition: opacity 0.45s ease; }
+.bento-intro.hidden { opacity: 0; pointer-events: none; }
 .bento-intro-title {
   font-family: var(--font-display);
   font-size: 2rem;
@@ -836,8 +1079,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   color: var(--on-surface);
   text-align: center;
   letter-spacing: 0.02em;
-  opacity: 0;
-  animation: bentoIntroFadeIn 0.7s ease 0.1s forwards;
+  opacity: 1;
 }
 .bento-intro-tap {
   font-family: var(--font-kanji);
@@ -903,11 +1145,19 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   border-radius: 18px;
   overflow: hidden;
   touch-action: none;
-  background: var(--surface-low);
-  box-shadow:
-    inset 0 2px 10px rgba(26,18,10,0.07),
-    0 6px 24px rgba(26,18,10,0.06);
+  background: transparent;
   cursor: default;
+}
+
+.bento-art-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  pointer-events: none;
+  user-select: none;
 }
 
 .bento-art-placeholder {
@@ -950,8 +1200,8 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 }
 .bento-placed-food {
   position: absolute;
-  width: 72px;
-  height: 72px;
+  width: 110px;
+  height: 110px;
   transform: translate(-50%, -50%);
   background-size: contain;
   background-position: center;
@@ -1160,41 +1410,41 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   gap: 36px;
 }
 
-.loading-orb {
-  position: relative;
-  width: 110px;
-  height: 110px;
+.loading-sakura {
+  font-size: 5rem;
+  animation: sakuraSpin 1.4s linear infinite;
+  filter: saturate(0.55) brightness(1.15) drop-shadow(0 0 10px rgba(255,182,193,0.6));
 }
-.orb-ring {
+@keyframes sakuraSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Sakura fall — result reveal ──────────────────────── */
+.sakura-fall {
   position: absolute;
-  border-radius: 50%;
-  border: 1.5px solid var(--primary);
-}
-.orb-ring-1 {
   inset: 0;
-  opacity: 0.25;
-  animation: orbExpand 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 10;
+  overflow: hidden;
+  animation: sakuraFallFadeOut 1s ease-in 2.6s forwards;
 }
-.orb-ring-2 {
-  inset: -18px;
-  opacity: 0.12;
-  animation: orbExpand 2s ease-in-out 0.6s infinite;
+@keyframes sakuraFallFadeOut {
+  to { opacity: 0; }
 }
-.orb-core {
+.sakura-petal {
   position: absolute;
-  inset: 16px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, var(--primary-container), var(--primary));
-  opacity: 0.72;
-  animation: orbBreath 2.4s ease-in-out infinite;
+  top: -30px;
+  width: 10px;
+  height: 16px;
+  background: linear-gradient(150deg, #ffd6e7, #ffaac8);
+  border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%;
+  animation: petalFall linear forwards;
 }
-@keyframes orbExpand {
-  0%, 100% { transform: scale(0.9); opacity: 0.25; }
-  50%       { transform: scale(1.1); opacity: 0.5; }
-}
-@keyframes orbBreath {
-  0%, 100% { transform: scale(1); }
-  50%       { transform: scale(0.88); }
+@keyframes petalFall {
+  0%   { transform: translateY(0) rotate(var(--rot)) translateX(0px);              opacity: 0.9; }
+  80%  { opacity: 0.8; }
+  100% { transform: translateY(110vh) rotate(calc(var(--rot) + 540deg)) translateX(var(--sway)); opacity: 0; }
 }
 
 .loading-kanji {
@@ -1223,6 +1473,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 
 #view-result.active {
   display: block;
+  position: relative;
   min-height: 100dvh;
   background: var(--bg);
   overflow-y: auto;

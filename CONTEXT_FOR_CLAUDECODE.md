@@ -17,7 +17,7 @@ Shadow-work quiz disguised as a soulmate finder. Single `index.html`, no framewo
 |---|---|
 | `index.html` | Main app — all 6 views in one file |
 | `scoring-engine.js` | Pure scoring functions — no UI inside |
-| `questions.js` | Question bank — 5 house + 5×4 yokai questions |
+| `questions.js` | Question bank — 5 house + 6 yokai questions (Stage 2 shared, 2 choice sets on Bento/E6/E7) + narration |
 | `DESIGN_SYSTEM.md` | Colors, typography, component rules |
 | `DATA_SCHEMA.md` | State object, YOKAI_DATA structure, scoring pseudocode |
 | `CLAUDE.md` | Master rules + architecture + current status |
@@ -30,12 +30,12 @@ Shadow-work quiz disguised as a soulmate finder. Single `index.html`, no framewo
 ## 3. App Flow (6 Views)
 
 ```
-view-landing → view-gender → view-quiz (Stage 1 · h1–h5)
+view-landing → view-gender → view-quiz (Stage 1 · e1–e5)
+                                   ↓  calcHouse()
+                            view-bento (intro → pop-up Q → drag & drop → afterArrange)
                                    ↓
-                            view-bento (drag & drop + pop-up Q)
-                                   ↓
-                            view-quiz (Stage 2 · p/g/b/y 1–5)
-                                   ↓
+                            view-quiz (Stage 2 · e6–e10)
+                                   ↓  outro → calcYokai()
                             view-loading (3.5s kanji cycle)
                                    ↓
                             view-result
@@ -52,17 +52,19 @@ Must call `guardState(requiredStage)` before showing quiz/bento/result.
 setPlayerGender(gender)
   → targetGender = male|female|any
 
-pickAnswer('house', houseKey)  × 5
-  → Q1–Q4: +1pt  |  Q5: +2pt (tiebreaker weight)
-  → after Q5: showView('bento')
+pickHouseAnswer(house)  × 5
+  → primary +2, SECONDARY_HOUSE[house] +1, push to houseAnswers
+  → after E5: calcHouse() → winningHouse → loadStage2(house) → showView('bento')
 
-onBentoContinue()
-  → calcHouse() → winningHouse → loadStage2(house)
-  → showBentoQuestion()  [= yokai[house][0]]
+view-bento
+  → showBentoQuestion()  [= getStage2Set(QUESTIONS.yokai[0]) — JP or TF by house]
+  → pickYokaiAnswer(q, choice) → drag food → Continue → afterArrange → quiz E6
 
-pickAnswer('yokai', yokaiName)  × 5
-  → Q1–Q4: +1pt  |  Q5: +2pt
-  → after Q5: calcYokai() → winningYokai → showView('loading')
+pickYokaiAnswer(q, choice)  × 6 total (Bento + E6–E10)
+  → push { qid, axis, pole, fn } to stage2Answers
+  → after E10: outro → calcYokai()
+       majority of 3 per axis → HOUSE_MBTI_TEMPLATE → yokai with that mbti
+     → showView('loading')
 
 showView('result')
   → getResult() pulls YOKAI_DATA[winningYokai][resultGenderShown]
@@ -80,16 +82,15 @@ state.targetGender      // 'male'|'female'|'any'
 state.resultGenderShown // 'male'|'female' — togglable on result page
 
 state.houseScores       // { purple, green, blue, yellow }
+state.houseAnswers      // primary house per answer, in order — tie-break
 state.winningHouse      // set by calcHouse()
-state.lastHouseAnswer   // Q5 house choice — tie-breaker
 
 state.yokaiPool         // 4 yokai names for winningHouse
-state.yokaiScores       // { YokaiName: pts }
+state.stage2Answers     // [{ qid, axis, pole, fn }] — majority vote + functions for result
 state.winningYokai      // set by calcYokai()
-state.lastYokaiAnswer   // Q5 yokai choice — tie-breaker
 
 state.stage             // 1 | 2
-state.currentQ          // 0-based index within current stage
+state.currentQ          // 0-based index within current stage (stage 2: 0 = Bento)
 state.bentoSelected     // cosmetic only — array of food emoji
 ```
 
@@ -135,18 +136,22 @@ Full guide → `assets/README.md`.
 | `createInitialState()` | Returns fresh state object |
 | `setPlayerGender(gender)` | Sets playerGender + targetGender |
 | `resolveResultGender()` | Returns 'male'\|'female' for result display |
-| `pickAnswer(source, value)` | Records answer, advances Q, triggers transitions |
-| `calcHouse()` | Computes winningHouse with tie-breaker, calls loadStage2 |
-| `loadStage2(house)` | Resets stage 2 state, sets yokaiPool + yokaiScores |
-| `onBentoContinue()` | Calls calcHouse then showBentoQuestion |
-| `calcYokai()` | Computes winningYokai, sets resultGenderShown, triggers loading |
+| `pickHouseAnswer(house)` | Stage 1: +2 primary / +1 secondary, records houseAnswers |
+| `calcHouse()` | Computes winningHouse (tie-break: most primary picks → latest), calls loadStage2; throws if unresolved |
+| `loadStage2(house)` | Resets stage 2 state, sets yokaiPool |
+| `getStage2Set(q)` | Returns `{ axis, prompt, choices }` for the current house (JP/TF set or EI) |
+| `pickYokaiAnswer(q, choice)` | Stage 2: records `{ qid, axis, pole, fn }` |
+| `majorityPole(axis)` | Majority of 3 votes on an axis; throws if vote count ≠ 3 |
+| `calcYokai()` | Builds MBTI from house template + 2 majorities, picks yokai, sets resultGenderShown; throws if none |
+| `validateQuestions()` | Checks QUESTIONS shape at load (DATA_SCHEMA §4 rules); throws on violation |
 | `getResult()` | Returns result data object from YOKAI_DATA |
 | `toggleResultGender()` | Flips resultGenderShown, calls renderResult() |
 | `resetGame()` | Resets state, returns to landing |
-| `guardState(requiredStage)` | Redirects to landing if state is invalid |
+| `guardState(requiredStage)` | Throws if state is invalid for the view (Rule 5 — no silent reset) |
 | `debugScores()` | Console logs all scores (remove before production) |
 
-> Functions that reference UI (`showView`, `loadQuestion`, `showBentoQuestion`, `renderResult`) must be defined in `index.html`.
+> Functions that reference UI (`showView`, `loadQuestion`, `showBentoQuestion`, `renderResult`, narration for `lead`/`afterArrange`/`outro`) must be defined in `index.html`.
+> The table above is the target after the engine rewrite (DATA_SCHEMA §5); the current file still has the old `pickAnswer` / `onBentoContinue` / `yokaiScores` engine.
 
 ---
 

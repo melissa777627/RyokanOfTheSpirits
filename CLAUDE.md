@@ -1,6 +1,6 @@
 # 🏮 CLAUDE.md — Ryokan of The Spirits
 > Agent memory file. Read this before doing anything. Do not deviate from these rules.
-> Last updated: Phase 1 complete — architecture, design system, and scoring engine approved.
+> Last updated: Phase 2 — question design final (11 ข้อ), scoring redesign documented, engine รอเขียนใหม่.
 
 ---
 
@@ -116,12 +116,12 @@ Noto Serif JP      → kanji labels, eyebrow/scene text, watermarks     (Google 
 ## 4. App Architecture — 6 Views
 
 ```
-view-landing  →  view-gender  →  view-quiz (Stage 1)
+view-landing  →  view-gender  →  view-quiz (Stage 1 · E1–E5)
+                                      ↓  calcHouse()
+                               view-bento (pop-up Q ก่อน → ลากอาหาร)
                                       ↓
-                               view-bento (pop-up Q)
-                                      ↓
-                               view-quiz (Stage 2)
-                                      ↓
+                               view-quiz (Stage 2 · E6–E10)
+                                      ↓  outro → calcYokai()
                                view-loading  →  view-result
 ```
 
@@ -130,7 +130,7 @@ view-landing  →  view-gender  →  view-quiz (Stage 1)
 | `view-landing` | Landing Page | Art fade hero + paper stamp button + lorebook grid |
 | `view-gender` | Event 0 · Gender | Mirror + 3 gender card buttons |
 | `view-quiz` | Quiz (Stage 1 & 2 shared) | Progress bar + scene label + story box + 4 choices |
-| `view-bento` | Bento Mini-Game | Drag & drop food + Continue → pop-up modal |
+| `view-bento` | Bento Mini-Game | Intro (บทเชื่อมฟ้าสาง) → pop-up Q → drag & drop food → Continue → บทพูดของแขก |
 | `view-loading` | Loading Screen | Kanji cycle + spirit orb (3–4 sec auto-advance) |
 | `view-result` | Result Page | Yokai + MBTI + why match + compat bars + gender toggle + Omikuji |
 
@@ -140,25 +140,30 @@ view-landing  →  view-gender  →  view-quiz (Stage 1)
 
 ```
 32 Yokai
-  → Event 0:    เลือกเพศ          → pool = 16
-  → Event 1–5:  House Sorting      → pool = 4 (winningHouse)
-  → Bento:      pop-up Q           → นับเป็น Q แรกของ Stage 2
-  → Event 6–10: Yokai Selection    → เหลือ 1 = เนื้อคู่
+  → Event 0:     เลือกเพศ                 → pool = 16
+  → E1–E5:       House Sorting (คืนพายุ)   → pool = 4 (winningHouse)
+  → Bento:       pop-up Q                  → Q แรกของ Stage 2
+  → E6–E10:      Yokai Selection (แขกในหมอก) → เหลือ 1 = เนื้อคู่
+รวม 11 ข้อ (5 + Bento + 5)
 ```
+Pseudocode เต็ม → `DATA_SCHEMA.md` Section 5
 
-### Stage 1 — House Sorting (Event 1–5)
-- 5 คำถาม, 4 ตัวเลือก/ข้อ, แต่ละตัวเลือก +1 ให้ purple/green/blue/yellow
-- Tie-breaker: ดู `lastHouseAnswer` (Q5) → random
+### Stage 1 — House Sorting (E1–E5)
+- วัด **บ้านของเนื้อคู่** จากแผลที่ผู้เล่นมี (Schema Therapy × Keirsey) ไม่ใช่บ้านของผู้เล่น
+- 5 คำถาม ทุกข้อมี 4 ช้อย = 4 บ้านครบ · ช้อย: บ้านหลัก **+2**, บ้านสำรอง **+1** (`SECONDARY_HOUSE`: purple↔blue, green↔yellow)
+- Tie-break: บ้านหลักที่ถูกเลือกบ่อยสุด → บ้านหลักล่าสุดไล่ย้อนจาก E5 (ไม่ random)
+- `calcHouse()` เรียกทันทีหลังตอบ E5
 
 ### Bento Intermission
-- ลากอาหารวาง 3 slot อิสระ ไม่มีผลคะแนน
-- กด Continue → `calcHouse()` → pop-up คำถาม
-- คำตอบ pop-up = Q แรกของ Stage 2
+- pop-up คำถามขึ้น **ก่อน** ลากอาหาร · คำตอบ = Q แรกของ Stage 2
+- ลากอาหารลงกล่องอิสระ ไม่มีผลคะแนน → Continue → บทพูดของแขก → E6
 
-### Stage 2 — Yokai Selection (Event 6–10)
-- โหลดชุดคำถาม **ตาม winningHouse** (4 ชุดแยกกัน)
-- 5 คำถาม (รวม bento pop-up), 4 ตัวเลือก/ข้อ
-- Tie-breaker: ดู `lastYokaiAnswer` → random
+### Stage 2 — Yokai Selection (Bento + E6–E10)
+- stem เดียวกันทุกบ้าน · บ้านล็อกตัวอักษรไว้ 2 ตัว เหลือ 2 แกนให้วัด
+- Bento / E6 / E7 = แกนที่ 2 (`HOUSE_AXIS`: purple/green = **J/P**, blue/yellow = **T/F**) — มี 2 ชุดช้อยต่อข้อ
+- E8 / E9 / E10 = **E/I** — ชุดเดียวทุกบ้าน
+- แต่ละข้อ: ช้อยขั้วละ 2 ตัว · ตัดสิน **เสียงข้างมาก 3 ข้อต่อแกน** (ไม่มีเสมอ ไม่มี tie-breaker)
+- ทุกช้อยติด function (Te/Ne/Pi ฯลฯ) → เก็บใน `stage2Answers` ไว้ใช้หน้า result ไม่มีผลกับคะแนน
 
 ### House → Yokai Pools
 ```javascript
@@ -180,14 +185,13 @@ let state = {
   targetGender:      '',   // 'male' | 'female' | 'any'
   resultGenderShown: '',   // เวอร์ชันที่โชว์บน result page (toggle ได้)
 
-  houseScores:     { purple:0, green:0, blue:0, yellow:0 },
-  winningHouse:    '',
-  lastHouseAnswer: '',
+  houseScores:   { purple:0, green:0, blue:0, yellow:0 },
+  houseAnswers:  [],       // บ้านหลักแต่ละข้อ ตามลำดับ — tie-break
+  winningHouse:  '',
 
-  yokaiPool:       [],     // set โดย loadStage2()
-  yokaiScores:     {},     // build dynamically จาก yokaiPool
-  winningYokai:    '',
-  lastYokaiAnswer: '',
+  yokaiPool:     [],       // set โดย loadStage2()
+  stage2Answers: [],       // [{ qid, axis, pole, fn }] — เสียงข้างมาก + function สำหรับ result
+  winningYokai:  '',
 
   stage:         1,        // 1 = house sorting, 2 = yokai selection
   currentQ:      0,
@@ -265,7 +269,7 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 | `DESIGN_SYSTEM.md` | ✅ | "Zen Hearth" — colors, fonts, components |
 | `DATA_SCHEMA.md` | ✅ | State object, YOKAI_DATA structure, scoring pseudocode |
 | `scoring-engine.js` | ✅ | Pure scoring functions (no UI) |
-| `questions.js` | ✅ | 25 placeholder questions รอเนื้อหา |
+| `questions.js` | 🔄 | ยังเป็น placeholder โครงเก่า (25 ข้อ) — ต้องเขียนใหม่ตาม DATA_SCHEMA §4 (11 ข้อ) |
 | `README.md` | ✅ | Asset naming guide + folder structure |
 | `.claude/agents/spirit-psychologist.md` | ✅ | Subagent: MBTI/psychometrics — เขียน/ตรวจ/จำลองคำถาม + เนื้อหาผลลัพธ์ (read-only, เสนอร่างเท่านั้น) |
 | `.claude/agents/ryokan-storyteller.md` | ✅ | Subagent: นักเขียนนิยายไทย — ขัดเกลาฉาก/ช้อย/บทพูดให้สละสลวย พีเรียดเบาๆ อ่านง่าย โดยไม่เปลี่ยนสิ่งที่คำถามวัด (read-only, เสนอร่างเท่านั้น) |
@@ -280,8 +284,8 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 
 ### ✅ Done
 - Design system, style guide, design system doc ครบ
-- Scoring engine พร้อม (scoring-engine.js)
-- Question bank placeholder 25 ข้อ (questions.js)
+- Scoring redesign approved + documented (DATA_SCHEMA §5) — need-based houses +2/+1, Stage 2 เสียงข้างมากรายแกน
+- เนื้อหาคำถาม 11 ข้อ + บทเชื่อมฉาก + ข้อความปิด FINAL (ภาษาไทย, ต้นฉบับอยู่ใน memory)
 - Data schema + state object approved
 - Yokai roster 16 ตัว confirmed
 - 2-stage scoring architecture approved
@@ -292,9 +296,10 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 - [ ] `index.html` ทุก view (รอ plan mode)
 - [ ] Wire scoring-engine.js เข้า UI
 - [ ] Bento drag & drop
-- [ ] Dynamic question loader ตาม winningHouse
+- [ ] เขียน `scoring-engine.js` ใหม่ตาม DATA_SCHEMA §5 + `validateQuestions()` + `guardState()` แบบ throw
 - [ ] Result page + gender toggle + Omikuji modal
 - [ ] Loading animation
 - [ ] BGM/SFX audio manager (stub ก่อน)
 - [ ] Share to Story (html2canvas)
-- [ ] เนื้อหาคำถาม 25 ข้อ (เจ้าของเขียนเอง)
+- [ ] เขียน `questions.js` ใหม่ตาม DATA_SCHEMA §4 (ข้อความภาษาไทย 11 ข้อ + lead/afterArrange/outro)
+- [ ] UI: pop-up Bento ก่อนลากอาหาร, หน้าบรรยาย lead/outro, progress 11 ขั้น

@@ -31,18 +31,18 @@ assets/
 | Tenjin | `tenjin_m.png` | `tenjin_f.png` |
 | Yumekui | `yumekui_m.png` | `yumekui_f.png` |
 | Ryuu | `ryuu_m.png` | `ryuu_f.png` |
-| Tengu | `tengu_m.png` | `tengu_f.png` |
+| Kitsune | `kitsune_m.png` | `kitsune_f.png` |
 | Shinigami | `shinigami_m.png` | `shinigami_f.png` |
 | Yukionna | `yukionna_m.png` | `yukionna_f.png` |
-| Kitsune | `kitsune_m.png` | `kitsune_f.png` |
-| Tanuki | `tanuki_m.png` | `tanuki_f.png` |
 | Oni | `oni_m.png` | `oni_f.png` |
+| Tanuki | `tanuki_m.png` | `tanuki_f.png` |
+| Tengu | `tengu_m.png` | `tengu_f.png` |
 | Ningyo | `ningyo_m.png` | `ningyo_f.png` |
-| Raijin | `raijin_m.png` | `raijin_f.png` |
+| Jorogumo | `jorogumo_m.png` | `jorogumo_f.png` |
 | Inugami | `inugami_m.png` | `inugami_f.png` |
 | Nekomata | `nekomata_m.png` | `nekomata_f.png` |
 | Hebi | `hebi_m.png` | `hebi_f.png` |
-| Jorogumo | `jorogumo_m.png` | `jorogumo_f.png` |
+| Raijin | `raijin_m.png` | `raijin_f.png` |
 | Fuujin | `fuujin_m.png` | `fuujin_f.png` |
 
 ### Format ที่รองรับ

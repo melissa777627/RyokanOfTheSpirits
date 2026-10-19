@@ -7,10 +7,10 @@
 // ── 1. HOUSE POOLS ──────────────────────────────────────────
 
 const HOUSE_POOLS = {
-  purple: ['Tenjin',    'Yumekui',  'Ryuu',     'Tengu'   ],
-  green:  ['Shinigami', 'Yukionna', 'Kitsune',  'Tanuki'  ],
-  blue:   ['Oni',       'Ningyo',   'Raijin',   'Inugami' ],
-  yellow: ['Nekomata',  'Hebi',     'Jorogumo', 'Fuujin'  ]
+  purple: ['Tenjin',    'Yumekui',  'Ryuu',     'Kitsune' ],
+  green:  ['Shinigami', 'Yukionna', 'Oni',      'Tanuki'  ],
+  blue:   ['Tengu',     'Ningyo',   'Jorogumo', 'Inugami' ],
+  yellow: ['Nekomata',  'Hebi',     'Raijin',   'Fuujin'  ]
 };
 
 // ── 2. STATE ─────────────────────────────────────────────────

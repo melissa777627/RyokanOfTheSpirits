@@ -79,7 +79,7 @@ const QUESTIONS = {
   yokai: {
 
     // ── HOUSE PURPLE · Analysts ────────────────────────────
-    //    วัด: Tenjin (INTJ) / Yumekui (INTP) / Ryuu (ENTJ) / Tengu (ENTP)
+    //    วัด: Tenjin (INTJ) / Yumekui (INTP) / Ryuu (ENTJ) / Kitsune (ENTP)
 
     purple: [
       {
@@ -90,7 +90,7 @@ const QUESTIONS = {
           { text: '[ตัวเลือก A — Tenjin  · INTJ]', yokai: 'Tenjin'  },
           { text: '[ตัวเลือก B — Yumekui · INTP]', yokai: 'Yumekui' },
           { text: '[ตัวเลือก C — Ryuu    · ENTJ]', yokai: 'Ryuu'    },
-          { text: '[ตัวเลือก D — Tengu   · ENTP]', yokai: 'Tengu'   }
+          { text: '[ตัวเลือก D — Kitsune · ENTP]', yokai: 'Kitsune'   }
         ]
       },
       {
@@ -101,7 +101,7 @@ const QUESTIONS = {
           { text: '[ตัวเลือก A — Tenjin]',  yokai: 'Tenjin'  },
           { text: '[ตัวเลือก B — Yumekui]', yokai: 'Yumekui' },
           { text: '[ตัวเลือก C — Ryuu]',    yokai: 'Ryuu'    },
-          { text: '[ตัวเลือก D — Tengu]',   yokai: 'Tengu'   }
+          { text: '[ตัวเลือก D — Kitsune]',   yokai: 'Kitsune'   }
         ]
       },
       {
@@ -112,7 +112,7 @@ const QUESTIONS = {
           { text: '[ตัวเลือก A — Tenjin]',  yokai: 'Tenjin'  },
           { text: '[ตัวเลือก B — Yumekui]', yokai: 'Yumekui' },
           { text: '[ตัวเลือก C — Ryuu]',    yokai: 'Ryuu'    },
-          { text: '[ตัวเลือก D — Tengu]',   yokai: 'Tengu'   }
+          { text: '[ตัวเลือก D — Kitsune]',   yokai: 'Kitsune'   }
         ]
       },
       {
@@ -123,7 +123,7 @@ const QUESTIONS = {
           { text: '[ตัวเลือก A — Tenjin]',  yokai: 'Tenjin'  },
           { text: '[ตัวเลือก B — Yumekui]', yokai: 'Yumekui' },
           { text: '[ตัวเลือก C — Ryuu]',    yokai: 'Ryuu'    },
-          { text: '[ตัวเลือก D — Tengu]',   yokai: 'Tengu'   }
+          { text: '[ตัวเลือก D — Kitsune]',   yokai: 'Kitsune'   }
         ]
       },
       {
@@ -134,13 +134,13 @@ const QUESTIONS = {
           { text: '[ตัวเลือก A — Tenjin]',  yokai: 'Tenjin'  },
           { text: '[ตัวเลือก B — Yumekui]', yokai: 'Yumekui' },
           { text: '[ตัวเลือก C — Ryuu]',    yokai: 'Ryuu'    },
-          { text: '[ตัวเลือก D — Tengu]',   yokai: 'Tengu'   }
+          { text: '[ตัวเลือก D — Kitsune]',   yokai: 'Kitsune'   }
         ]
       }
     ],
 
     // ── HOUSE GREEN · Diplomats ────────────────────────────
-    //    วัด: Shinigami (INFJ) / Yukionna (INFP) / Kitsune (ENFJ) / Tanuki (ENFP)
+    //    วัด: Shinigami (INFJ) / Yukionna (INFP) / Oni (ENFJ) / Tanuki (ENFP)
 
     green: [
       {
@@ -150,7 +150,7 @@ const QUESTIONS = {
         choices: [
           { text: '[ตัวเลือก A — Shinigami · INFJ]', yokai: 'Shinigami' },
           { text: '[ตัวเลือก B — Yukionna  · INFP]', yokai: 'Yukionna'  },
-          { text: '[ตัวเลือก C — Kitsune   · ENFJ]', yokai: 'Kitsune'   },
+          { text: '[ตัวเลือก C — Oni       · ENFJ]', yokai: 'Oni'   },
           { text: '[ตัวเลือก D — Tanuki    · ENFP]', yokai: 'Tanuki'    }
         ]
       },
@@ -161,7 +161,7 @@ const QUESTIONS = {
         choices: [
           { text: '[ตัวเลือก A — Shinigami]', yokai: 'Shinigami' },
           { text: '[ตัวเลือก B — Yukionna]',  yokai: 'Yukionna'  },
-          { text: '[ตัวเลือก C — Kitsune]',   yokai: 'Kitsune'   },
+          { text: '[ตัวเลือก C — Oni]',   yokai: 'Oni'   },
           { text: '[ตัวเลือก D — Tanuki]',    yokai: 'Tanuki'    }
         ]
       },
@@ -172,7 +172,7 @@ const QUESTIONS = {
         choices: [
           { text: '[ตัวเลือก A — Shinigami]', yokai: 'Shinigami' },
           { text: '[ตัวเลือก B — Yukionna]',  yokai: 'Yukionna'  },
-          { text: '[ตัวเลือก C — Kitsune]',   yokai: 'Kitsune'   },
+          { text: '[ตัวเลือก C — Oni]',   yokai: 'Oni'   },
           { text: '[ตัวเลือก D — Tanuki]',    yokai: 'Tanuki'    }
         ]
       },
@@ -183,7 +183,7 @@ const QUESTIONS = {
         choices: [
           { text: '[ตัวเลือก A — Shinigami]', yokai: 'Shinigami' },
           { text: '[ตัวเลือก B — Yukionna]',  yokai: 'Yukionna'  },
-          { text: '[ตัวเลือก C — Kitsune]',   yokai: 'Kitsune'   },
+          { text: '[ตัวเลือก C — Oni]',   yokai: 'Oni'   },
           { text: '[ตัวเลือก D — Tanuki]',    yokai: 'Tanuki'    }
         ]
       },
@@ -194,14 +194,14 @@ const QUESTIONS = {
         choices: [
           { text: '[ตัวเลือก A — Shinigami]', yokai: 'Shinigami' },
           { text: '[ตัวเลือก B — Yukionna]',  yokai: 'Yukionna'  },
-          { text: '[ตัวเลือก C — Kitsune]',   yokai: 'Kitsune'   },
+          { text: '[ตัวเลือก C — Oni]',   yokai: 'Oni'   },
           { text: '[ตัวเลือก D — Tanuki]',    yokai: 'Tanuki'    }
         ]
       }
     ],
 
     // ── HOUSE BLUE · Sentinels ─────────────────────────────
-    //    วัด: Oni (ISTJ) / Ningyo (ISFJ) / Raijin (ESTJ) / Inugami (ESFJ)
+    //    วัด: Tengu (ISTJ) / Ningyo (ISFJ) / Jorogumo (ESTJ) / Inugami (ESFJ)
 
     blue: [
       {
@@ -209,9 +209,9 @@ const QUESTIONS = {
         scene: '🍱 [BENTO · Blue]',
         text: '[คำถาม bento pop-up สำหรับบ้าน Blue — "ทำไมถึงจัดแบบนี้?"]',
         choices: [
-          { text: '[ตัวเลือก A — Oni     · ISTJ]', yokai: 'Oni'     },
+          { text: '[ตัวเลือก A — Tengu   · ISTJ]', yokai: 'Tengu'     },
           { text: '[ตัวเลือก B — Ningyo  · ISFJ]', yokai: 'Ningyo'  },
-          { text: '[ตัวเลือก C — Raijin  · ESTJ]', yokai: 'Raijin'  },
+          { text: '[ตัวเลือก C — Jorogumo· ESTJ]', yokai: 'Jorogumo'  },
           { text: '[ตัวเลือก D — Inugami · ESFJ]', yokai: 'Inugami' }
         ]
       },
@@ -220,9 +220,9 @@ const QUESTIONS = {
         scene: '👹 [SCENE B2]',
         text: '[คำถามข้อ 2 บ้าน Blue — เจาะนิสัย ISTJ vs ISFJ vs ESTJ vs ESFJ]',
         choices: [
-          { text: '[ตัวเลือก A — Oni]',     yokai: 'Oni'     },
+          { text: '[ตัวเลือก A — Oni]',     yokai: 'Tengu'     },
           { text: '[ตัวเลือก B — Ningyo]',  yokai: 'Ningyo'  },
-          { text: '[ตัวเลือก C — Raijin]',  yokai: 'Raijin'  },
+          { text: '[ตัวเลือก C — Jorogumo]',  yokai: 'Jorogumo'  },
           { text: '[ตัวเลือก D — Inugami]', yokai: 'Inugami' }
         ]
       },
@@ -231,9 +231,9 @@ const QUESTIONS = {
         scene: '🧜 [SCENE B3]',
         text: '[คำถามข้อ 3 บ้าน Blue]',
         choices: [
-          { text: '[ตัวเลือก A — Oni]',     yokai: 'Oni'     },
+          { text: '[ตัวเลือก A — Oni]',     yokai: 'Tengu'     },
           { text: '[ตัวเลือก B — Ningyo]',  yokai: 'Ningyo'  },
-          { text: '[ตัวเลือก C — Raijin]',  yokai: 'Raijin'  },
+          { text: '[ตัวเลือก C — Jorogumo]',  yokai: 'Jorogumo'  },
           { text: '[ตัวเลือก D — Inugami]', yokai: 'Inugami' }
         ]
       },
@@ -242,9 +242,9 @@ const QUESTIONS = {
         scene: '⚡ [SCENE B4]',
         text: '[คำถามข้อ 4 บ้าน Blue]',
         choices: [
-          { text: '[ตัวเลือก A — Oni]',     yokai: 'Oni'     },
+          { text: '[ตัวเลือก A — Oni]',     yokai: 'Tengu'     },
           { text: '[ตัวเลือก B — Ningyo]',  yokai: 'Ningyo'  },
-          { text: '[ตัวเลือก C — Raijin]',  yokai: 'Raijin'  },
+          { text: '[ตัวเลือก C — Jorogumo]',  yokai: 'Jorogumo'  },
           { text: '[ตัวเลือก D — Inugami]', yokai: 'Inugami' }
         ]
       },
@@ -253,16 +253,16 @@ const QUESTIONS = {
         scene: '🐕 [SCENE B5 · Tiebreaker]',
         text: '[คำถามข้อ 5 บ้าน Blue — ข้อนี้ใช้เป็น tiebreaker ของ Yokai]',
         choices: [
-          { text: '[ตัวเลือก A — Oni]',     yokai: 'Oni'     },
+          { text: '[ตัวเลือก A — Oni]',     yokai: 'Tengu'     },
           { text: '[ตัวเลือก B — Ningyo]',  yokai: 'Ningyo'  },
-          { text: '[ตัวเลือก C — Raijin]',  yokai: 'Raijin'  },
+          { text: '[ตัวเลือก C — Jorogumo]',  yokai: 'Jorogumo'  },
           { text: '[ตัวเลือก D — Inugami]', yokai: 'Inugami' }
         ]
       }
     ],
 
     // ── HOUSE YELLOW · Explorers ───────────────────────────
-    //    วัด: Nekomata (ISTP) / Hebi (ISFP) / Jorogumo (ESTP) / Fuujin (ESFP)
+    //    วัด: Nekomata (ISTP) / Hebi (ISFP) / Raijin (ESTP) / Fuujin (ESFP)
 
     yellow: [
       {
@@ -272,7 +272,7 @@ const QUESTIONS = {
         choices: [
           { text: '[ตัวเลือก A — Nekomata · ISTP]', yokai: 'Nekomata' },
           { text: '[ตัวเลือก B — Hebi      · ISFP]', yokai: 'Hebi'     },
-          { text: '[ตัวเลือก C — Jorogumo  · ESTP]', yokai: 'Jorogumo' },
+          { text: '[ตัวเลือก C — Raijin  · ESTP]', yokai: 'Raijin' },
           { text: '[ตัวเลือก D — Fuujin    · ESFP]', yokai: 'Fuujin'   }
         ]
       },
@@ -283,7 +283,7 @@ const QUESTIONS = {
         choices: [
           { text: '[ตัวเลือก A — Nekomata]', yokai: 'Nekomata' },
           { text: '[ตัวเลือก B — Hebi]',     yokai: 'Hebi'     },
-          { text: '[ตัวเลือก C — Jorogumo]', yokai: 'Jorogumo' },
+          { text: '[ตัวเลือก C — Raijin]', yokai: 'Raijin' },
           { text: '[ตัวเลือก D — Fuujin]',   yokai: 'Fuujin'   }
         ]
       },
@@ -294,7 +294,7 @@ const QUESTIONS = {
         choices: [
           { text: '[ตัวเลือก A — Nekomata]', yokai: 'Nekomata' },
           { text: '[ตัวเลือก B — Hebi]',     yokai: 'Hebi'     },
-          { text: '[ตัวเลือก C — Jorogumo]', yokai: 'Jorogumo' },
+          { text: '[ตัวเลือก C — Raijin]', yokai: 'Raijin' },
           { text: '[ตัวเลือก D — Fuujin]',   yokai: 'Fuujin'   }
         ]
       },
@@ -305,7 +305,7 @@ const QUESTIONS = {
         choices: [
           { text: '[ตัวเลือก A — Nekomata]', yokai: 'Nekomata' },
           { text: '[ตัวเลือก B — Hebi]',     yokai: 'Hebi'     },
-          { text: '[ตัวเลือก C — Jorogumo]', yokai: 'Jorogumo' },
+          { text: '[ตัวเลือก C — Raijin]', yokai: 'Raijin' },
           { text: '[ตัวเลือก D — Fuujin]',   yokai: 'Fuujin'   }
         ]
       },
@@ -316,7 +316,7 @@ const QUESTIONS = {
         choices: [
           { text: '[ตัวเลือก A — Nekomata]', yokai: 'Nekomata' },
           { text: '[ตัวเลือก B — Hebi]',     yokai: 'Hebi'     },
-          { text: '[ตัวเลือก C — Jorogumo]', yokai: 'Jorogumo' },
+          { text: '[ตัวเลือก C — Raijin]', yokai: 'Raijin' },
           { text: '[ตัวเลือก D — Fuujin]',   yokai: 'Fuujin'   }
         ]
       }

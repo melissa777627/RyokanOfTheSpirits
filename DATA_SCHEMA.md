@@ -28,8 +28,8 @@ let state = {
   // คำถาม pop-up หลัง bento นับเป็น Q แรกของ Stage 2
 
   // ── Stage 2 · Event 6–10 · Yokai Selection ───────────
-  yokaiPool:       [],     // ['Tenjin','Yumekui','Ryuu','Tengu'] — set ตาม winningHouse
-  yokaiScores:     {},     // { Tenjin:0, Yumekui:0, Ryuu:0, Tengu:0 } — build ตอน loadStage2()
+  yokaiPool:       [],     // ['Tenjin','Yumekui','Ryuu','Kitsune'] — set ตาม winningHouse
+  yokaiScores:     {},     // { Tenjin:0, Yumekui:0, Ryuu:0, Kitsune:0 } — build ตอน loadStage2()
   winningYokai:    '',     // ชื่อ Yokai — set หลัง calcYokai()
   lastYokaiAnswer: '',     // yokai จากตัวเลือก Q10 — ใช้ tie-breaker
 
@@ -103,18 +103,18 @@ const YOKAI_DATA = {
 | purple | INTJ | Tenjin | 📜 | เทพแห่งปัญญา |
 | purple | INTP | Yumekui | 💤 | ปีศาจกินฝัน |
 | purple | ENTJ | Ryuu | 🐉 | มังกรเทพเจ้า |
-| purple | ENTP | Tengu | 👺 | เทนกุ |
+| purple | ENTP | Kitsune | 🦊 | จิ้งจอกเก้าหาง |
 | green | INFJ | Shinigami | 💀 | ยมทูต |
 | green | INFP | Yukionna | ❄️ | ปีศาจหิมะ |
-| green | ENFJ | Kitsune | 🦊 | จิ้งจอกเก้าหาง |
+| green | ENFJ | Oni | 👹 | ยักษ์โอนิ |
 | green | ENFP | Tanuki | 🍃 | ทานุกิ |
-| blue | ISTJ | Oni | 👹 | ยักษ์โอนิ |
+| blue | ISTJ | Tengu | 👺 | เทนกุ |
 | blue | ISFJ | Ningyo | 🧜 | เงือกญี่ปุ่น |
-| blue | ESTJ | Raijin | ⚡ | เทพสายฟ้า |
+| blue | ESTJ | Jorogumo | 🕸️ | ปีศาจแมงมุม |
 | blue | ESFJ | Inugami | 🐕 | เทพสุนัข |
 | yellow | ISTP | Nekomata | 🐈‍⬛ | แมวปีศาจสองหาง |
 | yellow | ISFP | Hebi | 🐍 | ปีศาจงูขาว |
-| yellow | ESTP | Jorogumo | 🕸️ | ปีศาจแมงมุม |
+| yellow | ESTP | Raijin | ⚡ | เทพสายฟ้า |
 | yellow | ESFP | Fuujin | 🌪️ | เทพวายุ |
 
 ---
@@ -153,22 +153,22 @@ const QUESTIONS = {
           { text: 'Choice text', yokai: 'Tenjin'  },
           { text: 'Choice text', yokai: 'Yumekui' },
           { text: 'Choice text', yokai: 'Ryuu'    },
-          { text: 'Choice text', yokai: 'Tengu'   }
+          { text: 'Choice text', yokai: 'Kitsune' }
         ]
       },
       // p2, p3, p4, p5  (index 1–4 · รวม bento pop-up = 5 ข้อ)
     ],
 
     green: [
-      // 5 ข้อ · choices map: Shinigami / Yukionna / Kitsune / Tanuki
+      // 5 ข้อ · choices map: Shinigami / Yukionna / Oni / Tanuki
     ],
 
     blue: [
-      // 5 ข้อ · choices map: Oni / Ningyo / Raijin / Inugami
+      // 5 ข้อ · choices map: Tengu / Ningyo / Jorogumo / Inugami
     ],
 
     yellow: [
-      // 5 ข้อ · choices map: Nekomata / Hebi / Jorogumo / Fuujin
+      // 5 ข้อ · choices map: Nekomata / Hebi / Raijin / Fuujin
     ]
   }
 };
@@ -207,10 +207,10 @@ function calcHouse() {
 ```js
 function loadStage2(house) {
   const HOUSE_POOLS = {
-    purple: ['Tenjin',    'Yumekui',  'Ryuu',     'Tengu'   ],
-    green:  ['Shinigami', 'Yukionna', 'Kitsune',  'Tanuki'  ],
-    blue:   ['Oni',       'Ningyo',   'Raijin',   'Inugami' ],
-    yellow: ['Nekomata',  'Hebi',     'Jorogumo', 'Fuujin'  ]
+    purple: ['Tenjin',    'Yumekui',  'Ryuu',     'Kitsune' ],
+    green:  ['Shinigami', 'Yukionna', 'Oni',      'Tanuki'  ],
+    blue:   ['Tengu',     'Ningyo',   'Jorogumo', 'Inugami' ],
+    yellow: ['Nekomata',  'Hebi',     'Raijin',   'Fuujin'  ]
   };
 
   state.yokaiPool = HOUSE_POOLS[house];

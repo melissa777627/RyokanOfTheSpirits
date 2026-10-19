@@ -163,10 +163,10 @@ view-landing  →  view-gender  →  view-quiz (Stage 1)
 ### House → Yokai Pools
 ```javascript
 const HOUSE_POOLS = {
-  purple: ['Tenjin',    'Yumekui',  'Ryuu',     'Tengu'   ],
-  green:  ['Shinigami', 'Yukionna', 'Kitsune',  'Tanuki'  ],
-  blue:   ['Oni',       'Ningyo',   'Raijin',   'Inugami' ],
-  yellow: ['Nekomata',  'Hebi',     'Jorogumo', 'Fuujin'  ]
+  purple: ['Tenjin',    'Yumekui',  'Ryuu',     'Kitsune' ],
+  green:  ['Shinigami', 'Yukionna', 'Oni',      'Tanuki'  ],
+  blue:   ['Tengu',     'Ningyo',   'Jorogumo', 'Inugami' ],
+  yellow: ['Nekomata',  'Hebi',     'Raijin',   'Fuujin'  ]
 };
 ```
 
@@ -204,18 +204,18 @@ let state = {
 | 🟣 Purple (Analysts NT) | INTJ | Tenjin | 📜 |
 | | INTP | Yumekui | 💤 |
 | | ENTJ | Ryuu | 🐉 |
-| | ENTP | Tengu | 👺 |
+| | ENTP | Kitsune | 🦊 |
 | 🟢 Green (Diplomats NF) | INFJ | Shinigami | 💀 |
 | | INFP | Yukionna | ❄️ |
-| | ENFJ | Kitsune | 🦊 |
+| | ENFJ | Oni | 👹 |
 | | ENFP | Tanuki | 🍃 |
-| 🔵 Blue (Sentinels SJ) | ISTJ | Oni | 👹 |
+| 🔵 Blue (Sentinels SJ) | ISTJ | Tengu | 👺 |
 | | ISFJ | Ningyo | 🧜 |
-| | ESTJ | Raijin | ⚡ |
+| | ESTJ | Jorogumo | 🕸️ |
 | | ESFJ | Inugami | 🐕 |
 | 🟡 Yellow (Explorers SP) | ISTP | Nekomata | 🐈‍⬛ |
 | | ISFP | Hebi | 🐍 |
-| | ESTP | Jorogumo | 🕸️ |
+| | ESTP | Raijin | ⚡ |
 | | ESFP | Fuujin | 🌪️ |
 
 ### Gender Logic
@@ -267,6 +267,8 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 | `scoring-engine.js` | ✅ | Pure scoring functions (no UI) |
 | `questions.js` | ✅ | 25 placeholder questions รอเนื้อหา |
 | `README.md` | ✅ | Asset naming guide + folder structure |
+| `.claude/agents/spirit-psychologist.md` | ✅ | Subagent: MBTI/psychometrics — เขียน/ตรวจ/จำลองคำถาม + เนื้อหาผลลัพธ์ (read-only, เสนอร่างเท่านั้น) |
+| `.claude/agents/ryokan-storyteller.md` | ✅ | Subagent: นักเขียนนิยายไทย — ขัดเกลาฉาก/ช้อย/บทพูดให้สละสลวย พีเรียดเบาๆ อ่านง่าย โดยไม่เปลี่ยนสิ่งที่คำถามวัด (read-only, เสนอร่างเท่านั้น) |
 | `assets/yokai/` | ⬜ | Yokai art — `{name}_{m|f}.png` × 32 |
 | `assets/ui/` | ⬜ | hero_art, seigaiha, ornament_divider |
 | `assets/audio/` | ⬜ | BGM + SFX |

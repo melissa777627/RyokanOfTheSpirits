@@ -817,34 +817,34 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   overflow: hidden;
 }
 
-/* Event 1 only — BG image + glassmorphism */
-#view-quiz.quiz-event1 {
+/* E3 ฟ้าผ่า only — lamp BG image + glassmorphism */
+#view-quiz.quiz-lamp-scene {
   background: url('assets/ui/event1_lamp/Phone_size_Bg.PNG') center center / cover no-repeat;
 }
-#view-quiz.quiz-event1 .quiz-story-box {
+#view-quiz.quiz-lamp-scene .quiz-story-box {
   background: rgba(255, 255, 255, 0.48);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: none;
 }
-#view-quiz.quiz-event1 .choice-btn {
+#view-quiz.quiz-lamp-scene .choice-btn {
   background: rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-color: rgba(255, 255, 255, 0.3);
   box-shadow: none;
 }
-#view-quiz.quiz-event1 .choice-text {
+#view-quiz.quiz-lamp-scene .choice-text {
   color: #1a1a1a;
   text-shadow: none;
   background: transparent;
 }
-#view-quiz.quiz-event1 .quiz-next-wrap {
+#view-quiz.quiz-lamp-scene .quiz-next-wrap {
   background: transparent;
 }
 
-/* Event 1 — black overlay fades out revealing BG (position:fixed covers all) */
-#view-quiz.quiz-event1.quiz-vn-enter::before {
+/* E3 — black overlay fades out revealing BG (position:fixed covers all) */
+#view-quiz.quiz-lamp-scene.quiz-vn-enter::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -930,6 +930,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   color: var(--on-surface);
   opacity: 0.82;
   text-align: left;
+  white-space: pre-line;
   position: relative;
   z-index: 1;
 }
@@ -1093,6 +1094,45 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 0.55; transform: translateY(0); }
 }
+
+/* Narration overlay — บทเชื่อมฉาก (lead / afterArrange / outro) · typewriter + tap */
+.narration {
+  position: fixed;
+  inset: 0;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  z-index: 950;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 0 32px;
+  background: var(--bg);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+.narration.open { opacity: 1; pointer-events: all; }
+.narration-text {
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  line-height: 1.95;
+  color: var(--on-surface);
+  text-align: center;
+  white-space: pre-line;
+  max-width: 360px;
+}
+.narration-tap {
+  font-family: var(--font-kanji);
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  color: var(--on-surface);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.narration-tap.ready { opacity: 0.55; }
 
 /* Bento main content — fills view, no scroll */
 .bento-main {
@@ -1323,6 +1363,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   line-height: 1.8;
   text-align: left;
   opacity: 0.82;
+  white-space: pre-line;
 }
 
 /* Bento oracle card choices — same grid as quiz */

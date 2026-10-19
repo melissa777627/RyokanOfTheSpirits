@@ -162,7 +162,8 @@
       <span class="jd-dot"></span>
       <span class="jd-dot"></span>
       <span class="jd-dot"></span>
-      <span class="jd-label" id="quiz-dot-label">1 / 10</span>
+      <span class="jd-dot"></span>
+      <span class="jd-label" id="quiz-dot-label">1 / 11</span>
     </div>
 
     <header class="view-header">
@@ -283,6 +284,12 @@
   ════════════════════════════════════════ -->
   <div id="view-result" class="view"></div>
 
+  <!-- Narration overlay — scene bridges (QUESTIONS lead / afterArrange / outro) -->
+  <div id="narration" class="narration" onclick="advanceNarration()">
+    <p id="narration-text" class="narration-text"></p>
+    <p id="narration-tap" class="narration-tap">— tap to continue —</p>
+  </div>
+
   <!-- Black fade curtain — used for cinematic view transitions -->
   <div id="fade-curtain" aria-hidden="true"></div>
 
@@ -291,6 +298,8 @@
 <script src="scoring-engine.js"></script>
 <script src="questions.js"></script>
 <script>
+
+validateQuestions();   // fail fast if questions.js breaks DATA_SCHEMA §4
 
 // ── VIEW MANAGER ─────────────────────────────────────────────
 function showView(id) {
@@ -378,60 +387,136 @@ function shuffled(arr) {
   return a;
 }
 
+// ── NARRATION — scene bridges (typewriter, tap to continue) ──
+let _narrationPages  = [];
+let _narrationDone   = null;
+let _narrationTimer  = null;
+let _narrationFull   = '';
+
+function toGraphemes(text) {
+  // Thai vowels/tone marks must stay attached to their consonant while typing
+  return [...new Intl.Segmenter('th', { granularity: 'grapheme' }).segment(text)].map(s => s.segment);
+}
+
+function showNarration(pages, onDone) {
+  if (!pages.length) { onDone(); return; }
+  _narrationPages = [...pages];
+  _narrationDone  = onDone;
+  document.getElementById('narration').classList.add('open');
+  typeNarrationPage();
+}
+
+function typeNarrationPage() {
+  const el  = document.getElementById('narration-text');
+  const tap = document.getElementById('narration-tap');
+  _narrationFull = _narrationPages.shift();
+  const chars = toGraphemes(_narrationFull);
+  let i = 0;
+  el.textContent = '';
+  tap.classList.remove('ready');
+  _narrationTimer = setInterval(() => {
+    el.textContent += chars[i++];
+    if (i >= chars.length) finishNarrationTyping();
+  }, 38);
+}
+
+function finishNarrationTyping() {
+  clearInterval(_narrationTimer);
+  _narrationTimer = null;
+  document.getElementById('narration-text').textContent = _narrationFull;
+  document.getElementById('narration-tap').classList.add('ready');
+}
+
+function advanceNarration() {
+  if (_narrationTimer) { finishNarrationTyping(); return; }
+  if (_narrationPages.length) { typeNarrationPage(); return; }
+  document.getElementById('narration').classList.remove('open');
+  const done = _narrationDone;
+  _narrationDone = null;
+  done();
+}
+
 // ── QUIZ ─────────────────────────────────────────────────────
-let _pendingAnswer = null;
+let _pendingChoice = null;
+
+function currentQuestion() {
+  return state.stage === 2 ? QUESTIONS.yokai[state.currentQ] : QUESTIONS.house[state.currentQ];
+}
 
 function confirmAnswer() {
-  if (!_pendingAnswer) return;
-  const { source, val } = _pendingAnswer;
-  _pendingAnswer = null;
+  if (!_pendingChoice) return;
+  const choice = _pendingChoice;
+  _pendingChoice = null;
   document.getElementById('btn-quiz-next').disabled = true;
-  pickAnswer(source, val);
+
+  if (state.stage === 1) {
+    pickHouseAnswer(choice.house);
+    if (state.currentQ < QUESTIONS.house.length) { loadQuestion(); return; }
+    calcHouse();
+    showView('bento');
+    return;
+  }
+
+  pickYokaiAnswer(currentQuestion(), choice);
+  if (state.currentQ < QUESTIONS.yokai.length) { loadQuestion(); return; }
+  showNarration(QUESTIONS.outro, () => {
+    calcYokai();
+    showView('loading');
+  });
+}
+
+// step 1–11: E1–E5 = 1–5 · Bento = 6 · E6–E10 = 7–11
+function journeyStep() {
+  return state.stage === 1 ? state.currentQ + 1 : 6 + state.currentQ;
 }
 
 function loadQuestion() {
+  const q = currentQuestion();
+  showNarration(q.lead, () => renderQuestion(q));
+}
+
+function renderQuestion(q) {
   const isStage2 = state.stage === 2;
-  const source   = isStage2 ? 'yokai' : 'house';
-  const pool     = isStage2 ? QUESTIONS.yokai[state.winningHouse] : QUESTIONS.house;
-  const q        = pool[state.currentQ];
+  if (isStage2) guardState(2);
+  const set     = isStage2 ? getStage2Set(q) : { prompt: '', choices: q.choices };
 
   const view = document.getElementById('view-quiz');
-  const isEvent1 = !isStage2 && state.currentQ === 0;
   view.classList.toggle('quiz-stage1', !isStage2);
-  view.classList.toggle('quiz-event1', isEvent1);
+  view.classList.toggle('quiz-lamp-scene', q.id === 'e3');
   view.classList.remove('quiz-vn-enter');
   void view.offsetWidth;
   if (!isStage2) view.classList.add('quiz-vn-enter');
 
-  // eventNum: stage1 Q0–Q4 = events 1–5, stage2 Q1–Q4 = events 7–10
-  const eventNum = isStage2 ? 6 + state.currentQ : state.currentQ + 1;
-  const progress = (eventNum / 10) * 100;
+  // eventNum = story numbering E1–E10 (Bento has no event number)
+  const step     = journeyStep();
+  const eventNum = isStage2 ? 5 + state.currentQ : state.currentQ + 1;
+  const total    = QUESTIONS.house.length + QUESTIONS.yokai.length;
 
   // Progress bar
-  document.getElementById('quiz-progress-fill').style.width = progress + '%';
+  document.getElementById('quiz-progress-fill').style.width = (step / total * 100) + '%';
 
   // Dots
   const dots = document.querySelectorAll('#quiz-dots .jd-dot');
   dots.forEach((d, i) => {
-    d.classList.toggle('done',   i < eventNum - 1);
-    d.classList.toggle('active', i === eventNum - 1);
-    d.classList.remove(i < eventNum - 1 ? 'active' : 'done');
+    d.classList.toggle('done',   i < step - 1);
+    d.classList.toggle('active', i === step - 1);
+    d.classList.remove(i < step - 1 ? 'active' : 'done');
   });
-  document.getElementById('quiz-dot-label').textContent = eventNum + ' / 10';
+  document.getElementById('quiz-dot-label').textContent = step + ' / ' + total;
 
   // Header + scene
   document.getElementById('quiz-event-badge').textContent = 'Event ' + eventNum;
   document.getElementById('quiz-scene').textContent = q.scene;
-  document.getElementById('quiz-story').textContent = q.text;
+  document.getElementById('quiz-story').textContent = set.prompt ? q.text + '\n\n' + set.prompt : q.text;
 
   // Reset next button for new question
-  _pendingAnswer = null;
+  _pendingChoice = null;
   document.getElementById('btn-quiz-next').disabled = true;
 
   // Choices
   const wrap = document.getElementById('quiz-choices');
   wrap.innerHTML = '';
-  shuffled(q.choices).forEach(c => {
+  shuffled(set.choices).forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
 
@@ -451,11 +536,10 @@ function loadQuestion() {
     btn.appendChild(img);
     btn.appendChild(txt);
 
-    const val = isStage2 ? c.yokai : c.house;
     btn.addEventListener('click', () => {
       wrap.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
-      _pendingAnswer = { source, val };
+      _pendingChoice = c;
       document.getElementById('btn-quiz-next').disabled = false;
     });
     wrap.appendChild(btn);
@@ -463,14 +547,18 @@ function loadQuestion() {
 }
 
 // ── BENTO ─────────────────────────────────────────────────────
-let _bentoFoodPlaced = 0;
-let _bentoPendingYokai = null;
-let _bentoPhase = 'arrange'; // 'arrange' | 'question'
+// Flow (DATA_SCHEMA §6): lead narration → intro → pop-up Q → drag food → Continue → afterArrange → E6
+let _bentoFoodPlaced    = 0;
+let _bentoPendingChoice = null;
+let _bentoPhase = 'question'; // 'question' | 'arrange'
 
 function initBento() {
-  // Show intro overlay first
-  document.getElementById('bento-intro').classList.remove('hidden');
+  guardState(2);
+  const intro = document.getElementById('bento-intro');
+  intro.style.display = '';
+  intro.classList.add('hidden');
   document.getElementById('bento-main').classList.add('hidden');
+  showNarration(QUESTIONS.yokai[0].lead, () => intro.classList.remove('hidden'));
 }
 
 function dismissBentoIntro() {
@@ -487,33 +575,40 @@ function dismissBentoIntro() {
     }));
   }, { once: true });
   document.getElementById('bento-main').classList.remove('hidden');
-  // Now set up the actual bento game
-  _bentoFoodPlaced   = 0;
-  _bentoPendingYokai = null;
-  _bentoPhase        = 'arrange';
+  // Now set up the actual bento game — question first, then arranging
+  _bentoFoodPlaced    = 0;
+  _bentoPendingChoice = null;
+  _bentoPhase         = 'question';
   document.getElementById('bento-placed-items').innerHTML = '';
-  document.getElementById('bento-q-modal').classList.remove('open');
   document.getElementById('btn-bento-next').disabled = true;
   document.getElementById('btn-bento-next').textContent = 'Continue →';
   document.querySelectorAll('.food-item').forEach(f => f.classList.remove('placed','food-ghost'));
   initBentoDrag();
+  showBentoQuestion();
 }
 
 function confirmBentoChoice() {
-  if (!_bentoPendingYokai) return;
+  if (!_bentoPendingChoice) return;
   document.getElementById('bento-q-modal').classList.remove('open');
-  pickAnswer('yokai', _bentoPendingYokai);
-  if (!state.winningYokai) fadeToView('quiz');
+  pickYokaiAnswer(QUESTIONS.yokai[0], _bentoPendingChoice);
+  _bentoPendingChoice = null;
+  _bentoPhase = 'arrange';
+}
+
+function onBentoContinue() {
+  if (_bentoPhase !== 'arrange' || !_bentoFoodPlaced) return;
+  showNarration([QUESTIONS.yokai[0].afterArrange], () => fadeToView('quiz', loadQuestion));
 }
 
 function showBentoQuestion() {
-  _bentoPendingYokai = null;
-  const q = QUESTIONS.yokai[state.winningHouse][0];
-  document.getElementById('bento-question-text').textContent = q.text;
+  _bentoPendingChoice = null;
+  const q   = QUESTIONS.yokai[0];
+  const set = getStage2Set(q);
+  document.getElementById('bento-question-text').textContent = q.text + '\n\n' + set.prompt;
 
   const wrap = document.getElementById('bento-choices');
   wrap.innerHTML = '';
-  shuffled(q.choices).forEach(c => {
+  shuffled(set.choices).forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'bento-choice-btn';
 
@@ -528,7 +623,7 @@ function showBentoQuestion() {
     btn.addEventListener('click', () => {
       wrap.querySelectorAll('.bento-choice-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
-      _bentoPendingYokai = c.yokai;
+      _bentoPendingChoice = c;
       document.getElementById('btn-bento-confirm').disabled = false;
     });
     wrap.appendChild(btn);
@@ -642,7 +737,7 @@ function spawnSakuraFall() {
 }
 
 function renderResult() {
-  if (!guardState(2)) return;
+  guardState(2);
   const r = getResult();
 
   const houseTints  = { purple:'rgba(107,79,160,0.14)', green:'rgba(45,122,79,0.12)', blue:'rgba(27,79,114,0.12)', yellow:'rgba(181,138,0,0.10)' };

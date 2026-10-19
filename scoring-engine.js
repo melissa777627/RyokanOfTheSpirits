@@ -1,10 +1,11 @@
 // ============================================================
 //  scoring-engine.js — Ryokan of The Spirits
-//  Pure functions only. No UI logic inside this file.
-//  Import / paste into index.html before app logic.
+//  State + scoring only. ฟังก์ชันที่ไปต่อ view (showView, loadQuestion ฯลฯ)
+//  อยู่ใน index.html — ยกเว้น toggleResultGender / resetGame ที่เรียก UI ตรงๆ
+//  Spec → DATA_SCHEMA.md §5
 // ============================================================
 
-// ── 1. HOUSE POOLS ──────────────────────────────────────────
+// ── 1. CONSTANTS ────────────────────────────────────────────
 
 const HOUSE_POOLS = {
   purple: ['Tenjin',    'Yumekui',  'Ryuu',     'Kitsune' ],
@@ -12,6 +13,15 @@ const HOUSE_POOLS = {
   blue:   ['Tengu',     'Ningyo',   'Jorogumo', 'Inugami' ],
   yellow: ['Nekomata',  'Hebi',     'Raijin',   'Fuujin'  ]
 };
+
+// Stage 1: บ้านหลัก +2 · บ้านสำรอง +1
+const SECONDARY_HOUSE = { purple: 'blue', blue: 'purple', green: 'yellow', yellow: 'green' };
+
+// Stage 2: แกนที่ 2 ที่บ้านยังไม่ล็อก
+const HOUSE_AXIS = { purple: 'JP', green: 'JP', blue: 'TF', yellow: 'TF' };
+
+// ตัวอักษรที่บ้านล็อกไว้: ? = E/I · _ = แกนที่ 2
+const HOUSE_MBTI_TEMPLATE = { purple: '?NT_', green: '?NF_', blue: '?S_J', yellow: '?S_P' };
 
 // ── 2. STATE ─────────────────────────────────────────────────
 
@@ -21,14 +31,13 @@ function createInitialState() {
     targetGender:      '',
     resultGenderShown: '',
 
-    houseScores:     { purple: 0, green: 0, blue: 0, yellow: 0 },
-    winningHouse:    '',
-    lastHouseAnswer: '',
+    houseScores:  { purple: 0, green: 0, blue: 0, yellow: 0 },
+    houseAnswers: [],
+    winningHouse: '',
 
-    yokaiPool:       [],
-    yokaiScores:     {},
-    winningYokai:    '',
-    lastYokaiAnswer: '',
+    yokaiPool:     [],
+    stage2Answers: [],
+    winningYokai:  '',
 
     stage:         1,
     currentQ:      0,
@@ -54,71 +63,34 @@ function resolveResultGender() {
   return state.targetGender;
 }
 
-// ── 4. ANSWER HANDLER ────────────────────────────────────────
-//
-//  Weighted scoring:
-//    Q1–Q(n-1)  →  +1 pt  (normal signal)
-//    Q(n) last  →  +2 pt  (tiebreaker weight)
-//
-//  เหตุผล: ด้วย 5 คำถาม 4 ตัวเลือก การให้ +1 ทุกข้อ
-//  มีโอกาสสูงที่จะ tie แล้วต้อง random ทำให้ผู้เล่นรู้สึก
-//  ว่าผลสุ่ม ไม่แม่น ข้อสุดท้าย +2 ทำให้แทบทุก path
-//  มีผู้ชนะชัดเจนโดยไม่ต้องสุ่ม
+// ── 4. STAGE 1 · HOUSE ───────────────────────────────────────
 
-function pickAnswer(source, value) {
-  if (source === 'house') {
-    const total    = QUESTIONS.house.length;           // 5
-    const isLast   = state.currentQ === total - 1;
-    const pts      = isLast ? 2 : 1;
-
-    state.houseScores[value] += pts;
-    state.lastHouseAnswer     = value;
-    state.currentQ++;
-
-    if (state.currentQ >= total) {
-      showView('bento');   // calcHouse จะถูกเรียกใน onBentoContinue
-    } else {
-      loadQuestion();
-    }
-
-  } else if (source === 'yokai') {
-    const pool     = QUESTIONS.yokai[state.winningHouse];
-    const total    = pool.length;                      // 5
-    const isLast   = state.currentQ === total - 1;
-    const pts      = isLast ? 2 : 1;
-
-    state.yokaiScores[value] += pts;
-    state.lastYokaiAnswer     = value;
-    state.currentQ++;
-
-    if (state.currentQ >= total) {
-      calcYokai();
-    } else {
-      loadQuestion();
-    }
-  }
+function pickHouseAnswer(house) {
+  state.houseScores[house]                  += 2;
+  state.houseScores[SECONDARY_HOUSE[house]] += 1;
+  state.houseAnswers.push(house);
+  state.currentQ++;
 }
-
-// ── 5. CALC HOUSE ────────────────────────────────────────────
 
 function calcHouse() {
   const scores = state.houseScores;
-  let max  = -1;
-  let ties = [];
+  const max    = Math.max(...Object.values(scores));
+  let   ties   = Object.keys(scores).filter(h => scores[h] === max);
 
-  for (const [house, score] of Object.entries(scores)) {
-    if (score > max)       { max = score; ties = [house]; }
-    else if (score === max) { ties.push(house); }
+  // Tie-break 1: บ้านที่ถูกเลือกเป็นบ้านหลักบ่อยที่สุด
+  if (ties.length > 1) {
+    const count = h => state.houseAnswers.filter(a => a === h).length;
+    const top   = Math.max(...ties.map(count));
+    ties = ties.filter(h => count(h) === top);
   }
 
-  let winner;
-  if (ties.length === 1) {
-    winner = ties[0];
-  } else if (ties.includes(state.lastHouseAnswer)) {
-    // Q5 (+2 pts) ทำให้ path นี้เกิดน้อยมาก แต่ถ้าเกิดให้ Q5 ตัดสิน
-    winner = state.lastHouseAnswer;
-  } else {
-    winner = ties[Math.floor(Math.random() * ties.length)];
+  // Tie-break 2: ไล่ย้อนจาก E5 หาบ้านหลักล่าสุดที่อยู่ใน ties
+  let winner = ties[0];
+  if (ties.length > 1) {
+    winner = [...state.houseAnswers].reverse().find(h => ties.includes(h));
+  }
+  if (!winner) {
+    throw new Error('[Ryokan] calcHouse: unresolved tie ' + JSON.stringify(scores));
   }
 
   state.winningHouse = winner;
@@ -126,52 +98,89 @@ function calcHouse() {
   return winner;
 }
 
-// ── 6. LOAD STAGE 2 ──────────────────────────────────────────
+// ── 5. STAGE 2 · YOKAI ───────────────────────────────────────
 
 function loadStage2(house) {
-  state.yokaiPool   = [...HOUSE_POOLS[house]];
-  state.yokaiScores = {};
-  for (const name of state.yokaiPool) {
-    state.yokaiScores[name] = 0;
+  state.yokaiPool     = [...HOUSE_POOLS[house]];
+  state.stage2Answers = [];
+  state.stage         = 2;
+  state.currentQ      = 0;   // 0 = Bento
+}
+
+// ช้อยที่ผู้เล่นเห็นในข้อนั้น: ชุด JP/TF ตามบ้าน หรือชุด EI
+function getStage2Set(q) {
+  if (q.axis === 'EI') return { axis: 'EI', prompt: q.prompt, choices: q.choices };
+  const axis = HOUSE_AXIS[state.winningHouse];
+  return { axis, prompt: q.sets[axis].prompt, choices: q.sets[axis].choices };
+}
+
+function pickYokaiAnswer(q, choice) {
+  const { axis } = getStage2Set(q);
+  state.stage2Answers.push({ qid: q.id, axis, pole: choice.pole, fn: choice.fn });
+  state.currentQ++;
+}
+
+function majorityPole(axis) {
+  const votes = state.stage2Answers.filter(a => a.axis === axis);
+  if (votes.length !== 3) {
+    throw new Error(`[Ryokan] axis ${axis} has ${votes.length} votes, expected 3`);
   }
-  state.stage    = 2;
-  state.currentQ = 0;   // bento pop-up = Q แรก (index 0)
+  const [a, b] = axis.split('');
+  return votes.filter(v => v.pole === a).length >= 2 ? a : b;
 }
-
-// ── 7. BENTO CONTINUE ────────────────────────────────────────
-
-function onBentoContinue() {
-  calcHouse();          // คำนวณบ้าน → loadStage2 ถูกเรียกใน calcHouse
-  showBentoQuestion();
-}
-
-// ── 8. CALC YOKAI ────────────────────────────────────────────
 
 function calcYokai() {
-  const scores = state.yokaiScores;
-  let max  = -1;
-  let ties = [];
-
-  for (const [yokai, score] of Object.entries(scores)) {
-    if (score > max)       { max = score; ties = [yokai]; }
-    else if (score === max) { ties.push(yokai); }
-  }
-
-  let winner;
-  if (ties.length === 1) {
-    winner = ties[0];
-  } else if (ties.includes(state.lastYokaiAnswer)) {
-    winner = state.lastYokaiAnswer;
-  } else {
-    winner = ties[Math.floor(Math.random() * ties.length)];
+  const house  = state.winningHouse;
+  const mbti   = HOUSE_MBTI_TEMPLATE[house]
+                   .replace('?', majorityPole('EI'))
+                   .replace('_', majorityPole(HOUSE_AXIS[house]));
+  const winner = state.yokaiPool.find(name => YOKAI_DATA[name].mbti === mbti);
+  if (!winner) {
+    throw new Error(`[Ryokan] calcYokai: no yokai with ${mbti} in ${house}`);
   }
 
   state.winningYokai      = winner;
   state.resultGenderShown = resolveResultGender();
-  showView('loading');
+  return winner;
 }
 
-// ── 9. RESULT HELPERS ────────────────────────────────────────
+// ── 6. QUESTION BANK CHECK ───────────────────────────────────
+//  กฎตาม DATA_SCHEMA.md §4 — เรียกครั้งเดียวตอนโหลดหน้า
+
+function validateChoiceSet(id, axis, choices) {
+  const [a, b] = axis.split('');
+  const count  = p => choices.filter(c => c.pole === p).length;
+  if (choices.length !== 4 || count(a) !== 2 || count(b) !== 2) {
+    throw new Error(`[Ryokan] ${id} ${axis}: need 2 '${a}' + 2 '${b}' choices`);
+  }
+}
+
+function validateQuestions() {
+  const { house, yokai, outro } = QUESTIONS;
+  if (house.length !== 5) throw new Error('[Ryokan] QUESTIONS.house must have 5 questions');
+  if (yokai.length !== 6) throw new Error('[Ryokan] QUESTIONS.yokai must have 6 questions');
+  if (!outro.length)      throw new Error('[Ryokan] QUESTIONS.outro is empty');
+
+  for (const q of house) {
+    const houses = q.choices.map(c => c.house).sort().join(',');
+    if (houses !== 'blue,green,purple,yellow') {
+      throw new Error(`[Ryokan] ${q.id}: choices must cover all 4 houses once`);
+    }
+  }
+
+  yokai.forEach((q, i) => {
+    if (i < 3) {
+      if (!q.sets || !q.sets.JP || !q.sets.TF) throw new Error(`[Ryokan] ${q.id}: needs sets.JP and sets.TF`);
+      validateChoiceSet(q.id, 'JP', q.sets.JP.choices);
+      validateChoiceSet(q.id, 'TF', q.sets.TF.choices);
+    } else {
+      if (q.axis !== 'EI') throw new Error(`[Ryokan] ${q.id}: must have axis 'EI'`);
+      validateChoiceSet(q.id, 'EI', q.choices);
+    }
+  });
+}
+
+// ── 7. RESULT HELPERS ────────────────────────────────────────
 
 function getResult() {
   const yokai  = YOKAI_DATA[state.winningYokai];
@@ -196,31 +205,29 @@ function toggleResultGender() {
   renderResult();
 }
 
-// ── 10. RESET ────────────────────────────────────────────────
+// ── 8. RESET ─────────────────────────────────────────────────
 
 function resetGame() {
   state = createInitialState();
   showView('landing');
 }
 
-// ── 11. REFRESH GUARD ────────────────────────────────────────
+// ── 9. STATE GUARD (Rule 5 — fail loud, no silent reset) ─────
 
 function guardState(requiredStage) {
   if (requiredStage === 2 && !state.winningHouse) {
-    console.warn('[Ryokan] State lost — redirecting to landing');
-    resetGame();
-    return false;
+    throw new Error('[Ryokan] guardState: Stage 2 view entered without winningHouse');
   }
-  return true;
 }
 
-// ── 12. DEBUG (ลบออกก่อน production) ────────────────────────
+// ── 10. DEBUG (ลบออกก่อน production) ────────────────────────
 
 function debugScores() {
   console.group('[Ryokan] Current Scores');
-  console.log('House:',         state.houseScores);
+  console.log('House:',          state.houseScores);
+  console.log('House answers:',  state.houseAnswers);
   console.log('Winning House:',  state.winningHouse);
-  console.log('Yokai:',         state.yokaiScores);
+  console.log('Stage 2:',        state.stage2Answers);
   console.log('Winning Yokai:',  state.winningYokai);
   console.log('Gender shown:',   state.resultGenderShown);
   console.groupEnd();

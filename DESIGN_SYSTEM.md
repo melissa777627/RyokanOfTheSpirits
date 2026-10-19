@@ -110,6 +110,17 @@ Depth is achieved through **Tonal Layering**, not structural shadows.
 - Fill: `--primary`
 - Add small character icon at leading edge of fill
 
+### Narration Overlay (`.narration`) — บทเชื่อมฉาก
+- ใช้กับ `lead` / `afterArrange` / `outro` ใน `questions.js` (1 string = 1 หน้า)
+- Full-screen fixed, `--bg` ทึบ (ไม่ให้เห็นคำถามข้างหลัง), กว้างไม่เกิน `--max-w`
+- ข้อความ: `--font-body`, 0.98rem, line-height 1.95, กึ่งกลาง, `white-space: pre-line`
+- Typewriter ทีละ grapheme (สระ/วรรณยุกต์ไทยไม่หลุด) · แตะครั้งแรก = แสดงครบ · แตะอีกครั้ง = หน้าถัดไป/ปิด
+- "— tap to continue —" (`--font-kanji`) โผล่หลังพิมพ์จบ
+- สถานะ: ดีไซน์ชั่วคราว รอเจ้าของเคาะ
+
+### Lamp Scene (`#view-quiz.quiz-lamp-scene`)
+- E3 ฟ้าผ่าเท่านั้น: BG `assets/ui/event1_lamp/` + story box / choice แบบ glass
+
 ### Modals / Overlays
 - Background: `rgba(239,224,192,0.7)` (`--surface-lowest` at 70%)
 - `backdrop-filter: blur(20px)`

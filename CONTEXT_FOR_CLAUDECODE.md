@@ -150,8 +150,19 @@ Full guide → `assets/README.md`.
 | `guardState(requiredStage)` | Throws if state is invalid for the view (Rule 5 — no silent reset) |
 | `debugScores()` | Console logs all scores (remove before production) |
 
-> Functions that reference UI (`showView`, `loadQuestion`, `showBentoQuestion`, `renderResult`, narration for `lead`/`afterArrange`/`outro`) must be defined in `index.html`.
-> The table above is the target after the engine rewrite (DATA_SCHEMA §5); the current file still has the old `pickAnswer` / `onBentoContinue` / `yokaiScores` engine.
+> Functions that reference UI must be defined in `index.html`.
+
+### UI flow functions in index.html
+
+| Function | Purpose |
+|---|---|
+| `showNarration(pages, onDone)` / `advanceNarration()` | Narration overlay for `lead` / `afterArrange` / `outro` (typewriter, tap) |
+| `currentQuestion()` | `QUESTIONS.house` or `QUESTIONS.yokai` item at `state.currentQ` |
+| `loadQuestion()` → `renderQuestion(q)` | Shows `q.lead` first, then renders scene + choices (Stage 2 via `getStage2Set`) |
+| `confirmAnswer()` | Records answer; after E5 → `calcHouse()` + bento; after E10 → outro → `calcYokai()` + loading |
+| `journeyStep()` | Progress step 1–11 |
+| `initBento()` → `dismissBentoIntro()` → `showBentoQuestion()` | Bento: lead narration → intro → pop-up Q first |
+| `confirmBentoChoice()` / `onBentoContinue()` | Records Bento answer → arrange phase → afterArrange → quiz E6 |
 
 ---
 

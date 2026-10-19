@@ -269,7 +269,7 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 | `DESIGN_SYSTEM.md` | ✅ | "Zen Hearth" — colors, fonts, components |
 | `DATA_SCHEMA.md` | ✅ | State object, YOKAI_DATA structure, scoring pseudocode |
 | `scoring-engine.js` | ✅ | Pure scoring functions (no UI) |
-| `questions.js` | 🔄 | ยังเป็น placeholder โครงเก่า (25 ข้อ) — ต้องเขียนใหม่ตาม DATA_SCHEMA §4 (11 ข้อ) |
+| `questions.js` | ✅ | 11 ข้อ FINAL (ไทย) + บทเชื่อมฉาก ตาม DATA_SCHEMA §4 |
 | `README.md` | ✅ | Asset naming guide + folder structure |
 | `.claude/agents/spirit-psychologist.md` | ✅ | Subagent: MBTI/psychometrics — เขียน/ตรวจ/จำลองคำถาม + เนื้อหาผลลัพธ์ (read-only, เสนอร่างเท่านั้น) |
 | `.claude/agents/ryokan-storyteller.md` | ✅ | Subagent: นักเขียนนิยายไทย — ขัดเกลาฉาก/ช้อย/บทพูดให้สละสลวย พีเรียดเบาๆ อ่านง่าย โดยไม่เปลี่ยนสิ่งที่คำถามวัด (read-only, เสนอร่างเท่านั้น) |
@@ -296,10 +296,12 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 - [ ] `index.html` ทุก view (รอ plan mode)
 - [ ] Wire scoring-engine.js เข้า UI
 - [ ] Bento drag & drop
-- [ ] เขียน `scoring-engine.js` ใหม่ตาม DATA_SCHEMA §5 + `validateQuestions()` + `guardState()` แบบ throw
+- [x] เขียน `scoring-engine.js` ใหม่ตาม DATA_SCHEMA §5 + `validateQuestions()` + `guardState()` แบบ throw
 - [ ] Result page + gender toggle + Omikuji modal
 - [ ] Loading animation
 - [ ] BGM/SFX audio manager (stub ก่อน)
 - [ ] Share to Story (html2canvas)
-- [ ] เขียน `questions.js` ใหม่ตาม DATA_SCHEMA §4 (ข้อความภาษาไทย 11 ข้อ + lead/afterArrange/outro)
-- [ ] UI: pop-up Bento ก่อนลากอาหาร, หน้าบรรยาย lead/outro, progress 11 ขั้น
+- [x] เขียน `questions.js` ใหม่ตาม DATA_SCHEMA §4 (ข้อความภาษาไทย 11 ข้อ + lead/afterArrange/outro)
+- [ ] แปลคำถามเป็น EN (ทีหลัง)
+- [x] UI: pop-up Bento ก่อนลากอาหาร, หน้าบรรยาย lead/outro (ดีไซน์ชั่วคราว), progress 11 ขั้น
+- [ ] E3 lamp BG: จุด progress + badge อ่านยากบนพื้นมืด · การ์ดช้อยยังไม่มีรูป

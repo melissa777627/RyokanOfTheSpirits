@@ -217,6 +217,7 @@ function pickHouseAnswer(house) {
   state.houseScores[house]                  += 2;
   state.houseScores[SECONDARY_HOUSE[house]] += 1;
   state.houseAnswers.push(house);
+  state.currentQ++;
 }
 ```
 
@@ -269,6 +270,7 @@ function getStage2Set(q) {
 function pickYokaiAnswer(q, choice) {
   const { axis } = getStage2Set(q);
   state.stage2Answers.push({ qid: q.id, axis, pole: choice.pole, fn: choice.fn });
+  state.currentQ++;
 }
 ```
 
@@ -318,11 +320,11 @@ function calcYokai() {
 
 | ที่อยู่ในข้อมูล | ใช้ตอนไหน |
 |---|---|
-| `q.lead` | แสดงก่อนฉากของข้อนั้น (เช่น บทเชื่อม E1→E2 อยู่ที่ `house[1].lead`) |
+| `q.lead` | แสดงก่อนฉากของข้อนั้น (เช่น บทเชื่อม E1→E2 อยู่ที่ `house[1].lead`) · array — 1 string = 1 หน้า |
 | `yokai[0].afterArrange` | หลังกด Continue ใน Bento |
 | `QUESTIONS.outro` | หลังตอบ E10 ก่อน Loading (บทเชื่อม E10→ปิด + ข้อความปิด) |
 
-รูปแบบการแสดง (หน้าบรรยาย tap เพื่อไปต่อ / typewriter) กำหนดใน `DESIGN_SYSTEM.md` ตอนลงโค้ด
+แสดงด้วย `showNarration(pages, onDone)` ใน index.html — สเปก UI ดู `DESIGN_SYSTEM.md` "Narration Overlay"
 
 ---
 

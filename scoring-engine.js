@@ -204,9 +204,12 @@ function validateQuestions() {
   });
 }
 
-// memory / near ต่อ Yokai: null = ยังไม่เขียน · ถ้ามี object ต้องครบทุก key (DATA_SCHEMA §3)
+// why / memory / near ต่อ Yokai: null = ยังไม่เขียน · ถ้ามี object ต้องครบทุก key (DATA_SCHEMA §3)
 function validateYokaiData() {
   for (const [name, y] of Object.entries(YOKAI_DATA)) {
+    if (y.why !== null && (typeof y.why !== 'string' || !y.why)) {
+      throw new Error(`[Ryokan] YOKAI_DATA.${name}.why must be text (or null)`);
+    }
     if (y.memory !== null) {
       const ok = y.memory && ['e1', 'e2', 'e3', 'e4', 'e5'].every(k => typeof y.memory[k] === 'string' && y.memory[k]);
       if (!ok) throw new Error(`[Ryokan] YOKAI_DATA.${name}.memory needs e1–e5 (or null)`);
@@ -234,7 +237,7 @@ function getResult() {
     title:   yokai.title,
     image:   yokai[gender].image,
     tagline: yokai[gender].tagline,
-    why:     yokai[gender].why,
+    why:     yokai.why,                              // null = ยังไม่เขียน
     compat:  yokai[gender].compat,
     memory:  yokai.memory ? pickMemoryLine() : '',   // ชั้น A
     near:    yokai.near   ? pickNearLines()  : []    // ชั้น B (0–2 บรรทัด)

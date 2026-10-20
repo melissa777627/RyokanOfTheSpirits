@@ -321,4 +321,4 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 - [ ] การ์ดช้อยยังไม่มีรูป
 - [x] บทพูดหน้า result ชั้น A (ความทรงจำ) + B (แกนเฉียด) — 8 ตัวแรก: Tenjin Kitsune Yukionna Oni Tengu Inugami Nekomata Fuujin · narration หลัง loading + กล่องโควท
 - [ ] บทพูด A+B อีก 8 ตัว: Yumekui Ryuu Shinigami Tanuki Ningyo Jorogumo Hebi Raijin (ตอนนี้ `memory: null`)
-- [ ] `why` ทุกตัวยังเป็น placeholder
+- [x] `why` (ใช้ร่วมสองเพศ) 8 ตัวเดียวกับบทพูด A+B · อีก 8 ตัว `why: null`

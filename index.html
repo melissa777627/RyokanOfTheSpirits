@@ -1352,10 +1352,11 @@ function renderResult() {
           <p class="result-title">${r.title}</p>
           <p class="result-tagline">${r.tagline}</p>
         </div>
+        ${r.why ? `
         <div class="result-section">
           <p class="result-section-eyebrow">— Why you matched —</p>
           <p class="result-why">${r.why}</p>
-        </div>
+        </div>` : ''}
         ${r.memory ? `
         <div class="result-quote-block">
           ${[r.memory, ...r.near].map(line => `<p class="result-quote">"${line}"</p>`).join('')}
@@ -1473,6 +1474,7 @@ const YOKAI_DATA = {
   // ── Purple · Analysts (NT) ───────────────────────────────────
   Tenjin: {
     house:'purple', mbti:'INTJ', emoji:'📜', name:'Tenjin', title:'เทพแห่งปัญญา', dollImage:'',
+    why: 'หลังคืนที่ทั้งเรือนพึ่งคุณ ใจคุณมองหาใครสักคนที่อยู่ข้างแล้วพักได้จริง Tenjin เห็นงานที่รอคุณก่อนคุณรู้ตัว จัดใหม่ทีเดียวให้หายไป แล้วไม่พูดถึงอีก เรื่องที่สำคัญจริงๆ คุณกับเขามักขอคิดให้ตกผลึกก่อนค่อยลงมือ',
     memory: {
       e1: 'เอาละ กระดิ่งใบนั้นไม่ต้องหาแล้ว งานในเรือนข้าจัดใหม่หมด คืนนี้เจ้าพักได้',
       e2: 'ร่มกองนั้นข้าผูกป้ายชื่อครบทุกคันตั้งแต่ก่อนฝนตก เรียงตามห้องด้วย ต่อจากนี้ใครมาก็หยิบเองได้',
@@ -1484,23 +1486,26 @@ const YOKAI_DATA = {
       JP: 'บางทีเจ้าก็ลองอะไรใหม่ๆ ขึ้นมาเฉยๆ แผนของข้าเลยมีเรื่องให้ตื่นเต้นบ้าง ข้าชอบนะ',
       EI: 'เวลาเจ้าออกไปก่อนข้าอ่านจบ ข้าก็หนีบตำราตามไปตลาด ได้เห็นของจริงที่เคยอ่านแต่ในตำรา'
     },
-    male:   { image:'', tagline:'The God of Knowledge',    why:'[เหตุผลที่คุณคู่กับ Tenjin เพศชาย]',   compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] },
-    female: { image:'', tagline:'The Goddess of Knowledge',why:'[เหตุผลที่คุณคู่กับ Tenjin เพศหญิง]', compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] }
+    male:   { image:'', tagline:'The God of Knowledge',   compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] },
+    female: { image:'', tagline:'The Goddess of Knowledge', compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] }
   },
   Yumekui: {
     house:'purple', mbti:'INTP', emoji:'💤', name:'Yumekui', title:'ปีศาจกินฝัน', dollImage:'',
+    why: null,
     memory: null, near: null,
-    male:   { image:'', tagline:'The Dream Devourer', why:'[เหตุผลที่คุณคู่กับ Yumekui เพศชาย]',   compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] },
-    female: { image:'assets/yokai/yumekui_f.png', tagline:'The Dream Devourer', why:'[เหตุผลที่คุณคู่กับ Yumekui เพศหญิง]', compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] }
+    male:   { image:'', tagline:'The Dream Devourer',   compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] },
+    female: { image:'assets/yokai/yumekui_f.png', tagline:'The Dream Devourer', compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] }
   },
   Ryuu: {
     house:'purple', mbti:'ENTJ', emoji:'🐉', name:'Ryuu', title:'มังกรเทพเจ้า', dollImage:'',
+    why: null,
     memory: null, near: null,
-    male:   { image:'', tagline:'The Dragon God',     why:'[เหตุผลที่คุณคู่กับ Ryuu เพศชาย]',   compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] },
-    female: { image:'', tagline:'The Dragon Goddess', why:'[เหตุผลที่คุณคู่กับ Ryuu เพศหญิง]', compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] }
+    male:   { image:'', tagline:'The Dragon God',   compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] },
+    female: { image:'', tagline:'The Dragon Goddess', compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] }
   },
   Kitsune: {
     house:'purple', mbti:'ENTP', emoji:'🦊', name:'Kitsune', title:'จิ้งจอกเก้าหาง', dollImage:'',
+    why: 'คนที่ใครๆ ก็พึ่ง มักลืมว่าอยู่กับใครโดยไม่ต้องคอยเอาใจก็ได้ Kitsune ไม่แบกแทนคุณ เขาหยอก เขาถามกลับ จนคุณเห็นเองว่าหลายอย่างที่แบกอยู่วางลงได้ ส่วนใหญ่คุณสองคนชอบคิดไปพูดไป และกล้าลองทางที่ยังไม่รู้ปลาย',
     memory: {
       e1: 'ฮิฮิ กระดิ่งน่ะข้าซ่อนเอง ถ้าคืนนี้ไม่มีเสียงเรียก เจ้าจะหลับลงไหมล่ะ',
       e2: 'ฮิฮิ ร่มกองนั้นมาทายกับข้าไหมว่าคันไหนของใคร ทายผิดก็ไม่มีใครว่าหรอก',
@@ -1512,19 +1517,21 @@ const YOKAI_DATA = {
       JP: 'ข้าคิดได้เก้าทาง เจ้าชี้ทางเดียวก็จบเรื่อง เข้าคู่กันดีไหมล่ะ',
       EI: 'เวลาเจ้านั่งดูเงียบๆ ข้าก็ซนได้ทั้งคืน ซนจนเหนื่อยเมื่อไหร่ ก็กลับมานอนข้างเจ้า'
     },
-    male:   { image:'', tagline:'The Nine-Tailed Fox', why:'[เหตุผลที่คุณคู่กับ Kitsune เพศชาย]',   compat:[{label:'Wit & Banter',value:95},{label:'Curiosity',value:86},{label:'Stability',value:34}] },
-    female: { image:'', tagline:'The Nine-Tailed Fox', why:'[เหตุผลที่คุณคู่กับ Kitsune เพศหญิง]', compat:[{label:'Wit & Banter',value:95},{label:'Curiosity',value:86},{label:'Stability',value:34}] }
+    male:   { image:'', tagline:'The Nine-Tailed Fox',   compat:[{label:'Wit & Banter',value:95},{label:'Curiosity',value:86},{label:'Stability',value:34}] },
+    female: { image:'', tagline:'The Nine-Tailed Fox', compat:[{label:'Wit & Banter',value:95},{label:'Curiosity',value:86},{label:'Stability',value:34}] }
   },
 
   // ── Green · Diplomats (NF) ───────────────────────────────────
   Shinigami: {
     house:'green', mbti:'INFJ', emoji:'💀', name:'Shinigami', title:'ยมทูต', dollImage:'',
+    why: null,
     memory: null, near: null,
-    male:   { image:'', tagline:'The Soul Guide', why:'[เหตุผลที่คุณคู่กับ Shinigami เพศชาย]',   compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] },
-    female: { image:'assets/yokai/shinigami_f.png', tagline:'The Soul Guide', why:'[เหตุผลที่คุณคู่กับ Shinigami เพศหญิง]', compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] }
+    male:   { image:'', tagline:'The Soul Guide',   compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] },
+    female: { image:'assets/yokai/shinigami_f.png', tagline:'The Soul Guide', compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] }
   },
   Yukionna: {
     house:'green', mbti:'INFP', emoji:'❄️', name:'Yukionna', title:'ปีศาจหิมะ', dollImage:'',
+    why: 'บางเรื่องในใจคุณอยากให้มีใครเห็น โดยไม่ต้องรื้อออกมาวางให้ดู Yukionna ไม่ซอกแซก เขาเปิดมุมเปราะบางของตัวเองให้คุณเห็นก่อน แล้วค่อยขยับเข้าใกล้เมื่อคุณพร้อม หลายครั้งคุณสองคนชอบคิดอยู่ในใจเงียบๆ ปล่อยให้สิ่งที่ถูกใจค่อยๆ ชัดขึ้นเอง',
     memory: {
       e1: 'สมุดเล่มนั้น ข้าไม่ขอเปิดหรอก… ข้าเองก็มีอยู่เล่มหนึ่ง ถ้าเจ้าอยากดู ข้าให้ดูก่อนก็ได้',
       e2: 'ชาถ้วยนั้นร้อนเกินมือข้าไปหน่อย… ฟู่… ข้าจะค่อยๆ จิบจนหมดเลยนะ',
@@ -1536,11 +1543,12 @@ const YOKAI_DATA = {
       JP: 'เจ้าน่ะ ทำอะไรก็ทำจนจบ… ข้าเห็นแล้วก็อยากปั้นตุ๊กตาหิมะให้เสร็จสักตัวบ้าง',
       EI: 'เวลาเจ้าเดินมาทักก่อน… ข้าถึงได้พูดคำแรกของวัน เสียงแหบหน่อยนะ อย่าหัวเราะล่ะ'
     },
-    male:   { image:'', tagline:'The Snow Spirit', why:'[เหตุผลที่คุณคู่กับ Yukionna เพศชาย]',   compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] },
-    female: { image:'assets/yokai/yukionna_f.png', tagline:'The Snow Spirit', why:'[เหตุผลที่คุณคู่กับ Yukionna เพศหญิง]', compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] }
+    male:   { image:'', tagline:'The Snow Spirit',   compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] },
+    female: { image:'assets/yokai/yukionna_f.png', tagline:'The Snow Spirit', compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] }
   },
   Oni: {
     house:'green', mbti:'ENFJ', emoji:'👹', name:'Oni', title:'ยักษ์โอนิ', dollImage:'',
+    why: 'ในตัวคุณมีของดีที่ยังไม่มีใครเดินไปถึง Oni ไม่ปล่อยให้มันอยู่ในมุมมืด เขาพามันออกมาให้คนอื่นได้เห็น บอกชัดๆ ว่าเป็นของคุณ แล้วยืนข้างคุณต่อหน้าทุกคน หลายครั้งคุณสองคนพอใจอะไรก็พูดออกมาเลย และอยากพาคนที่มาด้วยไปให้ถึงที่ตั้งใจ',
     memory: {
       e1: 'เล่าเรื่องในสมุดเล่มนั้นให้ข้าฟังสักเรื่องสิ ข้าแบกโต๊ะมาให้เจ้าขึ้นยืนเล่าแล้วนะ',
       e2: 'ฮ่าๆๆ ชาที่เจ้ารินไว้ ข้ายกดื่มเป็นคนแรกแล้ว ใครถามว่าฝีมือใคร ข้าจะชี้มาที่เจ้า',
@@ -1552,19 +1560,21 @@ const YOKAI_DATA = {
       JP: 'คนอย่างเจ้า คงลากข้าเข้าวงรำก่อนข้าได้กล่าวเปิดงาน ฮ่าๆๆ ก็ดี สนุกกว่าตั้งเยอะ',
       EI: 'เวลาเจ้านิ่งคิด ยักษ์เสียงดังอย่างข้าก็ยอมปิดปากรอ คำที่เจ้าพูดออกมาทีหลังน่ะ ดีทุกคำ'
     },
-    male:   { image:'assets/yokai/oni_m.png', tagline:'The Iron Guardian', why:'[เหตุผลที่คุณคู่กับ Oni เพศชาย]',   compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] },
-    female: { image:'assets/yokai/oni_f.png', tagline:'The Iron Guardian', why:'[เหตุผลที่คุณคู่กับ Oni เพศหญิง]', compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] }
+    male:   { image:'assets/yokai/oni_m.png', tagline:'The Iron Guardian',   compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] },
+    female: { image:'assets/yokai/oni_f.png', tagline:'The Iron Guardian', compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] }
   },
   Tanuki: {
     house:'green', mbti:'ENFP', emoji:'🍃', name:'Tanuki', title:'ทานุกิ', dollImage:'',
+    why: null,
     memory: null, near: null,
-    male:   { image:'assets/yokai/tanuki_m.png', tagline:'The Shapeshifting Tanuki', why:'[เหตุผลที่คุณคู่กับ Tanuki เพศชาย]',   compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] },
-    female: { image:'assets/yokai/RYO_tanukiFall.mp4', tagline:'The Shapeshifting Tanuki', why:'Because you overthink and carry too much weight on your shoulders. She is the chaotic sunshine who will break down your walls, teach you to let go, and heal your heart when you\'re exhausted.', compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] }
+    male:   { image:'assets/yokai/tanuki_m.png', tagline:'The Shapeshifting Tanuki',   compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] },
+    female: { image:'assets/yokai/RYO_tanukiFall.mp4', tagline:'The Shapeshifting Tanuki', compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] }
   },
 
   // ── Blue · Sentinels (SJ) ────────────────────────────────────
   Tengu: {
     house:'blue', mbti:'ISTJ', emoji:'👺', name:'Tengu', title:'เทนกุ', dollImage:'',
+    why: 'ใจคุณมองหาสิ่งดีๆ ที่พรุ่งนี้ยังอยู่ตรงเดิม Tengu ไม่ใช่คนพูดหวาน เขาทำเรื่องเล็กๆ เรื่องเดิมซ้ำไปเรื่อยๆ จนคุณพึ่งได้ และจำแม่นว่าคุณชอบอะไร หลายครั้งคุณสองคนขอคิดในใจก่อนพูด และอยากเห็นกับตาว่ามั่นคงจริงก่อนจะวางใจ',
     memory: {
       e1: 'เครื่องรางนั้นห้อยอยู่ซ้ายมือเจ้าทุกวัน ข้าจำได้ ต่อไปข้าก็ยืนอยู่ซ้ายมือเจ้า ที่เดิม',
       e2: 'หึ กลอนประตูนั้นข้าตรวจก่อนนอนเสมอ หลับเถอะ',
@@ -1576,23 +1586,26 @@ const YOKAI_DATA = {
       TF: 'เจ้าน่ะ เห็นแขกหน้าเศร้าทีไร ก็แอบวางขนมเกินให้ ข้าเห็นนะ ข้าก็วางเกินตามไปชิ้นหนึ่ง',
       EI: 'เวลาเจ้าคว้ามือข้าวิ่งไปก่อน ข้าผูกเกี๊ยะไม่ทันทุกที หึ ข้างเดียวก็ลงเขาได้'
     },
-    male:   { image:'assets/yokai/tengu_m.png', tagline:'The Mountain Sentinel', why:'[เหตุผลที่คุณคู่กับ Tengu เพศชาย]',   compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] },
-    female: { image:'assets/yokai/tengu_f.png', tagline:'The Mountain Sentinel', why:'[เหตุผลที่คุณคู่กับ Tengu เพศหญิง]', compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] }
+    male:   { image:'assets/yokai/tengu_m.png', tagline:'The Mountain Sentinel',   compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] },
+    female: { image:'assets/yokai/tengu_f.png', tagline:'The Mountain Sentinel', compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] }
   },
   Ningyo: {
     house:'blue', mbti:'ISFJ', emoji:'🧜', name:'Ningyo', title:'เงือกญี่ปุ่น', dollImage:'',
+    why: null,
     memory: null, near: null,
-    male:   { image:'', tagline:'The Eternal Mermaid', why:'[เหตุผลที่คุณคู่กับ Ningyo เพศชาย]',   compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] },
-    female: { image:'assets/yokai/ningyo_f.png', tagline:'The Eternal Mermaid', why:'[เหตุผลที่คุณคู่กับ Ningyo เพศหญิง]', compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] }
+    male:   { image:'', tagline:'The Eternal Mermaid',   compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] },
+    female: { image:'assets/yokai/ningyo_f.png', tagline:'The Eternal Mermaid', compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] }
   },
   Jorogumo: {
     house:'blue', mbti:'ESTJ', emoji:'🕸️', name:'Jorogumo', title:'ปีศาจแมงมุม', dollImage:'',
+    why: null,
     memory: null, near: null,
-    male:   { image:'', tagline:'The Spider Enchantress', why:'[เหตุผลที่คุณคู่กับ Jorogumo เพศชาย]',   compat:[{label:'Command',value:94},{label:'Dependability',value:89},{label:'Flexibility',value:30}] },
-    female: { image:'', tagline:'The Spider Enchantress', why:'[เหตุผลที่คุณคู่กับ Jorogumo เพศหญิง]', compat:[{label:'Command',value:94},{label:'Dependability',value:89},{label:'Flexibility',value:30}] }
+    male:   { image:'', tagline:'The Spider Enchantress',   compat:[{label:'Command',value:94},{label:'Dependability',value:89},{label:'Flexibility',value:30}] },
+    female: { image:'', tagline:'The Spider Enchantress', compat:[{label:'Command',value:94},{label:'Dependability',value:89},{label:'Flexibility',value:30}] }
   },
   Inugami: {
     house:'blue', mbti:'ESFJ', emoji:'🐕', name:'Inugami', title:'เทพสุนัข', dollImage:'',
+    why: 'สิ่งที่ใจคุณอยากรู้ คือมีใครอยู่ตรงนี้จริงๆ ในตอนนี้ Inugami ตอบด้วยการอยู่ให้เห็น ถามถึงข้าวถึงผ้าห่มก่อนเรื่องอื่น แล้วขยับมานั่งชิดโดยไม่รอให้คุณเอ่ยปาก ส่วนใหญ่คุณก็เหมือนเขา ห่วงใครก็ถามออกไปตรงๆ',
     memory: {
       e1: 'ฟุดฟิด เครื่องรางนั้นมีกลิ่นเจ้าติดอยู่ ข้าหาเจอแน่ ต่อไปของสำคัญ ข้าจำไว้ให้เอง',
       e2: 'ลมกระแทกประตูทีไร ข้าก็เห่าใส่มันทีนั้น เห็นไหม มันเงียบไปแล้ว มานั่งพิงข้านะ',
@@ -1604,13 +1617,14 @@ const YOKAI_DATA = {
       TF: 'ข้ามัวห่วงคนอื่นจนลืมกินทุกที เจ้าก็วางชามตรงหน้า บอกคำเดียวว่ากิน ข้าก็กินเกลี้ยงเลยนะ',
       EI: 'เวลาเจ้าขอนั่งดูเงียบๆ ข้าก็หมอบลงข้างๆ หางยังกระดิกอยู่เลย แบบนี้ก็อยู่ด้วยกันเหมือนกันนะ'
     },
-    male:   { image:'assets/yokai/inugami_m.png', tagline:'The Spirit Hound', why:'[เหตุผลที่คุณคู่กับ Inugami เพศชาย]',   compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] },
-    female: { image:'assets/yokai/inugami_f.png', tagline:'The Spirit Hound', why:'[เหตุผลที่คุณคู่กับ Inugami เพศหญิง]', compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] }
+    male:   { image:'assets/yokai/inugami_m.png', tagline:'The Spirit Hound',   compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] },
+    female: { image:'assets/yokai/inugami_f.png', tagline:'The Spirit Hound', compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] }
   },
 
   // ── Yellow · Explorers (SP) ──────────────────────────────────
   Nekomata: {
     house:'yellow', mbti:'ISTP', emoji:'🐈‍⬛', name:'Nekomata', title:'แมวปีศาจสองหาง', dollImage:'',
+    why: 'ใจที่เร่งตัวเองไว้ก่อน ราวเข็มนาฬิกาที่เดินเร็วกว่าเวลาจริง ได้พักเมื่ออยู่กับ Nekomata เขาแก้ให้แค่จุดที่ใช้ไม่ได้จริงๆ แล้วถอยไป ส่วนที่เบี้ยวนิดหน่อยก็ปล่อยไว้ ให้คุณได้วางมือบ้าง หลายครั้งคุณสองคนชอบนั่งคิดเงียบๆ ว่าอะไรทำให้ของสักชิ้นใช้ได้จริง',
     memory: {
       e1: 'หาววว นาฬิกานั่นเร็วไปห้านาที ข้าเขี่ยเข็มกลับให้แล้ว งีบต่อได้',
       e2: 'รองเท้าพวกนั้น ข้าเขี่ยแค่คู่ที่ขวางทางออก ที่เหลือช่างมัน แค่นี้ก็พอ',
@@ -1622,23 +1636,26 @@ const YOKAI_DATA = {
       TF: 'เรื่องทำให้ใครยิ้ม ข้าทำไม่เป็น เจ้าทำไปเลย ข้าชอบนั่งดู',
       EI: 'เวลาเจ้าดึงข้าเข้าไปด้วย แมวที่ชอบนอนในเงาอย่างข้า ก็ได้ออกไปนอนตากแดดบ้าง'
     },
-    male:   { image:'assets/yokai/nekomata_m.png', tagline:'The Twin-Tailed Cat Demon', why:'[เหตุผลที่คุณคู่กับ Nekomata เพศชาย]',   compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] },
-    female: { image:'assets/yokai/nekomata_f.png', tagline:'The Twin-Tailed Cat Demon', why:'[เหตุผลที่คุณคู่กับ Nekomata เพศหญิง]', compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] }
+    male:   { image:'assets/yokai/nekomata_m.png', tagline:'The Twin-Tailed Cat Demon',   compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] },
+    female: { image:'assets/yokai/nekomata_f.png', tagline:'The Twin-Tailed Cat Demon', compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] }
   },
   Hebi: {
     house:'yellow', mbti:'ISFP', emoji:'🐍', name:'Hebi', title:'ปีศาจงูขาว', dollImage:'',
+    why: null,
     memory: null, near: null,
-    male:   { image:'assets/yokai/hebi_m.png', tagline:'The White Serpent', why:'[เหตุผลที่คุณคู่กับ Hebi เพศชาย]',   compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] },
-    female: { image:'', tagline:'The White Serpent', why:'[เหตุผลที่คุณคู่กับ Hebi เพศหญิง]', compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] }
+    male:   { image:'assets/yokai/hebi_m.png', tagline:'The White Serpent',   compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] },
+    female: { image:'', tagline:'The White Serpent', compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] }
   },
   Raijin: {
     house:'yellow', mbti:'ESTP', emoji:'⚡', name:'Raijin', title:'เทพสายฟ้า', dollImage:'',
+    why: null,
     memory: null, near: null,
-    male:   { image:'assets/yokai/raijin_m.png', tagline:'The God of Thunder',     why:'[เหตุผลที่คุณคู่กับ Raijin เพศชาย]',   compat:[{label:'Electric Energy',value:95},{label:'Thrill',value:88},{label:'Patience',value:24}] },
-    female: { image:'', tagline:'The Goddess of Thunder', why:'[เหตุผลที่คุณคู่กับ Raijin เพศหญิง]', compat:[{label:'Electric Energy',value:95},{label:'Thrill',value:88},{label:'Patience',value:24}] }
+    male:   { image:'assets/yokai/raijin_m.png', tagline:'The God of Thunder',   compat:[{label:'Electric Energy',value:95},{label:'Thrill',value:88},{label:'Patience',value:24}] },
+    female: { image:'', tagline:'The Goddess of Thunder', compat:[{label:'Electric Energy',value:95},{label:'Thrill',value:88},{label:'Patience',value:24}] }
   },
   Fuujin: {
     house:'yellow', mbti:'ESFP', emoji:'🌪️', name:'Fuujin', title:'เทพวายุ', dollImage:'',
+    why: 'สำหรับใจที่พักไม่ลงจนกว่าทุกอย่างจะเรียบร้อย Fuujin ชวนคุณออกไปวิ่ง โยนของ นอนดูเมฆ จนลืมนับว่าอะไรยังไม่เป๊ะ หลายครั้งคุณสองคนดีใจก็ออกท่าออกทาง แล้วชวนคนรอบข้างมาร่วมวงด้วย',
     memory: {
       e1: 'ห้านาทีที่ได้คืนมา เอามานอนนับเมฆกับข้า!',
       e2: 'รองเท้าเกลื่อนขนาดนี้ มาแข่งโยนเข้าชั้นกันดีกว่า ใครเข้าก่อนชนะ!',
@@ -1650,8 +1667,8 @@ const YOKAI_DATA = {
       TF: 'เจ้าน่ะ ต้องรู้ก่อนว่าว่าวลอยได้เพราะอะไร แล้วผูกสายจนแน่น ว่าวแบบนั้น ข้าพัดแรงแค่ไหนก็ไม่หลุด!',
       EI: 'เวลาเจ้าหยุดดูทางก่อนก้าว ข้าก็หยุดพัดด้วย ใบไม้ค่อยๆ ร่วงลงมา ข้าชอบดูตอนนั้นที่สุด!'
     },
-    male:   { image:'', tagline:'The Wind God',     why:'[เหตุผลที่คุณคู่กับ Fuujin เพศชาย]',   compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] },
-    female: { image:'assets/yokai/fuujin_f.png', tagline:'The Wind Goddess', why:'[เหตุผลที่คุณคู่กับ Fuujin เพศหญิง]', compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] }
+    male:   { image:'', tagline:'The Wind God',   compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] },
+    female: { image:'assets/yokai/fuujin_f.png', tagline:'The Wind Goddess', compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] }
   }
 
 };

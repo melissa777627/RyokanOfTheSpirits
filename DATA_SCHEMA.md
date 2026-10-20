@@ -70,6 +70,9 @@ const YOKAI_DATA = {
     title:   'เทพแห่งปัญญา',
     dollImage: '',            // ตุ๊กตาไล่ฝนประจำตัว (ทั้งสองเพศใช้รูปเดียว) — ว่าง = ยังไม่มีรูป, หน้า result โชว์เฉพาะตุ๊กตาผู้เล่น
 
+    why: '...',               // "Why you matched" — ผู้บรรยายพูดกับผู้เล่น (คุณ) ใช้ร่วมทั้งสองเพศ · null = ยังไม่เขียน → ซ่อนหัวข้อนี้
+                              // ห้ามอ้างช้อยข้อเดียวเป็นข้อเท็จจริง (ไม่มีช้อยไหนที่ทุกคนในบ้านเลือกแน่) · ความคล้ายต้องไม่เด็ดขาด (บท near อาจโชว์อีกด้าน)
+
     // คำพูดเฉพาะผู้เล่น — ใช้ร่วมทั้งสองเพศ (ข้า/เจ้า ไม่บอกเพศ) · ดู Section 9
     // null = ยังไม่เขียน (ทยอยทำ) → หน้า result ไม่แสดงส่วนนี้ · ถ้ามี object ต้องครบทุก key ไม่งั้น throw
     memory: {                 // ชั้น A "ความทรงจำคืนพายุ" — 1 บรรทัดต่อข้อ = ช้อยของบ้านนี้ในข้อนั้น
@@ -84,7 +87,6 @@ const YOKAI_DATA = {
     male: {
       image:       'assets/yokai/tenjin_m.png',   // รองรับ .gif / .webm / .mp4
       tagline:     'The God of Knowledge',
-      why:         '...',
       compat: [
         { label: 'Intellectual Bond', value: 97 },
         { label: 'Passion',           value: 58 },
@@ -374,7 +376,7 @@ function getResult() {
     title:   yokai.title,
     image:   yokai[gender].image,
     tagline: yokai[gender].tagline,
-    why:     yokai[gender].why,
+    why:     yokai.why,
     compat:  yokai[gender].compat,
     memory:  yokai.memory ? pickMemoryLine() : '',   // ชั้น A
     near:    yokai.near   ? pickNearLines()  : []    // ชั้น B (0–2 บรรทัด)

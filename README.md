@@ -59,7 +59,11 @@ assets/
 
 | ไฟล์ | ใช้งาน |
 |---|---|
-| `hero_art.png` | Landing page art banner (full-bleed) |
+| `hero/hero.jpg` | Landing page art banner (full-bleed) · 1080px wide JPEG, crop จาก center top |
+| `quiz/cloud_bg.png` | พื้นหลังเมฆญี่ปุ่น + ลาย asanoha — view-quiz และ view-result |
+| `fx/rain_ripples_glow.webp` | วงคลื่นฝน (animated WebP พื้นใส 1280×720, 48 เฟรม 4s loop, 3.9MB) — reveal หลังวาดตุ๊กตา E7 · เส้นขาว ใช้บนพื้นมืดเท่านั้น · จากชุด effect ของเจ้าของ (มีสิทธิ์ใช้) |
+| `quiz/cloud_bg.png` | พื้นหลังทุกอีเวนต์คำถาม E1–E10 (`#view-quiz`) · 750×1334 เมฆญี่ปุ่นบนลาย asanoha โทนครีม |
+| `doll/teru_body.png` | ตุ๊กตาไล่ฝน (หน้าว่าง) สำหรับ view-doll · 1000×1000 พื้นใส · หน้า = วงกลม center (482,386) r≈168 — ระบายได้เฉพาะพิกเซลสีหน้า |
 | `seigaiha.svg` | Seigaiha (鱗) scale pattern — overlay opacity 0.18 |
 | `ornament_divider.svg` | Gold line + ✦ + line divider |
 | `logo.png` | App logo (ถ้ามี) |

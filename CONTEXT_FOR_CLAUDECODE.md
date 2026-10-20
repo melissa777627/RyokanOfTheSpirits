@@ -163,6 +163,11 @@ Full guide → `assets/README.md`.
 | `journeyStep()` | Progress step 1–11 |
 | `initBento()` → `dismissBentoIntro()` → `showBentoQuestion()` | Bento: lead narration → intro → pop-up Q first |
 | `confirmBentoChoice()` / `onBentoContinue()` | Records Bento answer → arrange phase → afterArrange → quiz E6 |
+| `dollOrder(q)` | `'before'` / `'after'` / null — when view-doll runs around E7 for this house |
+| `startDoll(storyText, onDone)` / `finishDoll()` → `revealDoll()` | Opens view-doll (intro card first), saves `state.dollImage`, plays the reveal, then continues the flow |
+| `resetSceneIntro` / `showSceneIntro` / `dismissSceneIntro` | Shared intro card (Bento + Doll) |
+| `fadeThrough(fn)` | Black curtain down → run fn → curtain up |
+| `initDollCanvas()` | Builds the face mask from `teru_body.png`, wires pointer drawing, palette, sizes, undo/clear, color wheel |
 
 ---
 

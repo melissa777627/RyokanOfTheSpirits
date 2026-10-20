@@ -17,6 +17,11 @@
   --surface-lowest:    #EFE0C0;
   --on-surface:        #1A120A;
   --outline-variant:   rgba(26,18,10,0.15);
+  --ink-green:         #2D7A4F;   /* doll palette */
+  --ink-gold:          #B58A00;   /* doll palette */
+  --ink-brown:         #6B4A35;   /* narration text — softer than --on-surface */
+  --rain-dusk:         #5B6B7A;   /* rainy-night blue-grey (E7 doll scene) */
+  --rain-dusk-deep:    #3B4856;
   --shadow-ambient:    0 8px 32px rgba(26,18,10,0.06);
   --shadow-float:      0 8px 40px rgba(26,18,10,0.10);
   --font-display:      'Kaisei Decol', Georgia, serif;
@@ -120,8 +125,8 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 .art-section {
   position: relative;
   width: 100%;
-  height: 60dvh;
-  min-height: 300px;
+  height: 70dvh;
+  min-height: 340px;
   overflow: hidden;
 }
 
@@ -150,11 +155,15 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   user-select: none;
 }
 
-/* Gradient fade — art into bg */
+/* Gradient fade — art into bg, gentle so the art shows behind eyebrow/title */
 .art-fade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent 35%, var(--bg) 90%);
+  background: linear-gradient(to bottom,
+    transparent 40%,
+    color-mix(in srgb, var(--bg) 45%, transparent) 68%,
+    color-mix(in srgb, var(--bg) 82%, transparent) 86%,
+    var(--bg) 100%);
   pointer-events: none;
 }
 
@@ -194,6 +203,8 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 /* Hero content */
 .hero-content {
   position: relative;
+  z-index: 1;
+  margin-top: -140px;   /* overlap the faded bottom of the art */
   padding: 4px 28px 40px;
   text-align: center;
 }
@@ -336,14 +347,12 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   animation: stampPress 0.45s cubic-bezier(0.22, 1, 0.36, 1) 1.05s forwards;
 }
 
-/* Bento intro title wrapper — frosted white + stamp anchor */
-.bento-intro-title-wrap {
+/* Frosted white band behind text — scene intro cards + narration */
+.frost-band {
   position: relative;
-  padding: 20px 36px;
-  opacity: 0;
-  animation: bentoIntroFadeIn 0.7s ease 0.1s forwards;
+  isolation: isolate;
 }
-.bento-intro-title-wrap::before {
+.frost-band::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -352,7 +361,14 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   border-radius: 6px;
   z-index: -1;
 }
-.bento-intro-title-wrap .sakura-stamp {
+
+/* Scene intro title wrapper — stamp anchor */
+.scene-intro-title-wrap {
+  padding: 20px 36px;
+  opacity: 0;
+  animation: bentoIntroFadeIn 0.7s ease 0.1s forwards;
+}
+.scene-intro-title-wrap .sakura-stamp {
   bottom: -22px;
   right: 20px;
   top: auto;
@@ -812,39 +828,38 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
    7. VIEW: QUIZ
 ════════════════════════════════════════ */
 
+/* Cloud BG — every question event E1–E10 */
+#view-quiz {
+  background: url('assets/ui/quiz/cloud_bg.png') center center / cover no-repeat, var(--bg);
+}
+
 /* Stage 1 base */
 #view-quiz.quiz-stage1 {
   overflow: hidden;
 }
 
-/* E3 ฟ้าผ่า only — lamp BG image + glassmorphism */
-#view-quiz.quiz-lamp-scene {
-  background: url('assets/ui/event1_lamp/Phone_size_Bg.PNG') center center / cover no-repeat;
-}
-#view-quiz.quiz-lamp-scene .quiz-story-box {
+/* E3 ฟ้าผ่า only — glassmorphism */
+#view-quiz.quiz-glass-scene .quiz-story-box {
   background: rgba(255, 255, 255, 0.48);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: none;
 }
-#view-quiz.quiz-lamp-scene .choice-btn {
+#view-quiz.quiz-glass-scene .choice-btn {
   background: rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-color: rgba(255, 255, 255, 0.3);
   box-shadow: none;
 }
-#view-quiz.quiz-lamp-scene .choice-text {
+#view-quiz.quiz-glass-scene .choice-text {
   color: #1a1a1a;
   text-shadow: none;
   background: transparent;
 }
-#view-quiz.quiz-lamp-scene .quiz-next-wrap {
-  background: transparent;
-}
 
 /* E3 — black overlay fades out revealing BG (position:fixed covers all) */
-#view-quiz.quiz-lamp-scene.quiz-vn-enter::before {
+#view-quiz.quiz-glass-scene.quiz-vn-enter::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -1032,7 +1047,6 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   display: flex;
   justify-content: flex-end;
   padding: 12px 20px 24px;
-  background: linear-gradient(to top, var(--bg) 60%, transparent);
   pointer-events: none;
 }
 .quiz-next-wrap .btn-gender-next {
@@ -1056,7 +1070,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 }
 
 /* Glassmorphism intro overlay */
-.bento-intro {
+.scene-intro {
   position: absolute;
   inset: 0;
   z-index: 200;
@@ -1071,9 +1085,26 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   cursor: pointer;
   border-radius: inherit;
 }
-.bento-intro { transition: opacity 0.45s ease; }
-.bento-intro.hidden { opacity: 0; pointer-events: none; }
-.bento-intro-title {
+.scene-intro { transition: opacity 0.45s ease; }
+
+/* Rainy variant — gloomy blue-grey sky (E7 doll intro) */
+.scene-intro--rain {
+  background: linear-gradient(to bottom, var(--rain-dusk-deep), var(--rain-dusk));
+}
+.scene-intro--rain .scene-intro-title,
+.scene-intro--rain .scene-intro-tap { color: var(--bg); }
+/* Full-strength text on the dark sky (base card stops at 55% opacity) */
+.scene-intro--rain .scene-intro-title-wrap { animation-name: sceneIntroFadeInFull; }
+.scene-intro--rain .scene-intro-title { text-shadow: 0 2px 14px color-mix(in srgb, var(--on-surface) 45%, transparent); }
+@keyframes sceneIntroFadeInFull {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.scene-intro--rain .frost-band::before {
+  background: color-mix(in srgb, var(--bg) 14%, transparent);
+}
+.scene-intro.hidden { opacity: 0; pointer-events: none; }
+.scene-intro-title {
   font-family: var(--font-display);
   font-size: 2rem;
   line-height: 1.25;
@@ -1082,7 +1113,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   letter-spacing: 0.02em;
   opacity: 1;
 }
-.bento-intro-tap {
+.scene-intro-tap {
   font-family: var(--font-kanji);
   font-size: 0.65rem;
   letter-spacing: 0.3em;
@@ -1121,8 +1152,54 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   line-height: 1.95;
   color: var(--on-surface);
   text-align: center;
-  white-space: pre-line;
   max-width: 360px;
+  padding: 22px 26px;
+}
+.narration-line { margin: 0 0 12px; color: var(--ink-brown); }
+.narration-line:last-child { margin-bottom: 0; }
+/* Dialogue — set apart and fades in slowly */
+.narration-line--speech {
+  margin: 18px 0;
+  font-size: 1.04rem;
+  font-weight: 700;
+  color: var(--secondary);
+  letter-spacing: 0.01em;
+  opacity: 0;
+  transform: translateY(6px);
+  filter: blur(3px);
+  animation: narrationSpeechIn 1.1s ease forwards;
+}
+.narration-line--speech.shown { animation: none; opacity: 1; transform: none; filter: none; }
+/* The player's own chosen line */
+.narration-line--player { color: var(--primary); }
+
+/* Reply options — Choice button style (DESIGN_SYSTEM §5) */
+.narration-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 18px 0 4px;
+  animation: narrationSpeechIn 0.6s ease forwards;
+  opacity: 0;
+}
+.narration-reply-btn {
+  width: 100%;
+  padding: 12px 18px;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink-brown);
+  background: var(--surface-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow-ambient);
+  transition: background 0.15s, transform 0.15s;
+}
+.narration-reply-btn::before { content: '◆ '; color: var(--primary); font-size: 0.7rem; }
+.narration-reply-btn:hover { background: var(--surface-low); transform: scale(1.02); }
+@keyframes narrationSpeechIn {
+  to { opacity: 1; transform: none; filter: none; }
 }
 .narration-tap {
   font-family: var(--font-kanji);
@@ -1520,6 +1597,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   overflow-y: auto;
 }
 
+
 /* Art section */
 .result-art-section {
   position: relative;
@@ -1527,12 +1605,12 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   height: 60dvh;
   min-height: 280px;
   overflow: hidden;
-  background: var(--house-tint, rgba(176,43,43,0.07));
 }
+/* House tint behind the yokai, fading to plain --bg at the bottom so it meets the clouds' blend */
 .result-art-bg {
   position: absolute;
   inset: 0;
-  background: var(--house-tint, transparent);
+  background: linear-gradient(to bottom, var(--house-tint, transparent) 55%, transparent 100%);
 }
 .result-art-video,
 .result-art-img {
@@ -1555,22 +1633,25 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   line-height: 1;
   animation: kanjiBreath 5s ease-in-out infinite;
 }
-.result-art-fade {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 65%;
-  background: linear-gradient(to bottom, transparent 0%, var(--bg) 100%);
-  pointer-events: none;
-}
 
 /* Content */
 .result-content {
   padding: 0 24px 48px;
   position: relative;
   z-index: 1;
-  margin-top: -36px;
+  /* no negative margin: content must never cover the yokai art */
+  /* Same cloud backdrop as the question events — starts below the yokai art, never over it */
+  background: url('assets/ui/quiz/cloud_bg.png') center top / 100% auto repeat-y;
+}
+/* Soft blend from the plain art area into the clouds */
+.result-content::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 180px;
+  background: linear-gradient(to bottom, var(--bg), transparent);
+  pointer-events: none;
+  z-index: -1;
 }
 
 /* Identity */
@@ -1926,4 +2007,217 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   opacity: 0.25;
   line-height: 2;
   margin: 0;
+}
+
+/* ════════════════════════════════════════
+   VIEW: DOLL — E7 teru teru bozu face drawing
+════════════════════════════════════════ */
+/* Rainy-night backdrop for the whole drawing scene */
+#view-doll {
+  text-align: center;
+  padding-bottom: 24px;
+  overflow-x: hidden;   /* ripples are wider than the screen */
+  background-color: var(--rain-dusk);
+}
+#view-doll .bento-scene-kana,
+#view-doll .event-badge,
+#view-doll .bento-instruction { color: var(--bg); }
+#view-doll .bento-instruction { opacity: 0.7; }
+.doll-story-box p {
+  font-size: 0.85rem;
+  line-height: 1.8;
+  text-align: left;
+  opacity: 0.82;
+  white-space: pre-line;
+}
+.doll-stage {
+  position: relative;
+  width: min(72vw, 300px);
+  aspect-ratio: 1;
+  margin: 4px auto 0;
+}
+.doll-figure,
+.doll-body,
+.doll-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.doll-canvas {
+  touch-action: none;
+  cursor: crosshair;
+}
+
+/* Drawing content wrapper (hidden until the intro card is dismissed) */
+.doll-main.hidden { display: none; }
+
+/* Done → reveal: UI fades away, the doll drifts to center and holds */
+#view-doll .doll-main > :not(.doll-stage) { transition: opacity 0.8s ease; }
+#view-doll .doll-stage {
+  transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.45s;
+}
+#view-doll.doll-reveal .doll-main > :not(.doll-stage) { opacity: 0; pointer-events: none; }
+#view-doll.doll-reveal .doll-stage {
+  transform: translateY(var(--reveal-shift, 0)) scale(1.18);
+}
+
+/* The night deepens behind the doll */
+#view-doll { transition: background-color 1.4s ease 0.8s; }
+#view-doll.doll-reveal { background-color: var(--rain-dusk-deep); }
+
+/* Glow eases in after Done — starts from a zero-strength glow so it interpolates (no pop) */
+.doll-figure {
+  filter: drop-shadow(0 0 22px color-mix(in srgb, var(--bg) 0%, transparent));
+  transition: filter 2s ease 1.2s;
+}
+#view-doll.doll-reveal .doll-figure {
+  filter: drop-shadow(0 0 22px color-mix(in srgb, var(--bg) 35%, transparent));
+}
+
+/* Rain-puddle ripples under the doll (white glow — only visible on the night background) */
+.doll-ripples {
+  position: absolute;
+  left: 50%;
+  top: 28%;
+  width: 190%;
+  transform: translateX(-44%);   /* source ripples lean left — nudge right */
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s ease 1.3s;
+}
+#view-doll.doll-reveal .doll-ripples { opacity: 0.9; }
+
+.doll-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 8px 20px 0;
+  padding: 14px 16px;
+  background: var(--surface-low);
+  border-radius: 1.5rem;
+}
+.doll-swatches {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.doll-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--outline-variant);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.doll-swatch.selected {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 2px var(--on-surface);
+}
+.doll-swatch-wheel {
+  background:
+    radial-gradient(circle at center, var(--custom-ink, transparent) 0 34%, transparent 36%),
+    conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+}
+.doll-tool-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.doll-sizes {
+  display: flex;
+  gap: 6px;
+  margin-right: 6px;
+}
+.doll-size {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-lowest);
+  border: 1px solid var(--outline-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.doll-size span {
+  display: block;
+  border-radius: 50%;
+  background: var(--on-surface);
+}
+.doll-size.selected { box-shadow: 0 0 0 2px var(--on-surface); }
+.doll-tool-btn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 3rem;
+  background: transparent;
+  border: 1px solid var(--outline-variant);
+  color: var(--secondary);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+}
+
+/* Color wheel — glass bottom panel */
+.doll-wheel-panel {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 24px calc(env(safe-area-inset-bottom, 0px) + 22px);
+  background: color-mix(in srgb, var(--surface-lowest) 80%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 2rem 2rem 0 0;
+  box-shadow: var(--shadow-float);
+  transform: translateY(105%);
+  transition: transform 0.35s ease;
+}
+.doll-wheel-panel.open { transform: translateY(0); }
+.doll-wheel {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  touch-action: none;
+}
+.doll-lightness {
+  width: 200px;
+  accent-color: var(--primary);
+}
+.doll-wheel-preview {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--outline-variant);
+}
+
+/* Result — player's doll paired with the yokai's doll */
+.result-dolls {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+}
+.result-doll {
+  margin: 0;
+  width: 132px;
+  text-align: center;
+}
+.result-doll img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--surface-low);
+  border-radius: 1.5rem;
+}
+.result-doll figcaption {
+  margin-top: 6px;
+  font-family: var(--font-kanji);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  opacity: 0.6;
 }

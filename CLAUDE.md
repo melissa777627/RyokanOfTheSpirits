@@ -131,6 +131,7 @@ view-landing  →  view-gender  →  view-quiz (Stage 1 · E1–E5)
 | `view-gender` | Event 0 · Gender | Mirror + 3 gender card buttons |
 | `view-quiz` | Quiz (Stage 1 & 2 shared) | Progress bar + scene label + story box + 4 choices |
 | `view-bento` | Bento Mini-Game | Intro (บทเชื่อมฟ้าสาง) → pop-up Q → drag & drop food → Continue → บทพูดของแขก |
+| `view-doll` | E7 Teru Teru Bozu | Intro card → วาดหน้าตุ๊กตาไล่ฝน (สีฟิกซ์ + วงล้อสี, 3 ความหนา, undo/clear) → Done reveal — cosmetic, ไม่มีผลคะแนน |
 | `view-loading` | Loading Screen | Kanji cycle + spirit orb (3–4 sec auto-advance) |
 | `view-result` | Result Page | Yokai + MBTI + why match + compat bars + gender toggle + Omikuji |
 
@@ -153,6 +154,11 @@ Pseudocode เต็ม → `DATA_SCHEMA.md` Section 5
 - 5 คำถาม ทุกข้อมี 4 ช้อย = 4 บ้านครบ · ช้อย: บ้านหลัก **+2**, บ้านสำรอง **+1** (`SECONDARY_HOUSE`: purple↔blue, green↔yellow)
 - Tie-break: บ้านหลักที่ถูกเลือกบ่อยสุด → บ้านหลักล่าสุดไล่ย้อนจาก E5 (ไม่ random)
 - `calcHouse()` เรียกทันทีหลังตอบ E5
+
+### E7 · วาดหน้าตุ๊กตาไล่ฝน (view-doll)
+- J/P (purple/green): ถาม E7 ก่อน → วาด · T/F (blue/yellow): วาดก่อน → ถาม (คำถาม T/F คือ "ตุ๊กตาเสร็จแล้ว แขวนตรงไหน")
+- ลำดับกำหนดใน `questions.js` → `yokai[2].doll = { JP: 'after', TF: 'before' }`
+- รูปที่วาดเก็บใน `state.dollImage` → หน้า result โชว์คู่กับตุ๊กตาประจำ Yokai (`YOKAI_DATA[x].dollImage`)
 
 ### Bento Intermission
 - pop-up คำถามขึ้น **ก่อน** ลากอาหาร · คำตอบ = Q แรกของ Stage 2
@@ -195,7 +201,8 @@ let state = {
 
   stage:         1,        // 1 = house sorting, 2 = yokai selection
   currentQ:      0,
-  bentoSelected: []
+  bentoSelected: [],
+  dollImage:     ''        // PNG dataURL ตุ๊กตาที่ผู้เล่นวาด (E7) — cosmetic
 };
 ```
 
@@ -236,19 +243,22 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 
 ### Art Banner — Full-bleed fade
 ```css
-/* รูปอาร์ตเต็มความกว้าง สูง ~55–60% หน้าจอ */
+/* รูปอาร์ตเต็มความกว้าง สูง ~70% หน้าจอ */
 .art-section { position: relative; }
 
 /* overlay fade ทับบนรูป */
 .art-fade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent 45%, #FDF6E3 90%);
+  background: linear-gradient(to bottom, transparent 40%,
+    color-mix(in srgb, var(--bg) 45%, transparent) 68%,
+    color-mix(in srgb, var(--bg) 82%, transparent) 86%, var(--bg) 100%);
   pointer-events: none;
 }
 ```
 - Nav ทับบนรูป (position absolute, z-index สูง)
-- ใช้ placeholder div ก่อน — เจ้าของใส่รูปจริงทีหลัง
+- รูปจริง: `assets/ui/hero/hero.jpg`
+- `.hero-content` ดึงขึ้นทับขอบล่างของรูป (`margin-top: -140px`) — ไล่สีนุ่มให้เห็นภาพหลัง eyebrow/title (เจ้าของขอ 2026-10-20)
 
 ### Hero Content (ต่อจาก fade)
 - Eyebrow: "✦ A Spirit Awaits ✦" (Noto Serif JP, gold, letter-spacing 4px)
@@ -273,7 +283,7 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 | `README.md` | ✅ | Asset naming guide + folder structure |
 | `.claude/agents/spirit-psychologist.md` | ✅ | Subagent: MBTI/psychometrics — เขียน/ตรวจ/จำลองคำถาม + เนื้อหาผลลัพธ์ (read-only, เสนอร่างเท่านั้น) |
 | `.claude/agents/ryokan-storyteller.md` | ✅ | Subagent: นักเขียนนิยายไทย — ขัดเกลาฉาก/ช้อย/บทพูดให้สละสลวย พีเรียดเบาๆ อ่านง่าย โดยไม่เปลี่ยนสิ่งที่คำถามวัด (read-only, เสนอร่างเท่านั้น) |
-| `assets/yokai/` | ⬜ | Yokai art — `{name}_{m|f}.png` × 32 |
+| `assets/yokai/` | 🔄 | Yokai art — `{name}_{m|f}.png` × 32 · มีแล้ว 16 + Tanuki_f (mp4) · ยังขาด: ♂ Tenjin Yumekui Ryuu Kitsune Shinigami Yukionna Ningyo Jorogumo Fuujin · ♀ Tenjin Ryuu Kitsune Jorogumo Hebi Raijin |
 | `assets/ui/` | ⬜ | hero_art, seigaiha, ornament_divider |
 | `assets/audio/` | ⬜ | BGM + SFX |
 | `index.html` | ✅ Step 1–2 | Shell + CSS tokens + Landing page |
@@ -304,4 +314,7 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 - [x] เขียน `questions.js` ใหม่ตาม DATA_SCHEMA §4 (ข้อความภาษาไทย 11 ข้อ + lead/afterArrange/outro)
 - [ ] แปลคำถามเป็น EN (ทีหลัง)
 - [x] UI: pop-up Bento ก่อนลากอาหาร, หน้าบรรยาย lead/outro (ดีไซน์ชั่วคราว), progress 11 ขั้น
-- [ ] E3 lamp BG: จุด progress + badge อ่านยากบนพื้นมืด · การ์ดช้อยยังไม่มีรูป
+- [ ] วาดหน้าตุ๊กตาไล่ฝน E7 (view-doll) + โชว์คู่บนหน้า result
+- [ ] รูปตุ๊กตาไล่ฝนประจำ Yokai 16 ตัว (`YOKAI_DATA[x].dollImage`)
+- [x] BG เมฆ `assets/ui/quiz/cloud_bg.png` ทุกอีเวนต์คำถาม (E3 เลิกใช้ภาพโคมไฟ เหลือแค่ glass)
+- [ ] การ์ดช้อยยังไม่มีรูป

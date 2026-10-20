@@ -27,6 +27,17 @@ Our palette is rooted in traditional Japanese pigments, balanced with soft, appr
   --surface-lowest:     #EFE0C0;          /* floating cards, choice buttons */
   --on-surface:         #1A120A;          /* body text — NEVER use pure black */
   --outline-variant:    rgba(26,18,10,0.15); /* ghost border fallback (a11y only) */
+
+  /* Doll ink — สีฟิกซ์ของหน้าวาดตุ๊กตา (มาจากสีบ้าน green/yellow ที่ใช้อยู่ในหน้า result) */
+  --ink-green:          #2D7A4F;
+  --ink-gold:           #B58A00;
+
+  /* Narration text — น้ำตาลนุ่ม แทนดำ (ดำโดดเกินบนแถบขาว) */
+  --ink-brown:          #6B4A35;
+
+  /* Rain dusk — ท้องฟ้าฝนอึมครึมสีเทาน้ำเงิน (ฉากตุ๊กตา E7: intro card + reveal) */
+  --rain-dusk:          #5B6B7A;
+  --rain-dusk-deep:     #3B4856;
 }
 ```
 
@@ -113,13 +124,44 @@ Depth is achieved through **Tonal Layering**, not structural shadows.
 ### Narration Overlay (`.narration`) — บทเชื่อมฉาก
 - ใช้กับ `lead` / `afterArrange` / `outro` ใน `questions.js` (1 string = 1 หน้า)
 - Full-screen fixed, `--bg` ทึบ (ไม่ให้เห็นคำถามข้างหลัง), กว้างไม่เกิน `--max-w`
-- ข้อความ: `--font-body`, 0.98rem, line-height 1.95, กึ่งกลาง, `white-space: pre-line`
-- Typewriter ทีละ grapheme (สระ/วรรณยุกต์ไทยไม่หลุด) · แตะครั้งแรก = แสดงครบ · แตะอีกครั้ง = หน้าถัดไป/ปิด
+- ข้อความ: `--font-body`, 0.98rem, line-height 1.95, กึ่งกลาง · มี `.frost-band` (แถบขาวเบลอหลังตัวอักษร แบบเดียวกับการ์ด Bento) ให้อ่านง่าย
+- **ขึ้นทีละบรรทัด** (1 บรรทัดใน string = 1 แตะ) บรรทัดก่อนหน้าค้างไว้บนจอ
+- บรรทัดบรรยาย: สี `--ink-brown`, typewriter ทีละ grapheme (สระ/วรรณยุกต์ไทยไม่หลุด)
+- ตัวเลือกตอบของผู้เล่น (`{ reply: [...] }`): ปุ่มแบบ Choice (`--surface-lowest`, ghost border, 1.5rem, ◆ สี `--primary`) — หน้าหยุดรอจนเลือก, แตะพื้นหลังไม่มีผล · เลือกแล้วกลายเป็นบรรทัดบทพูดสี `--primary` (`.narration-line--player`) · ไม่มีผลคะแนน
+- บรรทัดบทพูด (ขึ้นต้นด้วย `"`): `.narration-line--speech` ตัวหนา `--secondary` 1.04rem ค่อยๆ เฟดขึ้น 1.1s (opacity + blur + เลื่อนขึ้น)
+- แตะระหว่างกำลังขึ้น = แสดงครบทันที · แตะเมื่อครบ = บรรทัดถัดไป / หน้าถัดไป / ปิด
 - "— tap to continue —" (`--font-kanji`) โผล่หลังพิมพ์จบ
 - สถานะ: ดีไซน์ชั่วคราว รอเจ้าของเคาะ
 
-### Lamp Scene (`#view-quiz.quiz-lamp-scene`)
-- E3 ฟ้าผ่าเท่านั้น: BG `assets/ui/event1_lamp/` + story box / choice แบบ glass
+### Quiz BG (`#view-quiz`)
+- ทุกอีเวนต์คำถาม E1–E10 (Stage 1+2): ภาพเมฆญี่ปุ่นบนลาย asanoha `assets/ui/quiz/cloud_bg.png` (`cover`, ทับบน `--bg`) · Bento ใช้ BG ของตัวเอง
+- `.quiz-next-wrap` พื้นใส (ไม่มี gradient `--bg` ทับภาพ)
+
+### Glass Scene (`#view-quiz.quiz-glass-scene`)
+- E3 ฟ้าผ่าเท่านั้น: story box / choice แบบ glass + black overlay fade-in (BG เมฆเหมือนข้ออื่น)
+
+### Scene Intro Card (`.scene-intro`) — ใช้ร่วม Bento + Doll
+- แถบขาวหลังชื่อฉากคือ `.frost-band` (class ใช้ร่วมกับ narration)
+- การ์ดเต็มจอ glass (`--bg` 72% + blur) · ชื่อฉาก `--font-display` 2rem + ตรา sakura-stamp (เปลี่ยน emoji/คันจิได้) + "— tap to continue —"
+- แตะ → white flash (`dismissSceneIntro`) → เผยเนื้อหาหลัก
+- Bento: "Time to prepare some bento." 🌸桜 · Doll: "The rain keeps coming… Let's make a teru teru bōzu." ☔雨
+- `.scene-intro--rain`: พื้น gradient `--rain-dusk-deep` → `--rain-dusk`, ตัวอักษร `--bg` ทึบ 100% + text-shadow อ่อน (การ์ดปกติจาง 55%)
+
+### Doll Drawing (`view-doll`) — E7 ตุ๊กตาไล่ฝน
+- เริ่มด้วย Scene Intro Card ก่อนเข้าหน้าวาด
+- ทั้งฉากใช้พื้น `--rain-dusk` (หัว/คำแนะนำเป็น `--bg`) · reveal เข้มลงเป็น `--rain-dusk-deep`
+- glow ห่อทั้งตัว (`.doll-figure` = ตัว + หน้า) ค่อยๆ ขึ้นหลัง Done (2s, delay 1.2s) — ห้าม glow แยกชั้น/ขึ้นทันที
+- กด Done → reveal (~6s): UI อื่นจางออก 0.8s → ตุ๊กตาเลื่อนเข้ากลางจอ + scale 1.18 → พื้นหลังเป็นเทาน้ำเงิน `--rain-dusk-deep` (คืนฝนอึมครึม — ไม่ใช่ดำล้วน) + ตุ๊กตาเรืองนวล → วงคลื่นฝน `assets/ui/fx/rain_ripples_glow.webp` เฟดขึ้นใต้ตุ๊กตา (ไม่บีบภาพ, เล่นครบ 1 รอบ 4s) → black curtain → ฉากถัดไป
+- วงคลื่นเป็นเส้นขาวเรืองแสง — ใช้ได้เฉพาะบนพื้นเข้ม · วางให้จุดกลางอยู่ราวชายกระโปรงตุ๊กตา (`top: 28%`, เลื่อนขวาเล็กน้อยเพราะต้นฉบับเอียงซ้าย)
+- ตัวตุ๊กตา `assets/ui/doll/teru_body.png` + `<canvas>` 1000×1000 ซ้อนทับ แสดงกว้าง ~280px
+- ระบายได้เฉพาะพิกเซลสีหน้า (mask จาก PNG) — ไม่เลอะคอเสื้อ/เส้นขอบ · `touch-action: none`
+- สีฟิกซ์ 6 สี: `--on-surface`, `--primary`, `--primary-container`, `--secondary`, `--ink-green`, `--ink-gold` + ปุ่มวงล้อสี (เปิด glass panel: วงล้อ hue×saturation + แถบความสว่าง)
+- ความหนา 3 ระดับ · Undo · Clear · ปุ่ม Done (`.btn-gender-next`)
+- Swatch: วงกลม 32px, เลือกแล้วมีวงแหวน `--on-surface`
+
+### Cloud Backdrop (`assets/ui/quiz/cloud_bg.png`)
+- ใช้ใน view-quiz และ view-result (ทั้งหน้า)
+- Result: เมฆอยู่ที่ `.result-content` เท่านั้น (ใต้รูป Yokai) · ขอบบนไล่จาก `--bg` → โปร่งใส 180px · **ห้ามมีพื้นหลัง/fade ทับตัว Yokai** — house tint อยู่ข้างหลังรูป ไล่จางเป็น `--bg` ที่ขอบล่าง, `.result-content` ไม่ใช้ margin ติดลบทับรูป
 
 ### Modals / Overlays
 - Background: `rgba(239,224,192,0.7)` (`--surface-lowest` at 70%)

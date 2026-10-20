@@ -23,7 +23,7 @@
         <button class="nav-bgm-btn" id="btn-bgm" aria-label="BGM toggle">♪</button>
       </nav>
 
-      <img class="art-hero" src="assets/ui/hero/hero.png" alt="">
+      <img class="art-hero" src="assets/ui/hero/hero.jpg" alt="">
 
       <div class="art-fade"></div>
     </section>
@@ -195,15 +195,15 @@
   <div id="view-bento" class="view">
 
     <!-- Intro overlay — tap to dismiss -->
-    <div id="bento-intro" class="bento-intro" onclick="dismissBentoIntro()">
-      <div class="bento-intro-title-wrap">
+    <div id="bento-intro" class="scene-intro" onclick="dismissBentoIntro()">
+      <div class="scene-intro-title-wrap frost-band">
         <div class="sakura-stamp" aria-hidden="true">
           <span class="ss-flower">🌸</span>
           <span class="ss-text">桜</span>
         </div>
-        <p class="bento-intro-title">Time to prepare<br>some bento.</p>
+        <p class="scene-intro-title">Time to prepare<br>some bento.</p>
       </div>
-      <p class="bento-intro-tap">— tap to continue —</p>
+      <p class="scene-intro-tap">— tap to continue —</p>
     </div>
 
     <!-- Main bento content (hidden until intro dismissed) -->
@@ -267,6 +267,74 @@
 
   </div><!-- /view-bento -->
 
+  <!-- ════════════════════════════════════════
+       VIEW: DOLL — E7 teru teru bozu face drawing (cosmetic)
+  ════════════════════════════════════════ -->
+  <div id="view-doll" class="view">
+
+    <!-- Intro card — tap to dismiss (shared .scene-intro template) -->
+    <div id="doll-intro" class="scene-intro scene-intro--rain" onclick="dismissDollIntro()">
+      <div class="scene-intro-title-wrap frost-band">
+        <div class="sakura-stamp" aria-hidden="true">
+          <span class="ss-flower">☔</span>
+          <span class="ss-text">雨</span>
+        </div>
+        <p class="scene-intro-title">The rain keeps coming…<br>Let's make a<br>teru teru bōzu.</p>
+      </div>
+      <p class="scene-intro-tap">— tap to continue —</p>
+    </div>
+
+    <!-- Main drawing content (hidden until intro dismissed) -->
+    <div id="doll-main" class="doll-main">
+
+    <header class="view-header">
+      <span class="bento-scene-kana">てるてる坊主</span>
+      <span class="event-badge">Event 7</span>
+    </header>
+
+    <div class="story-box doll-story-box" id="doll-story-box">
+      <p id="doll-story"></p>
+    </div>
+
+    <p class="bento-instruction">— Draw its face —</p>
+
+    <div class="doll-stage">
+      <!-- Rain-puddle ripples under the doll — src set in startDoll() so the 3.9MB file preloads while drawing -->
+      <img class="doll-ripples" id="doll-ripples" alt="" aria-hidden="true">
+      <!-- body + drawn face as one figure, so the reveal glow wraps them together -->
+      <div class="doll-figure">
+        <img class="doll-body" id="doll-body" src="assets/ui/doll/teru_body.png" alt="">
+        <canvas id="doll-canvas" class="doll-canvas" width="1000" height="1000"></canvas>
+      </div>
+    </div>
+
+    <div class="doll-tools">
+      <div class="doll-swatches" id="doll-swatches"><!-- Rendered by initDollCanvas() --></div>
+      <div class="doll-tool-row">
+        <div class="doll-sizes" id="doll-sizes"><!-- Rendered by initDollCanvas() --></div>
+        <button class="doll-tool-btn" onclick="undoDollStroke()">↶ Undo</button>
+        <button class="doll-tool-btn" onclick="clearDoll()">Clear</button>
+      </div>
+    </div>
+
+    <div class="bento-next-wrap">
+      <button id="btn-doll-done" class="btn-gender-next" onclick="finishDoll()" disabled>
+        Done &nbsp;→
+      </button>
+    </div>
+
+    </div><!-- /doll-main -->
+
+    <!-- Color wheel panel -->
+    <div id="doll-wheel-panel" class="doll-wheel-panel">
+      <canvas id="doll-wheel" class="doll-wheel" width="240" height="240"></canvas>
+      <input id="doll-lightness" class="doll-lightness" type="range" min="10" max="90" value="50" aria-label="Lightness">
+      <div class="doll-wheel-preview" id="doll-wheel-preview"></div>
+      <button class="btn-gender-next" onclick="closeDollWheel()">OK</button>
+    </div>
+
+  </div><!-- /view-doll -->
+
 
   <!-- ════════════════════════════════════════
        VIEW: LOADING — Step 6
@@ -286,7 +354,7 @@
 
   <!-- Narration overlay — scene bridges (QUESTIONS lead / afterArrange / outro) -->
   <div id="narration" class="narration" onclick="advanceNarration()">
-    <p id="narration-text" class="narration-text"></p>
+    <div id="narration-text" class="narration-text frost-band"></div>
     <p id="narration-tap" class="narration-tap">— tap to continue —</p>
   </div>
 
@@ -309,6 +377,7 @@ function showView(id) {
   target.classList.add('active');
   window.scrollTo({ top: 0, behavior: 'instant' });
   if (id === 'bento')   initBento();
+  if (id === 'doll')    resetDoll();
   if (id === 'loading') initLoading();
   if (id === 'result')  renderResult();
   if (id === 'gender')  initGenderCinematic();
@@ -387,11 +456,16 @@ function shuffled(arr) {
   return a;
 }
 
-// ── NARRATION — scene bridges (typewriter, tap to continue) ──
-let _narrationPages  = [];
-let _narrationDone   = null;
-let _narrationTimer  = null;
-let _narrationFull   = '';
+// ── NARRATION — scene bridges ────────────────────────────────
+// Each page reveals one line per tap and keeps earlier lines on screen.
+// Narration lines type out; dialogue lines (starting with a quote) fade in softly.
+const NARRATION_SPEECH_MS = 1100;
+let _narrationPages = [];
+let _narrationLines = [];
+let _narrationDone  = null;
+let _narrationTimer = null;   // typing interval or speech fade timeout
+let _narrationLine  = null;   // { el, text, speech } of the line being revealed
+let _narrationAwaitingReply = false;
 
 function toGraphemes(text) {
   // Thai vowels/tone marks must stay attached to their consonant while typing
@@ -402,34 +476,84 @@ function showNarration(pages, onDone) {
   if (!pages.length) { onDone(); return; }
   _narrationPages = [...pages];
   _narrationDone  = onDone;
+  _narrationAwaitingReply = false;
   document.getElementById('narration').classList.add('open');
-  typeNarrationPage();
+  startNarrationPage();
 }
 
-function typeNarrationPage() {
-  const el  = document.getElementById('narration-text');
-  const tap = document.getElementById('narration-tap');
-  _narrationFull = _narrationPages.shift();
-  const chars = toGraphemes(_narrationFull);
+// A page is a string ('\n' = next line) or an array of lines; a line may be { reply: [...] }
+function startNarrationPage() {
+  const page = _narrationPages.shift();
+  _narrationLines = (Array.isArray(page) ? page : page.split('\n'))
+    .filter(l => typeof l !== 'string' || l.trim());
+  document.getElementById('narration-text').innerHTML = '';
+  revealNarrationLine();
+}
+
+function isSpeechLine(text) {
+  return /^["“]/.test(text.trim());
+}
+
+// Player picks what to say (same meaning, no score) — like a dialogue option
+function showNarrationReply(options) {
+  const box  = document.getElementById('narration-text');
+  const wrap = document.createElement('div');
+  wrap.className = 'narration-replies';
+  options.forEach(text => {
+    const btn = document.createElement('button');
+    btn.className = 'narration-reply-btn';
+    btn.textContent = text;
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      wrap.remove();
+      _narrationAwaitingReply = false;
+      revealNarrationLine(text, true);
+    });
+    wrap.appendChild(btn);
+  });
+  box.appendChild(wrap);
+  document.getElementById('narration-tap').classList.remove('ready');
+  _narrationAwaitingReply = true;
+}
+
+function revealNarrationLine(chosenText, byPlayer) {
+  const line = chosenText || _narrationLines.shift();
+  if (typeof line === 'object') { showNarrationReply(line.reply); return; }
+  const text   = line;
+  const speech = isSpeechLine(text);
+  const el     = document.createElement('p');
+  el.className = 'narration-line' + (speech ? ' narration-line--speech' : '') + (byPlayer ? ' narration-line--player' : '');
+  document.getElementById('narration-text').appendChild(el);
+  document.getElementById('narration-tap').classList.remove('ready');
+  _narrationLine = { el, text, speech };
+
+  if (speech) {
+    el.textContent = text;
+    _narrationTimer = setTimeout(finishNarrationLine, NARRATION_SPEECH_MS);
+    return;
+  }
+  const chars = toGraphemes(text);
   let i = 0;
-  el.textContent = '';
-  tap.classList.remove('ready');
   _narrationTimer = setInterval(() => {
     el.textContent += chars[i++];
-    if (i >= chars.length) finishNarrationTyping();
+    if (i >= chars.length) finishNarrationLine();
   }, 38);
 }
 
-function finishNarrationTyping() {
-  clearInterval(_narrationTimer);
+function finishNarrationLine() {
+  const { el, text, speech } = _narrationLine;
+  if (speech) clearTimeout(_narrationTimer); else clearInterval(_narrationTimer);
   _narrationTimer = null;
-  document.getElementById('narration-text').textContent = _narrationFull;
+  el.textContent = text;
+  el.classList.add('shown');
   document.getElementById('narration-tap').classList.add('ready');
 }
 
 function advanceNarration() {
-  if (_narrationTimer) { finishNarrationTyping(); return; }
-  if (_narrationPages.length) { typeNarrationPage(); return; }
+  if (_narrationAwaitingReply) return;   // must pick a reply first
+  if (_narrationTimer) { finishNarrationLine(); return; }
+  if (_narrationLines.length) { revealNarrationLine(); return; }
+  if (_narrationPages.length) { startNarrationPage(); return; }
   document.getElementById('narration').classList.remove('open');
   const done = _narrationDone;
   _narrationDone = null;
@@ -457,12 +581,20 @@ function confirmAnswer() {
     return;
   }
 
-  pickYokaiAnswer(currentQuestion(), choice);
-  if (state.currentQ < QUESTIONS.yokai.length) { loadQuestion(); return; }
-  showNarration(QUESTIONS.outro, () => {
-    calcYokai();
-    showView('loading');
-  });
+  const q = currentQuestion();
+  pickYokaiAnswer(q, choice);
+  const next = () => {
+    if (state.currentQ < QUESTIONS.yokai.length) { loadQuestion(); return; }
+    showNarration(QUESTIONS.outro, () => {
+      calcYokai();
+      showView('loading');
+    });
+  };
+  if (dollOrder(q) === 'after') {
+    startDoll('', () => { showView('quiz'); next(); });
+    return;
+  }
+  next();
 }
 
 // step 1–11: E1–E5 = 1–5 · Bento = 6 · E6–E10 = 7–11
@@ -472,17 +604,25 @@ function journeyStep() {
 
 function loadQuestion() {
   const q = currentQuestion();
-  showNarration(q.lead, () => renderQuestion(q));
+  showNarration(q.lead, () => {
+    if (dollOrder(q) === 'before') {
+      // T/F set: draw first (scene shown on the doll screen), then only the prompt
+      startDoll(q.text, () => { showView('quiz'); renderQuestion(q, true); });
+      return;
+    }
+    renderQuestion(q, false);
+  });
 }
 
-function renderQuestion(q) {
+// sceneShown = scene text was already shown (doll screen) → show prompt only
+function renderQuestion(q, sceneShown) {
   const isStage2 = state.stage === 2;
   if (isStage2) guardState(2);
   const set     = isStage2 ? getStage2Set(q) : { prompt: '', choices: q.choices };
 
   const view = document.getElementById('view-quiz');
   view.classList.toggle('quiz-stage1', !isStage2);
-  view.classList.toggle('quiz-lamp-scene', q.id === 'e3');
+  view.classList.toggle('quiz-glass-scene', q.id === 'e3');
   view.classList.remove('quiz-vn-enter');
   void view.offsetWidth;
   if (!isStage2) view.classList.add('quiz-vn-enter');
@@ -507,7 +647,9 @@ function renderQuestion(q) {
   // Header + scene
   document.getElementById('quiz-event-badge').textContent = 'Event ' + eventNum;
   document.getElementById('quiz-scene').textContent = q.scene;
-  document.getElementById('quiz-story').textContent = set.prompt ? q.text + '\n\n' + set.prompt : q.text;
+  // scene text may be empty when the whole scene lives in the lead narration (E9)
+  document.getElementById('quiz-story').textContent =
+    (sceneShown ? [set.prompt] : [q.text, set.prompt]).filter(Boolean).join('\n\n');
 
   // Reset next button for new question
   _pendingChoice = null;
@@ -552,18 +694,22 @@ let _bentoFoodPlaced    = 0;
 let _bentoPendingChoice = null;
 let _bentoPhase = 'question'; // 'question' | 'arrange'
 
-function initBento() {
-  guardState(2);
-  const intro = document.getElementById('bento-intro');
+// ── SCENE INTRO CARD — shared by Bento and Doll (title + sakura stamp + tap) ──
+function resetSceneIntro(introId, mainId) {
+  const intro = document.getElementById(introId);
   intro.style.display = '';
   intro.classList.add('hidden');
-  document.getElementById('bento-main').classList.add('hidden');
-  showNarration(QUESTIONS.yokai[0].lead, () => intro.classList.remove('hidden'));
+  document.getElementById(mainId).classList.add('hidden');
 }
 
-function dismissBentoIntro() {
+function showSceneIntro(introId) {
+  document.getElementById(introId).classList.remove('hidden');
+}
+
+// White flash, hide the card, reveal the main content
+function dismissSceneIntro(introId, mainId) {
   const curtain = document.getElementById('fade-curtain');
-  const intro   = document.getElementById('bento-intro');
+  const intro   = document.getElementById(introId);
   curtain.style.background = '#fff';
   curtain.classList.add('visible');
   curtain.addEventListener('transitionend', function handler() {
@@ -574,7 +720,17 @@ function dismissBentoIntro() {
       setTimeout(() => { curtain.style.background = ''; }, 700);
     }));
   }, { once: true });
-  document.getElementById('bento-main').classList.remove('hidden');
+  document.getElementById(mainId).classList.remove('hidden');
+}
+
+function initBento() {
+  guardState(2);
+  resetSceneIntro('bento-intro', 'bento-main');
+  showNarration(QUESTIONS.yokai[0].lead, () => showSceneIntro('bento-intro'));
+}
+
+function dismissBentoIntro() {
+  dismissSceneIntro('bento-intro', 'bento-main');
   // Now set up the actual bento game — question first, then arranging
   _bentoFoodPlaced    = 0;
   _bentoPendingChoice = null;
@@ -694,6 +850,297 @@ function initBentoDrag() {
   });
 }
 
+// ── DOLL — E7 teru teru bozu face drawing (cosmetic, DATA_SCHEMA §6) ──
+const DOLL_INKS  = ['--on-surface', '--primary', '--primary-container', '--secondary', '--ink-green', '--ink-gold'];
+const DOLL_SIZES = [10, 20, 34];   // brush width in 1000px canvas units
+// Face of teru_body.png: fill color + head circle (the gown shares the fill color, so both must match)
+const DOLL_FACE  = { r: 231, g: 231, b: 234, tolerance: 14, cx: 482, cy: 386, radius: 172 };
+
+const _doll = {
+  strokes: [], color: '', size: DOLL_SIZES[1], drawing: null, onDone: null,
+  mask: null, wired: false, revealing: false, hue: 0, sat: 100, light: 50
+};
+
+// 'before' | 'after' | null — when view-doll runs for this question and house
+function dollOrder(q) {
+  if (!q.doll) return null;
+  return q.doll[getStage2Set(q).axis];
+}
+
+const DOLL_RIPPLES_SRC = 'assets/ui/fx/rain_ripples_glow.webp';
+
+function startDoll(storyText, onDone) {
+  _doll.onDone = onDone;
+  const ripples = document.getElementById('doll-ripples');
+  if (!ripples.getAttribute('src')) ripples.src = DOLL_RIPPLES_SRC;   // preload while the player draws
+  document.getElementById('doll-story').textContent = storyText;
+  document.getElementById('doll-story-box').classList.toggle('hidden', !storyText);
+  showView('doll');
+}
+
+function resetDoll() {
+  initDollCanvas();
+  _doll.strokes   = [];
+  _doll.drawing   = null;
+  _doll.revealing = false;
+  document.getElementById('view-doll').classList.remove('doll-reveal');
+  closeDollWheel();
+  resetSceneIntro('doll-intro', 'doll-main');
+  showSceneIntro('doll-intro');
+  redrawDoll();
+}
+
+function dismissDollIntro() {
+  dismissSceneIntro('doll-intro', 'doll-main');
+}
+
+// Fade the curtain down, run fn behind it, lift the curtain
+function fadeThrough(fn) {
+  const curtain = document.getElementById('fade-curtain');
+  curtain.classList.add('visible');
+  curtain.addEventListener('transitionend', function handler() {
+    curtain.removeEventListener('transitionend', handler);
+    fn();
+    requestAnimationFrame(() => requestAnimationFrame(() => curtain.classList.remove('visible')));
+  }, { once: true });
+}
+
+// UI fades out → doll drifts to center → night falls → rain ripples bloom under the doll
+// (one full 4s ripple loop) → curtain → next scene
+function revealDoll(after) {
+  const view    = document.getElementById('view-doll');
+  const stage   = view.querySelector('.doll-stage');
+  const ripples = document.getElementById('doll-ripples');
+  const rect    = stage.getBoundingClientRect();
+  stage.style.setProperty('--reveal-shift', (window.innerHeight / 2 - (rect.top + rect.height / 2)) + 'px');
+  view.classList.add('doll-reveal');
+  setTimeout(() => { ripples.src = ''; ripples.src = DOLL_RIPPLES_SRC; }, 1300);   // restart the loop as it fades in
+  setTimeout(() => fadeThrough(after), 6000);
+}
+
+function finishDoll() {
+  if (!_doll.strokes.length || _doll.revealing) return;
+  _doll.revealing = true;
+  closeDollWheel();
+  const out = document.createElement('canvas');
+  out.width = out.height = 1000;
+  const ctx = out.getContext('2d');
+  ctx.drawImage(document.getElementById('doll-body'), 0, 0, 1000, 1000);
+  ctx.drawImage(document.getElementById('doll-canvas'), 0, 0);
+  state.dollImage = out.toDataURL('image/png');
+  const done = _doll.onDone;
+  _doll.onDone = null;
+  revealDoll(done);
+}
+
+function buildDollMask(img) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 1000;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, 1000, 1000);
+  const data = ctx.getImageData(0, 0, 1000, 1000);
+  const px = data.data, t = DOLL_FACE.tolerance;
+  for (let i = 0; i < px.length; i += 4) {
+    const x = (i / 4) % 1000, y = Math.floor(i / 4000);
+    const inHead = Math.hypot(x - DOLL_FACE.cx, y - DOLL_FACE.cy) <= DOLL_FACE.radius;
+    const isFace = inHead && px[i + 3] > 200 &&
+      Math.abs(px[i] - DOLL_FACE.r) <= t && Math.abs(px[i + 1] - DOLL_FACE.g) <= t && Math.abs(px[i + 2] - DOLL_FACE.b) <= t;
+    px[i + 3] = isFace ? 255 : 0;
+  }
+  ctx.putImageData(data, 0, 0);
+  return c;
+}
+
+function initDollCanvas() {
+  if (_doll.wired) return;
+  _doll.wired = true;
+
+  const body = document.getElementById('doll-body');
+  const setMask = () => { _doll.mask = buildDollMask(body); redrawDoll(); };
+  if (body.complete && body.naturalWidth) setMask(); else body.addEventListener('load', setMask, { once: true });
+
+  // Palette
+  const css   = getComputedStyle(document.documentElement);
+  const wrap  = document.getElementById('doll-swatches');
+  DOLL_INKS.forEach((token, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'doll-swatch';
+    btn.style.background = `var(${token})`;
+    btn.setAttribute('aria-label', token);
+    btn.addEventListener('click', () => selectDollSwatch(btn, css.getPropertyValue(token).trim()));
+    wrap.appendChild(btn);
+    if (i === 0) selectDollSwatch(btn, css.getPropertyValue(token).trim());
+  });
+  const wheelBtn = document.createElement('button');
+  wheelBtn.className = 'doll-swatch doll-swatch-wheel';
+  wheelBtn.id = 'doll-swatch-wheel';
+  wheelBtn.setAttribute('aria-label', 'Color wheel');
+  wheelBtn.addEventListener('click', openDollWheel);
+  wrap.appendChild(wheelBtn);
+
+  // Brush sizes
+  const sizes = document.getElementById('doll-sizes');
+  DOLL_SIZES.forEach(size => {
+    const btn = document.createElement('button');
+    btn.className = 'doll-size' + (size === _doll.size ? ' selected' : '');
+    btn.innerHTML = `<span style="width:${size / 3}px;height:${size / 3}px"></span>`;
+    btn.setAttribute('aria-label', 'Brush ' + size);
+    btn.addEventListener('click', () => {
+      sizes.querySelectorAll('.doll-size').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      _doll.size = size;
+    });
+    sizes.appendChild(btn);
+  });
+
+  wireDollDrawing();
+  wireDollWheel();
+}
+
+function selectDollSwatch(btn, color) {
+  document.querySelectorAll('#doll-swatches .doll-swatch').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  _doll.color = color;
+}
+
+function dollPoint(canvas, e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height };
+}
+
+function wireDollDrawing() {
+  const canvas = document.getElementById('doll-canvas');
+  canvas.addEventListener('pointerdown', e => {
+    if (!_doll.mask || _doll.revealing) return;
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    _doll.drawing = { color: _doll.color, size: _doll.size, points: [dollPoint(canvas, e)] };
+    _doll.strokes.push(_doll.drawing);
+    redrawDoll();
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!_doll.drawing) return;
+    e.preventDefault();
+    _doll.drawing.points.push(dollPoint(canvas, e));
+    redrawDoll();
+  });
+  const end = () => { _doll.drawing = null; };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+}
+
+function redrawDoll() {
+  const canvas = document.getElementById('doll-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  for (const s of _doll.strokes) {
+    const p = s.points;
+    ctx.strokeStyle = ctx.fillStyle = s.color;
+    ctx.lineWidth = s.size;
+    if (p.length === 1) {
+      ctx.beginPath();
+      ctx.arc(p[0].x, p[0].y, s.size / 2, 0, Math.PI * 2);
+      ctx.fill();
+      continue;
+    }
+    // Smooth: curve through midpoints
+    ctx.beginPath();
+    ctx.moveTo(p[0].x, p[0].y);
+    for (let i = 1; i < p.length - 1; i++) {
+      ctx.quadraticCurveTo(p[i].x, p[i].y, (p[i].x + p[i + 1].x) / 2, (p[i].y + p[i + 1].y) / 2);
+    }
+    ctx.lineTo(p[p.length - 1].x, p[p.length - 1].y);
+    ctx.stroke();
+  }
+
+  // Keep ink only on the face pixels
+  if (_doll.mask) {
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.drawImage(_doll.mask, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  document.getElementById('btn-doll-done').disabled = !_doll.strokes.length;
+}
+
+function undoDollStroke() {
+  _doll.strokes.pop();
+  redrawDoll();
+}
+
+function clearDoll() {
+  _doll.strokes = [];
+  redrawDoll();
+}
+
+// ── Color wheel: hue = angle, saturation = distance, lightness = slider ──
+function hslToRgb(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return [f(0) * 255, f(8) * 255, f(4) * 255];
+}
+
+function paintDollWheel() {
+  const canvas = document.getElementById('doll-wheel');
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width, rad = size / 2;
+  const img = ctx.createImageData(size, size);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = x - rad, dy = y - rad, d = Math.hypot(dx, dy);
+      if (d > rad) continue;
+      const hue = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+      const [r, g, b] = hslToRgb(hue, d / rad * 100, _doll.light);
+      const i = (y * size + x) * 4;
+      img.data[i] = r; img.data[i + 1] = g; img.data[i + 2] = b; img.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+function applyDollWheelColor() {
+  const color = `hsl(${_doll.hue.toFixed(0)} ${_doll.sat.toFixed(0)}% ${_doll.light}%)`;
+  document.getElementById('doll-wheel-preview').style.background = color;
+  const wheelBtn = document.getElementById('doll-swatch-wheel');
+  wheelBtn.style.setProperty('--custom-ink', color);
+  selectDollSwatch(wheelBtn, color);
+}
+
+function wireDollWheel() {
+  const canvas = document.getElementById('doll-wheel');
+  const pick = e => {
+    const p = dollPoint(canvas, e), rad = canvas.width / 2;
+    const dx = p.x - rad, dy = p.y - rad;
+    _doll.hue = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+    _doll.sat = Math.min(Math.hypot(dx, dy) / rad, 1) * 100;
+    applyDollWheelColor();
+  };
+  let picking = false;
+  canvas.addEventListener('pointerdown', e => { picking = true; canvas.setPointerCapture(e.pointerId); pick(e); });
+  canvas.addEventListener('pointermove', e => { if (picking) pick(e); });
+  canvas.addEventListener('pointerup', () => { picking = false; });
+  document.getElementById('doll-lightness').addEventListener('input', e => {
+    _doll.light = Number(e.target.value);
+    paintDollWheel();
+    applyDollWheelColor();
+  });
+}
+
+function openDollWheel() {
+  paintDollWheel();
+  applyDollWheelColor();
+  document.getElementById('doll-wheel-panel').classList.add('open');
+}
+
+function closeDollWheel() {
+  document.getElementById('doll-wheel-panel').classList.remove('open');
+}
+
 // ── LOADING ───────────────────────────────────────────────────
 function initLoading() {
   const kanji = ['運', '縁', '霊', '契', '魂', '妖', '絆', '愛'];
@@ -752,6 +1199,8 @@ function renderResult() {
   let artHTML;
   if (!hasArt) {
     artHTML = `<div class="result-art-emoji" aria-hidden="true">${r.emoji}</div>`;
+  } else if (/\.(png|jpe?g|webp)$/i.test(r.image)) {
+    artHTML = `<img class="result-art-img" src="${r.image}" alt="${r.name}">`;
   } else {
     const isMp4Url = r.image.includes('googleusercontent.com') || r.image.endsWith('.mp4');
     const webmSrc  = r.image;
@@ -762,6 +1211,19 @@ function renderResult() {
          <source src="${mp4Src}" type='video/mp4; codecs="hvc1"'>`;
     artHTML = `<video class="result-art-video" autoplay loop muted playsinline>${sources}</video>`;
   }
+
+  if (!state.dollImage) throw new Error('[Ryokan] renderResult: state.dollImage missing (E7 doll not drawn)');
+  const yokaiDoll = YOKAI_DATA[state.winningYokai].dollImage;
+  const dollsHTML = `
+    <figure class="result-doll">
+      <img src="${state.dollImage}" alt="Your teru teru bozu">
+      <figcaption>Yours</figcaption>
+    </figure>
+    ${yokaiDoll ? `
+    <figure class="result-doll">
+      <img src="${yokaiDoll}" alt="${r.name}'s teru teru bozu">
+      <figcaption>${r.name}</figcaption>
+    </figure>` : ''}`;
 
   const compatHTML = r.compat.map(c => `
     <div class="compat-row">
@@ -779,7 +1241,6 @@ function renderResult() {
       <div class="result-art-section" style="--house-tint:${tint}">
         <div class="result-art-bg"></div>
         ${artHTML}
-        <div class="result-art-fade"></div>
       </div>
       <div class="result-content">
         <div class="result-identity">
@@ -801,6 +1262,10 @@ function renderResult() {
         </div>
         <div class="result-quote-block">
           <p class="result-quote">${r.quote}</p>
+        </div>
+        <div class="result-section">
+          <p class="result-section-eyebrow">— Teru Teru Bōzu —</p>
+          <div class="result-dolls">${dollsHTML}</div>
         </div>
         <div class="result-section">
           <p class="result-section-eyebrow">— Compatibility —</p>
@@ -910,90 +1375,90 @@ const YOKAI_DATA = {
 
   // ── Purple · Analysts (NT) ───────────────────────────────────
   Tenjin: {
-    house:'purple', mbti:'INTJ', emoji:'📜', name:'Tenjin', title:'เทพแห่งปัญญา',
+    house:'purple', mbti:'INTJ', emoji:'📜', name:'Tenjin', title:'เทพแห่งปัญญา', dollImage:'',
     male:   { image:'', tagline:'The God of Knowledge',    why:'[เหตุผลที่คุณคู่กับ Tenjin เพศชาย]',   quote:'"[คำพูดของ Tenjin เพศชาย]"',   compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] },
     female: { image:'', tagline:'The Goddess of Knowledge',why:'[เหตุผลที่คุณคู่กับ Tenjin เพศหญิง]', quote:'"[คำพูดของ Tenjin เพศหญิง]"', compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] }
   },
   Yumekui: {
-    house:'purple', mbti:'INTP', emoji:'💤', name:'Yumekui', title:'ปีศาจกินฝัน',
+    house:'purple', mbti:'INTP', emoji:'💤', name:'Yumekui', title:'ปีศาจกินฝัน', dollImage:'',
     male:   { image:'', tagline:'The Dream Devourer', why:'[เหตุผลที่คุณคู่กับ Yumekui เพศชาย]',   quote:'"[คำพูดของ Yumekui เพศชาย]"',   compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] },
-    female: { image:'', tagline:'The Dream Devourer', why:'[เหตุผลที่คุณคู่กับ Yumekui เพศหญิง]', quote:'"[คำพูดของ Yumekui เพศหญิง]"', compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] }
+    female: { image:'assets/yokai/yumekui_f.png', tagline:'The Dream Devourer', why:'[เหตุผลที่คุณคู่กับ Yumekui เพศหญิง]', quote:'"[คำพูดของ Yumekui เพศหญิง]"', compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] }
   },
   Ryuu: {
-    house:'purple', mbti:'ENTJ', emoji:'🐉', name:'Ryuu', title:'มังกรเทพเจ้า',
+    house:'purple', mbti:'ENTJ', emoji:'🐉', name:'Ryuu', title:'มังกรเทพเจ้า', dollImage:'',
     male:   { image:'', tagline:'The Dragon God',     why:'[เหตุผลที่คุณคู่กับ Ryuu เพศชาย]',   quote:'"[คำพูดของ Ryuu เพศชาย]"',   compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] },
     female: { image:'', tagline:'The Dragon Goddess', why:'[เหตุผลที่คุณคู่กับ Ryuu เพศหญิง]', quote:'"[คำพูดของ Ryuu เพศหญิง]"', compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] }
   },
   Kitsune: {
-    house:'purple', mbti:'ENTP', emoji:'🦊', name:'Kitsune', title:'จิ้งจอกเก้าหาง',
+    house:'purple', mbti:'ENTP', emoji:'🦊', name:'Kitsune', title:'จิ้งจอกเก้าหาง', dollImage:'',
     male:   { image:'', tagline:'The Nine-Tailed Fox', why:'[เหตุผลที่คุณคู่กับ Kitsune เพศชาย]',   quote:'"[คำพูดของ Kitsune เพศชาย]"',   compat:[{label:'Wit & Banter',value:95},{label:'Curiosity',value:86},{label:'Stability',value:34}] },
     female: { image:'', tagline:'The Nine-Tailed Fox', why:'[เหตุผลที่คุณคู่กับ Kitsune เพศหญิง]', quote:'"[คำพูดของ Kitsune เพศหญิง]"', compat:[{label:'Wit & Banter',value:95},{label:'Curiosity',value:86},{label:'Stability',value:34}] }
   },
 
   // ── Green · Diplomats (NF) ───────────────────────────────────
   Shinigami: {
-    house:'green', mbti:'INFJ', emoji:'💀', name:'Shinigami', title:'ยมทูต',
+    house:'green', mbti:'INFJ', emoji:'💀', name:'Shinigami', title:'ยมทูต', dollImage:'',
     male:   { image:'', tagline:'The Soul Guide', why:'[เหตุผลที่คุณคู่กับ Shinigami เพศชาย]',   quote:'"[คำพูดของ Shinigami เพศชาย]"',   compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] },
-    female: { image:'', tagline:'The Soul Guide', why:'[เหตุผลที่คุณคู่กับ Shinigami เพศหญิง]', quote:'"[คำพูดของ Shinigami เพศหญิง]"', compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] }
+    female: { image:'assets/yokai/shinigami_f.png', tagline:'The Soul Guide', why:'[เหตุผลที่คุณคู่กับ Shinigami เพศหญิง]', quote:'"[คำพูดของ Shinigami เพศหญิง]"', compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] }
   },
   Yukionna: {
-    house:'green', mbti:'INFP', emoji:'❄️', name:'Yukionna', title:'ปีศาจหิมะ',
+    house:'green', mbti:'INFP', emoji:'❄️', name:'Yukionna', title:'ปีศาจหิมะ', dollImage:'',
     male:   { image:'', tagline:'The Snow Spirit', why:'[เหตุผลที่คุณคู่กับ Yukionna เพศชาย]',   quote:'"[คำพูดของ Yukionna เพศชาย]"',   compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] },
-    female: { image:'', tagline:'The Snow Spirit', why:'[เหตุผลที่คุณคู่กับ Yukionna เพศหญิง]', quote:'"[คำพูดของ Yukionna เพศหญิง]"', compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] }
+    female: { image:'assets/yokai/yukionna_f.png', tagline:'The Snow Spirit', why:'[เหตุผลที่คุณคู่กับ Yukionna เพศหญิง]', quote:'"[คำพูดของ Yukionna เพศหญิง]"', compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] }
   },
   Oni: {
-    house:'green', mbti:'ENFJ', emoji:'👹', name:'Oni', title:'ยักษ์โอนิ',
-    male:   { image:'', tagline:'The Iron Guardian', why:'[เหตุผลที่คุณคู่กับ Oni เพศชาย]',   quote:'"[คำพูดของ Oni เพศชาย]"',   compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] },
-    female: { image:'', tagline:'The Iron Guardian', why:'[เหตุผลที่คุณคู่กับ Oni เพศหญิง]', quote:'"[คำพูดของ Oni เพศหญิง]"', compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] }
+    house:'green', mbti:'ENFJ', emoji:'👹', name:'Oni', title:'ยักษ์โอนิ', dollImage:'',
+    male:   { image:'assets/yokai/oni_m.png', tagline:'The Iron Guardian', why:'[เหตุผลที่คุณคู่กับ Oni เพศชาย]',   quote:'"[คำพูดของ Oni เพศชาย]"',   compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] },
+    female: { image:'assets/yokai/oni_f.png', tagline:'The Iron Guardian', why:'[เหตุผลที่คุณคู่กับ Oni เพศหญิง]', quote:'"[คำพูดของ Oni เพศหญิง]"', compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] }
   },
   Tanuki: {
-    house:'green', mbti:'ENFP', emoji:'🍃', name:'Tanuki', title:'ทานุกิ',
-    male:   { image:'', tagline:'The Shapeshifting Tanuki', why:'[เหตุผลที่คุณคู่กับ Tanuki เพศชาย]',   quote:'"[คำพูดของ Tanuki เพศชาย]"',   compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] },
+    house:'green', mbti:'ENFP', emoji:'🍃', name:'Tanuki', title:'ทานุกิ', dollImage:'',
+    male:   { image:'assets/yokai/tanuki_m.png', tagline:'The Shapeshifting Tanuki', why:'[เหตุผลที่คุณคู่กับ Tanuki เพศชาย]',   quote:'"[คำพูดของ Tanuki เพศชาย]"',   compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] },
     female: { image:'assets/yokai/RYO_tanukiFall.mp4', tagline:'The Shapeshifting Tanuki', why:'Because you overthink and carry too much weight on your shoulders. She is the chaotic sunshine who will break down your walls, teach you to let go, and heal your heart when you\'re exhausted.', quote:'"Stop frowning! Let me magic all that stress away.🍃"', compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] }
   },
 
   // ── Blue · Sentinels (SJ) ────────────────────────────────────
   Tengu: {
-    house:'blue', mbti:'ISTJ', emoji:'👺', name:'Tengu', title:'เทนกุ',
-    male:   { image:'', tagline:'The Mountain Sentinel', why:'[เหตุผลที่คุณคู่กับ Tengu เพศชาย]',   quote:'"[คำพูดของ Tengu เพศชาย]"',   compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] },
-    female: { image:'', tagline:'The Mountain Sentinel', why:'[เหตุผลที่คุณคู่กับ Tengu เพศหญิง]', quote:'"[คำพูดของ Tengu เพศหญิง]"', compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] }
+    house:'blue', mbti:'ISTJ', emoji:'👺', name:'Tengu', title:'เทนกุ', dollImage:'',
+    male:   { image:'assets/yokai/tengu_m.png', tagline:'The Mountain Sentinel', why:'[เหตุผลที่คุณคู่กับ Tengu เพศชาย]',   quote:'"[คำพูดของ Tengu เพศชาย]"',   compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] },
+    female: { image:'assets/yokai/tengu_f.png', tagline:'The Mountain Sentinel', why:'[เหตุผลที่คุณคู่กับ Tengu เพศหญิง]', quote:'"[คำพูดของ Tengu เพศหญิง]"', compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] }
   },
   Ningyo: {
-    house:'blue', mbti:'ISFJ', emoji:'🧜', name:'Ningyo', title:'เงือกญี่ปุ่น',
+    house:'blue', mbti:'ISFJ', emoji:'🧜', name:'Ningyo', title:'เงือกญี่ปุ่น', dollImage:'',
     male:   { image:'', tagline:'The Eternal Mermaid', why:'[เหตุผลที่คุณคู่กับ Ningyo เพศชาย]',   quote:'"[คำพูดของ Ningyo เพศชาย]"',   compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] },
-    female: { image:'', tagline:'The Eternal Mermaid', why:'[เหตุผลที่คุณคู่กับ Ningyo เพศหญิง]', quote:'"[คำพูดของ Ningyo เพศหญิง]"', compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] }
+    female: { image:'assets/yokai/ningyo_f.png', tagline:'The Eternal Mermaid', why:'[เหตุผลที่คุณคู่กับ Ningyo เพศหญิง]', quote:'"[คำพูดของ Ningyo เพศหญิง]"', compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] }
   },
   Jorogumo: {
-    house:'blue', mbti:'ESTJ', emoji:'🕸️', name:'Jorogumo', title:'ปีศาจแมงมุม',
+    house:'blue', mbti:'ESTJ', emoji:'🕸️', name:'Jorogumo', title:'ปีศาจแมงมุม', dollImage:'',
     male:   { image:'', tagline:'The Spider Enchantress', why:'[เหตุผลที่คุณคู่กับ Jorogumo เพศชาย]',   quote:'"[คำพูดของ Jorogumo เพศชาย]"',   compat:[{label:'Command',value:94},{label:'Dependability',value:89},{label:'Flexibility',value:30}] },
     female: { image:'', tagline:'The Spider Enchantress', why:'[เหตุผลที่คุณคู่กับ Jorogumo เพศหญิง]', quote:'"[คำพูดของ Jorogumo เพศหญิง]"', compat:[{label:'Command',value:94},{label:'Dependability',value:89},{label:'Flexibility',value:30}] }
   },
   Inugami: {
-    house:'blue', mbti:'ESFJ', emoji:'🐕', name:'Inugami', title:'เทพสุนัข',
-    male:   { image:'', tagline:'The Spirit Hound', why:'[เหตุผลที่คุณคู่กับ Inugami เพศชาย]',   quote:'"[คำพูดของ Inugami เพศชาย]"',   compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] },
-    female: { image:'', tagline:'The Spirit Hound', why:'[เหตุผลที่คุณคู่กับ Inugami เพศหญิง]', quote:'"[คำพูดของ Inugami เพศหญิง]"', compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] }
+    house:'blue', mbti:'ESFJ', emoji:'🐕', name:'Inugami', title:'เทพสุนัข', dollImage:'',
+    male:   { image:'assets/yokai/inugami_m.png', tagline:'The Spirit Hound', why:'[เหตุผลที่คุณคู่กับ Inugami เพศชาย]',   quote:'"[คำพูดของ Inugami เพศชาย]"',   compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] },
+    female: { image:'assets/yokai/inugami_f.png', tagline:'The Spirit Hound', why:'[เหตุผลที่คุณคู่กับ Inugami เพศหญิง]', quote:'"[คำพูดของ Inugami เพศหญิง]"', compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] }
   },
 
   // ── Yellow · Explorers (SP) ──────────────────────────────────
   Nekomata: {
-    house:'yellow', mbti:'ISTP', emoji:'🐈‍⬛', name:'Nekomata', title:'แมวปีศาจสองหาง',
-    male:   { image:'', tagline:'The Twin-Tailed Cat Demon', why:'[เหตุผลที่คุณคู่กับ Nekomata เพศชาย]',   quote:'"[คำพูดของ Nekomata เพศชาย]"',   compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] },
-    female: { image:'', tagline:'The Twin-Tailed Cat Demon', why:'[เหตุผลที่คุณคู่กับ Nekomata เพศหญิง]', quote:'"[คำพูดของ Nekomata เพศหญิง]"', compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] }
+    house:'yellow', mbti:'ISTP', emoji:'🐈‍⬛', name:'Nekomata', title:'แมวปีศาจสองหาง', dollImage:'',
+    male:   { image:'assets/yokai/nekomata_m.png', tagline:'The Twin-Tailed Cat Demon', why:'[เหตุผลที่คุณคู่กับ Nekomata เพศชาย]',   quote:'"[คำพูดของ Nekomata เพศชาย]"',   compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] },
+    female: { image:'assets/yokai/nekomata_f.png', tagline:'The Twin-Tailed Cat Demon', why:'[เหตุผลที่คุณคู่กับ Nekomata เพศหญิง]', quote:'"[คำพูดของ Nekomata เพศหญิง]"', compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] }
   },
   Hebi: {
-    house:'yellow', mbti:'ISFP', emoji:'🐍', name:'Hebi', title:'ปีศาจงูขาว',
-    male:   { image:'', tagline:'The White Serpent', why:'[เหตุผลที่คุณคู่กับ Hebi เพศชาย]',   quote:'"[คำพูดของ Hebi เพศชาย]"',   compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] },
+    house:'yellow', mbti:'ISFP', emoji:'🐍', name:'Hebi', title:'ปีศาจงูขาว', dollImage:'',
+    male:   { image:'assets/yokai/hebi_m.png', tagline:'The White Serpent', why:'[เหตุผลที่คุณคู่กับ Hebi เพศชาย]',   quote:'"[คำพูดของ Hebi เพศชาย]"',   compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] },
     female: { image:'', tagline:'The White Serpent', why:'[เหตุผลที่คุณคู่กับ Hebi เพศหญิง]', quote:'"[คำพูดของ Hebi เพศหญิง]"', compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] }
   },
   Raijin: {
-    house:'yellow', mbti:'ESTP', emoji:'⚡', name:'Raijin', title:'เทพสายฟ้า',
-    male:   { image:'', tagline:'The God of Thunder',     why:'[เหตุผลที่คุณคู่กับ Raijin เพศชาย]',   quote:'"[คำพูดของ Raijin เพศชาย]"',   compat:[{label:'Electric Energy',value:95},{label:'Thrill',value:88},{label:'Patience',value:24}] },
+    house:'yellow', mbti:'ESTP', emoji:'⚡', name:'Raijin', title:'เทพสายฟ้า', dollImage:'',
+    male:   { image:'assets/yokai/raijin_m.png', tagline:'The God of Thunder',     why:'[เหตุผลที่คุณคู่กับ Raijin เพศชาย]',   quote:'"[คำพูดของ Raijin เพศชาย]"',   compat:[{label:'Electric Energy',value:95},{label:'Thrill',value:88},{label:'Patience',value:24}] },
     female: { image:'', tagline:'The Goddess of Thunder', why:'[เหตุผลที่คุณคู่กับ Raijin เพศหญิง]', quote:'"[คำพูดของ Raijin เพศหญิง]"', compat:[{label:'Electric Energy',value:95},{label:'Thrill',value:88},{label:'Patience',value:24}] }
   },
   Fuujin: {
-    house:'yellow', mbti:'ESFP', emoji:'🌪️', name:'Fuujin', title:'เทพวายุ',
+    house:'yellow', mbti:'ESFP', emoji:'🌪️', name:'Fuujin', title:'เทพวายุ', dollImage:'',
     male:   { image:'', tagline:'The Wind God',     why:'[เหตุผลที่คุณคู่กับ Fuujin เพศชาย]',   quote:'"[คำพูดของ Fuujin เพศชาย]"',   compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] },
-    female: { image:'', tagline:'The Wind Goddess', why:'[เหตุผลที่คุณคู่กับ Fuujin เพศหญิง]', quote:'"[คำพูดของ Fuujin เพศหญิง]"', compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] }
+    female: { image:'assets/yokai/fuujin_f.png', tagline:'The Wind Goddess', why:'[เหตุผลที่คุณคู่กับ Fuujin เพศหญิง]', quote:'"[คำพูดของ Fuujin เพศหญิง]"', compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] }
   }
 
 };

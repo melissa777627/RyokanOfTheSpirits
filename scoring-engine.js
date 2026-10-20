@@ -41,7 +41,8 @@ function createInitialState() {
 
     stage:         1,
     currentQ:      0,
-    bentoSelected: []
+    bentoSelected: [],
+    dollImage:     ''
   };
 }
 
@@ -155,8 +156,25 @@ function validateChoiceSet(id, axis, choices) {
   }
 }
 
+// Narration page = string, or array of strings / { reply: [2+ strings] }
+function validateNarration(where, pages) {
+  if (!Array.isArray(pages)) throw new Error(`[Ryokan] ${where}: narration must be an array of pages`);
+  for (const page of pages) {
+    if (typeof page === 'string') continue;
+    if (!Array.isArray(page)) throw new Error(`[Ryokan] ${where}: page must be a string or an array`);
+    for (const line of page) {
+      if (typeof line === 'string') continue;
+      if (!line || !Array.isArray(line.reply) || line.reply.length < 2) {
+        throw new Error(`[Ryokan] ${where}: line must be a string or { reply: [2+ options] }`);
+      }
+    }
+  }
+}
+
 function validateQuestions() {
   const { house, yokai, outro } = QUESTIONS;
+  [...house, ...yokai].forEach(q => validateNarration(q.id + '.lead', q.lead));
+  validateNarration('outro', outro);
   if (house.length !== 5) throw new Error('[Ryokan] QUESTIONS.house must have 5 questions');
   if (yokai.length !== 6) throw new Error('[Ryokan] QUESTIONS.yokai must have 6 questions');
   if (!outro.length)      throw new Error('[Ryokan] QUESTIONS.outro is empty');
@@ -173,6 +191,10 @@ function validateQuestions() {
       if (!q.sets || !q.sets.JP || !q.sets.TF) throw new Error(`[Ryokan] ${q.id}: needs sets.JP and sets.TF`);
       validateChoiceSet(q.id, 'JP', q.sets.JP.choices);
       validateChoiceSet(q.id, 'TF', q.sets.TF.choices);
+      if (q.doll) {
+        const ok = v => v === 'before' || v === 'after';
+        if (!ok(q.doll.JP) || !ok(q.doll.TF)) throw new Error(`[Ryokan] ${q.id}: doll needs JP/TF = 'before' | 'after'`);
+      }
     } else {
       if (q.axis !== 'EI') throw new Error(`[Ryokan] ${q.id}: must have axis 'EI'`);
       validateChoiceSet(q.id, 'EI', q.choices);

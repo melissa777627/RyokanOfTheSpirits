@@ -31,7 +31,8 @@ let state = {
   // ── Progress ──────────────────────────────────────────
   stage:         1,        // 1 = house sorting, 2 = yokai selection
   currentQ:      0,        // index ภายใน stage ปัจจุบัน (0-based) · stage 2 index 0 = Bento
-  bentoSelected: []        // food ที่ลากลงกล่อง — cosmetic only
+  bentoSelected: [],       // food ที่ลากลงกล่อง — cosmetic only
+  dollImage:     ''        // PNG dataURL (ตัวตุ๊กตา + หน้าที่วาด) จาก view-doll ใน E7 — cosmetic only
 };
 ```
 
@@ -67,6 +68,7 @@ const YOKAI_DATA = {
     emoji:   '📜',
     name:    'Tenjin',
     title:   'เทพแห่งปัญญา',
+    dollImage: '',            // ตุ๊กตาไล่ฝนประจำตัว (ทั้งสองเพศใช้รูปเดียว) — ว่าง = ยังไม่มีรูป, หน้า result โชว์เฉพาะตุ๊กตาผู้เล่น
 
     male: {
       image:       'assets/yokai/tenjin_m.png',   // รองรับ .gif / .webm / .mp4
@@ -155,7 +157,8 @@ const QUESTIONS = {
       },
       afterArrange: 'Line he says after Continue'   // เฉพาะ bento
     },
-    // e6, e7 — โครงเดียวกับ bento (ไม่มี afterArrange)
+    // e6 — โครงเดียวกับ bento (ไม่มี afterArrange)
+    // e7 — โครงเดียวกัน + doll: { JP: 'after', TF: 'before' }  (วาดหน้าตุ๊กตาหลัง/ก่อนตอบ ตามชุดที่บ้านใช้)
 
     // index 3–5: แกน E/I — ช้อยชุดเดียวทุกบ้าน
     {
@@ -185,6 +188,7 @@ const QUESTIONS = {
 - Stage 1: ทุกข้อมีช้อย 4 ตัว ครบทั้ง 4 บ้าน ไม่ซ้ำ
 - Stage 2 ชุดใดก็ตาม (`sets.JP`, `sets.TF`, หรือ E/I): ช้อย 4 ตัว แต่ละขั้ว 2 ตัว
 - `yokai[0..2]` ต้องมี `sets.JP` และ `sets.TF` · `yokai[3..5]` ต้องมี `axis: 'EI'`
+- ถ้ามี `doll`: ต้องมีทั้ง `JP` และ `TF` ค่าเป็น `'before'` | `'after'`
 - ข้อความในเกมเป็น**ภาษาไทย** ตามต้นฉบับใน memory ของเจ้าของ (`project_questions_draft.md`) — คัดลอกลง `questions.js` ตรงตัว
 - ลำดับช้อยในไฟล์ไม่มีผล: UI สุ่มลำดับทุกครั้ง (`shuffled()`)
 
@@ -314,13 +318,20 @@ function calcYokai() {
   → view-quiz: yokai[1] (E6) ซึ่ง lead = บทเชื่อม Bento→E6
 ```
 
+### E7 · ตุ๊กตาไล่ฝน (view-doll)
+```
+JP (purple/green):  lead → E7 scene + prompt → ตอบ → view-doll (intro card → วาด → Done reveal) → E8
+TF (blue/yellow):   lead → view-doll (intro card → story box = E7 scene → วาด → Done reveal) → E7 แสดงเฉพาะ prompt → ตอบ → E8
+เสร็จแล้ว → state.dollImage = PNG dataURL (ตัวตุ๊กตา + หน้า)
+```
+
 ---
 
 ## 7. บทเชื่อมฉาก (Narration)
 
 | ที่อยู่ในข้อมูล | ใช้ตอนไหน |
 |---|---|
-| `q.lead` | แสดงก่อนฉากของข้อนั้น (เช่น บทเชื่อม E1→E2 อยู่ที่ `house[1].lead`) · array — 1 string = 1 หน้า |
+| `q.lead` | แสดงก่อนฉากของข้อนั้น (เช่น บทเชื่อม E1→E2 อยู่ที่ `house[1].lead`) · array — 1 string = 1 หน้า · `\n` แบ่งบรรทัด = ขึ้นทีละแตะ · บรรทัดขึ้นต้นด้วย `"` = บทพูด · หน้าเขียนเป็น array ได้ (1 รายการ = 1 บรรทัด) และบรรทัดเป็น `{ reply: ['…', '…'] }` = ผู้เล่นเลือกประโยคตอบ (cosmetic) · ตรวจโดย `validateNarration()` |
 | `yokai[0].afterArrange` | หลังกด Continue ใน Bento |
 | `QUESTIONS.outro` | หลังตอบ E10 ก่อน Loading (บทเชื่อม E10→ปิด + ข้อความปิด) |
 

@@ -127,8 +127,10 @@ Depth is achieved through **Tonal Layering**, not structural shadows.
 - ข้อความ: `--font-body`, 0.98rem, line-height 1.95, กึ่งกลาง · มี `.frost-band` (แถบขาวเบลอหลังตัวอักษร แบบเดียวกับการ์ด Bento) ให้อ่านง่าย
 - **ขึ้นทีละบรรทัด** (1 บรรทัดใน string = 1 แตะ) บรรทัดก่อนหน้าค้างไว้บนจอ
 - บรรทัดบรรยาย: สี `--ink-brown`, typewriter ทีละ grapheme (สระ/วรรณยุกต์ไทยไม่หลุด)
-- ตัวเลือกตอบของผู้เล่น (`{ reply: [...] }`): ปุ่มแบบ Choice (`--surface-lowest`, ghost border, 1.5rem, ◆ สี `--primary`) — หน้าหยุดรอจนเลือก, แตะพื้นหลังไม่มีผล · เลือกแล้วกลายเป็นบรรทัดบทพูดสี `--primary` (`.narration-line--player`) · ไม่มีผลคะแนน
+- ตัวเลือกตอบของผู้เล่น (`{ reply: [...] }`): ปุ่มแบบ Choice (`--surface-lowest`, ghost border, 1.5rem, ◆ สี `--primary`) ข้อความไม่มี `"` · เข้าแบบ Row Expand (scaleY 0.08→1 จากขอบบน + opacity, 720ms easeOutBack, ห่างกันทีละ 65ms) — หน้าหยุดรอจนเลือก, แตะพื้นหลังไม่มีผล · เลือกแล้วระบบครอบ `"…"` ให้ กลายเป็นบรรทัดบทพูดสี `--primary` (`.narration-line--player`) · ไม่มีผลคะแนน
 - บรรทัดบทพูด (ขึ้นต้นด้วย `"`): `.narration-line--speech` ตัวหนา `--secondary` 1.04rem ค่อยๆ เฟดขึ้น 1.1s (opacity + blur + เลื่อนขึ้น)
+- บรรทัดสะเทือนใจ (`{ slow: [...] }`): `.narration-line--slow` — เงียบ 0.7s แล้วแต่ละวลี (`.narration-phrase`) ลอยขึ้นจากเบลอ 2s ห่างกัน 1.7s เองโดยไม่ต้องแตะ · จบแล้วข้อความอยู่นิ่ง (ไม่ re-render) · วลีเดียวก็ได้ = ค่อยๆ โผล่ทั้งบรรทัดในจังหวะเดียว · `breath: true` = แต่ละวลีขึ้นบรรทัดใหม่ เว้นช่อง 14px (`.narration-line--breath`)
+- ไหลต่อเอง (ไม่ต้องแตะ): บรรทัดที่ผู้เล่นเลือก และ `{ say, auto: true }` — ขึ้นครบแล้วเว้น 0.65s ขึ้นบรรทัดถัดไปเอง (แตะระหว่างนั้น = ไปต่อทันที) · ถ้าขึ้นต้นด้วย `"` ใช้สไตล์บทพูดด้วย
 - แตะระหว่างกำลังขึ้น = แสดงครบทันที · แตะเมื่อครบ = บรรทัดถัดไป / หน้าถัดไป / ปิด
 - "— tap to continue —" (`--font-kanji`) โผล่หลังพิมพ์จบ
 - สถานะ: ดีไซน์ชั่วคราว รอเจ้าของเคาะ
@@ -162,6 +164,22 @@ Depth is achieved through **Tonal Layering**, not structural shadows.
 ### Cloud Backdrop (`assets/ui/quiz/cloud_bg.png`)
 - ใช้ใน view-quiz และ view-result (ทั้งหน้า)
 - Result: เมฆอยู่ที่ `.result-content` เท่านั้น (ใต้รูป Yokai) · ขอบบนไล่จาก `--bg` → โปร่งใส 180px · **ห้ามมีพื้นหลัง/fade ทับตัว Yokai** — house tint อยู่ข้างหลังรูป ไล่จางเป็น `--bg` ที่ขอบล่าง, `.result-content` ไม่ใช้ margin ติดลบทับรูป
+
+### Result Quote Block (`.result-quote-block`) — Result page
+- แสดงบทพูดเดียวกับที่ภูตพูดหลัง loading: บรรทัด A แล้วตามด้วย B 0–2 บรรทัด · 1 บรรทัด = `.result-quote` 1 ย่อหน้า ห่างกัน 14px · ข้อความครอบ `"…"` อัตโนมัติ
+- Yokai ที่ยังไม่มี `memory` → ไม่แสดงกล่องนี้
+
+### Gender Flip Card (`.gender-flip`) — Result page
+- แทนปุ่ม pill เดิม · การ์ด 64×84px `position: absolute` มุมขวาบนของ `.result-content` (ระดับแถว house · MBTI) ชื่อ Yokai ยังอยู่กลาง
+- หน้าการ์ด = **เพศที่โชว์อยู่ในหน้านั้น**: หน้า ♂ (`--secondary`) / หลัง ♀ (`--primary`) + label (Noto Serif JP) + "Tap to switch" (M PLUS, จาง 50%)
+- พื้น `--surface-lowest`, ghost border, `--shadow-ambient`, มุมไม่เท่ากัน `1.1rem 0.8rem 0.8rem 0.8rem`
+- กด → `rotateY(180deg)` 0.7s easeOutBack `cubic-bezier(0.34,1.56,0.64,1)` · `.is-flipped` = กำลังโชว์ female · ระหว่างหมุนกดซ้ำไม่ได้
+- กดปุ๊บ **Blinds Transition** เริ่มพร้อมกัน (หน่วง 0.25s ให้เห็นการ์ดพลิกก่อน) · สลับเพศตอนมู่ลี่ปิดสนิท (หลังการ์ดหมุนจบ)
+
+### Blinds Transition (`#blinds-curtain`) — สลับเพศหน้า result
+- มู่ลี่ญี่ปุ่น (sudare) แนวนอน 12 แถบ ปิดเต็มคอลัมน์แอป (`max-width: var(--max-w)` กึ่งกลาง — บนคอมไม่ล้นออกนอกจอมือถือ) · แถบไล่สี `--primary` → `--primary` ผสม `--on-surface` 22% (แดงโทริอิ)
+- แต่ละแถบ `scaleY(0→1)` จากขอบบน 0.35s `cubic-bezier(0.65,0,0.35,1)` ไล่ดีเลย์ 25ms/แถบ (บนลงล่าง ทั้งตอนปิดและเปิด) · ตอนปิดหน่วงเพิ่ม 0.25s
+- ปิดสนิท (~0.9s หลังกด) → สลับเนื้อหา → ค้าง 150ms → เปิด
 
 ### Modals / Overlays
 - Background: `rgba(239,224,192,0.7)` (`--surface-lowest` at 70%)

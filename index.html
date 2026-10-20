@@ -361,6 +361,22 @@
   <!-- Black fade curtain — used for cinematic view transitions -->
   <div id="fade-curtain" aria-hidden="true"></div>
 
+  <!-- Tori-red sudare blinds — result page gender swap -->
+  <div id="blinds-curtain" aria-hidden="true">
+    <span class="blind-slat" style="--i:0"></span>
+    <span class="blind-slat" style="--i:1"></span>
+    <span class="blind-slat" style="--i:2"></span>
+    <span class="blind-slat" style="--i:3"></span>
+    <span class="blind-slat" style="--i:4"></span>
+    <span class="blind-slat" style="--i:5"></span>
+    <span class="blind-slat" style="--i:6"></span>
+    <span class="blind-slat" style="--i:7"></span>
+    <span class="blind-slat" style="--i:8"></span>
+    <span class="blind-slat" style="--i:9"></span>
+    <span class="blind-slat" style="--i:10"></span>
+    <span class="blind-slat" style="--i:11"></span>
+  </div>
+
 </div><!-- /app -->
 
 <script src="scoring-engine.js"></script>
@@ -460,12 +476,19 @@ function shuffled(arr) {
 // Each page reveals one line per tap and keeps earlier lines on screen.
 // Narration lines type out; dialogue lines (starting with a quote) fade in softly.
 const NARRATION_SPEECH_MS = 1100;
+// { slow } lines — phrases surface one by one on their own (fade length matches .narration-phrase)
+const NARRATION_SLOW_PAUSE_MS = 700;
+const NARRATION_SLOW_STEP_MS  = 1700;
+const NARRATION_SLOW_FADE_MS  = 2000;
+const NARRATION_REPLY_STAGGER_MS = 65;   // reply rows expand one after another
+const NARRATION_AUTO_GAP_MS = 650;       // beat before an auto line flows into the next
 let _narrationPages = [];
 let _narrationLines = [];
 let _narrationDone  = null;
 let _narrationTimer = null;   // typing interval or speech fade timeout
-let _narrationLine  = null;   // { el, text, speech } of the line being revealed
+let _narrationLine  = null;   // { el, text, timed, phrased, auto } of the line being revealed (timed = timeout, else typing interval)
 let _narrationAwaitingReply = false;
+let _narrationAutoTimer = null;   // pending auto-advance after an { auto } / player line
 
 function toGraphemes(text) {
   // Thai vowels/tone marks must stay attached to their consonant while typing
@@ -481,7 +504,7 @@ function showNarration(pages, onDone) {
   startNarrationPage();
 }
 
-// A page is a string ('\n' = next line) or an array of lines; a line may be { reply: [...] }
+// A page is a string ('\n' = next line) or an array of lines; a line may be { reply: [...] }, { slow: [...], breath?, auto? } or { say: '…', auto: true }
 function startNarrationPage() {
   const page = _narrationPages.shift();
   _narrationLines = (Array.isArray(page) ? page : page.split('\n'))
@@ -499,15 +522,16 @@ function showNarrationReply(options) {
   const box  = document.getElementById('narration-text');
   const wrap = document.createElement('div');
   wrap.className = 'narration-replies';
-  options.forEach(text => {
+  options.forEach((text, i) => {
     const btn = document.createElement('button');
     btn.className = 'narration-reply-btn';
     btn.textContent = text;
+    btn.style.animationDelay = (i * NARRATION_REPLY_STAGGER_MS) + 'ms';
     btn.addEventListener('click', e => {
       e.stopPropagation();
       wrap.remove();
       _narrationAwaitingReply = false;
-      revealNarrationLine(text, true);
+      revealNarrationLine(`"${text}"`, true);
     });
     wrap.appendChild(btn);
   });
@@ -518,14 +542,17 @@ function showNarrationReply(options) {
 
 function revealNarrationLine(chosenText, byPlayer) {
   const line = chosenText || _narrationLines.shift();
-  if (typeof line === 'object') { showNarrationReply(line.reply); return; }
-  const text   = line;
+  if (typeof line === 'object' && line.reply) { showNarrationReply(line.reply); return; }
+  if (typeof line === 'object' && line.slow)  { revealSlowLine(line.slow, line.breath, line.auto === true); return; }
+  // player's own line and { auto } lines flow into the next line without a tap
+  const text   = typeof line === 'object' ? line.say : line;
+  const auto   = byPlayer || (typeof line === 'object' && line.auto);
   const speech = isSpeechLine(text);
   const el     = document.createElement('p');
   el.className = 'narration-line' + (speech ? ' narration-line--speech' : '') + (byPlayer ? ' narration-line--player' : '');
   document.getElementById('narration-text').appendChild(el);
   document.getElementById('narration-tap').classList.remove('ready');
-  _narrationLine = { el, text, speech };
+  _narrationLine = { el, text, timed: speech, phrased: false, auto };
 
   if (speech) {
     el.textContent = text;
@@ -540,17 +567,43 @@ function revealNarrationLine(chosenText, byPlayer) {
   }, 38);
 }
 
+// Emotional beat — after a short silence each phrase drifts up in turn, no tap needed
+function revealSlowLine(phrases, breath, auto) {
+  const text = phrases.join(' ');
+  const el   = document.createElement('p');
+  el.className = 'narration-line narration-line--slow' + (breath ? ' narration-line--breath' : '') + (isSpeechLine(text) ? ' narration-line--speech' : '');
+  phrases.forEach((phrase, i) => {
+    const span = document.createElement('span');
+    span.className = 'narration-phrase';
+    span.textContent = phrase;
+    span.style.animationDelay = (NARRATION_SLOW_PAUSE_MS + i * NARRATION_SLOW_STEP_MS) + 'ms';
+    if (i) el.append(' ');
+    el.appendChild(span);
+  });
+  document.getElementById('narration-text').appendChild(el);
+  document.getElementById('narration-tap').classList.remove('ready');
+  _narrationLine = { el, text, timed: true, phrased: true, auto };
+  const total = NARRATION_SLOW_PAUSE_MS + (phrases.length - 1) * NARRATION_SLOW_STEP_MS + NARRATION_SLOW_FADE_MS;
+  _narrationTimer = setTimeout(finishNarrationLine, total);
+}
+
 function finishNarrationLine() {
-  const { el, text, speech } = _narrationLine;
-  if (speech) clearTimeout(_narrationTimer); else clearInterval(_narrationTimer);
+  const { el, text, timed, phrased, auto } = _narrationLine;
+  if (timed) clearTimeout(_narrationTimer); else clearInterval(_narrationTimer);
   _narrationTimer = null;
-  el.textContent = text;
+  if (!phrased) el.textContent = text;   // phrase spans stay put — re-flowing them made the line jump
   el.classList.add('shown');
+  if (auto && _narrationLines.length) {
+    _narrationAutoTimer = setTimeout(advanceNarration, NARRATION_AUTO_GAP_MS);
+    return;
+  }
   document.getElementById('narration-tap').classList.add('ready');
 }
 
 function advanceNarration() {
   if (_narrationAwaitingReply) return;   // must pick a reply first
+  clearTimeout(_narrationAutoTimer);     // a tap during the auto beat just moves on now
+  _narrationAutoTimer = null;
   if (_narrationTimer) { finishNarrationLine(); return; }
   if (_narrationLines.length) { revealNarrationLine(); return; }
   if (_narrationPages.length) { startNarrationPage(); return; }
@@ -577,7 +630,8 @@ function confirmAnswer() {
     pickHouseAnswer(choice.house);
     if (state.currentQ < QUESTIONS.house.length) { loadQuestion(); return; }
     calcHouse();
-    showView('bento');
+    // lead narration opens over E5 — switching to bento first let it show through the fade-in
+    showNarration(QUESTIONS.yokai[0].lead, () => showView('bento'));
     return;
   }
 
@@ -726,7 +780,7 @@ function dismissSceneIntro(introId, mainId) {
 function initBento() {
   guardState(2);
   resetSceneIntro('bento-intro', 'bento-main');
-  showNarration(QUESTIONS.yokai[0].lead, () => showSceneIntro('bento-intro'));
+  showSceneIntro('bento-intro');
 }
 
 function dismissBentoIntro() {
@@ -753,7 +807,7 @@ function confirmBentoChoice() {
 
 function onBentoContinue() {
   if (_bentoPhase !== 'arrange' || !_bentoFoodPlaced) return;
-  showNarration([QUESTIONS.yokai[0].afterArrange], () => fadeToView('quiz', loadQuestion));
+  showNarration(QUESTIONS.yokai[0].afterArrange, () => fadeToView('quiz', loadQuestion));
 }
 
 function showBentoQuestion() {
@@ -1159,8 +1213,20 @@ function initLoading() {
 
   setTimeout(() => {
     clearInterval(interval);
-    fadeToView('result');
+    showResultSpeech();
   }, 3520);
+}
+
+// The guest finally speaks before the reveal — memory line (A) drifts up, near lines (B) flow on, tap → result
+// Yokai without written lines (memory: null) go straight to the result
+function showResultSpeech() {
+  const { memory, near } = getResult();
+  if (!memory) { fadeToView('result'); return; }
+  const page = [
+    { slow: [`"${memory}"`], auto: near.length > 0 },
+    ...near.map((line, i) => i < near.length - 1 ? { say: `"${line}"`, auto: true } : `"${line}"`)
+  ];
+  showNarration([page], () => fadeToView('result'));
 }
 
 // ── RESULT ────────────────────────────────────────────────────
@@ -1183,6 +1249,25 @@ function spawnSakuraFall() {
   setTimeout(() => container.remove(), 3800);
 }
 
+// Close the blinds (top slat first), run fn behind them, hold briefly, open again
+function blindsThrough(fn) {
+  const blinds = document.getElementById('blinds-curtain');
+  blinds.classList.add('closed');
+  blinds.lastElementChild.addEventListener('transitionend', () => {
+    fn();
+    setTimeout(() => blinds.classList.remove('closed'), 150);
+  }, { once: true });
+}
+
+// Flip and close the blinds together (CSS delays the blinds 0.25s) — swap lands after the flip ends;
+// renderResult() rebuilds the card already turned to match resultGenderShown
+function flipGenderCard(card) {
+  if (card.classList.contains('is-flipping')) return;
+  card.classList.add('is-flipping');
+  card.classList.toggle('is-flipped');
+  blindsThrough(toggleResultGender);
+}
+
 function renderResult() {
   guardState(2);
   const r = getResult();
@@ -1192,7 +1277,8 @@ function renderResult() {
 
   const tint            = houseTints[r.house]  || 'transparent';
   const houseLabel      = houseLabels[r.house] || r.house;
-  const otherGenderText = state.resultGenderShown === 'male' ? '♀ Female version' : '♂ Male version';
+  const otherGenderText = state.resultGenderShown === 'male' ? 'Switch to female version' : 'Switch to male version';
+  const flipClass       = state.resultGenderShown === 'female' ? ' is-flipped' : '';
 
   const hasArt = r.image && r.image.trim() !== '';
 
@@ -1243,6 +1329,20 @@ function renderResult() {
         ${artHTML}
       </div>
       <div class="result-content">
+        <button class="gender-flip${flipClass}" onclick="flipGenderCard(this)" aria-label="${otherGenderText}">
+          <span class="gender-flip-inner">
+            <span class="gender-flip-face gender-flip-face--front">
+              <span class="gender-flip-symbol">♂</span>
+              <span class="gender-flip-label">Male</span>
+              <span class="gender-flip-hint">Tap to switch</span>
+            </span>
+            <span class="gender-flip-face gender-flip-face--back">
+              <span class="gender-flip-symbol">♀</span>
+              <span class="gender-flip-label">Female</span>
+              <span class="gender-flip-hint">Tap to switch</span>
+            </span>
+          </span>
+        </button>
         <div class="result-identity">
           <div class="result-mbti-row">
             <span class="result-house-label">${houseLabel}</span>
@@ -1252,17 +1352,14 @@ function renderResult() {
           <p class="result-title">${r.title}</p>
           <p class="result-tagline">${r.tagline}</p>
         </div>
-        <button class="result-gender-pill" onclick="toggleResultGender()" aria-label="${otherGenderText}">
-          <svg viewBox="0 0 24 24"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
-          ${otherGenderText}
-        </button>
         <div class="result-section">
           <p class="result-section-eyebrow">— Why you matched —</p>
           <p class="result-why">${r.why}</p>
         </div>
+        ${r.memory ? `
         <div class="result-quote-block">
-          <p class="result-quote">${r.quote}</p>
-        </div>
+          ${[r.memory, ...r.near].map(line => `<p class="result-quote">"${line}"</p>`).join('')}
+        </div>` : ''}
         <div class="result-section">
           <p class="result-section-eyebrow">— Teru Teru Bōzu —</p>
           <div class="result-dolls">${dollsHTML}</div>
@@ -1376,92 +1473,190 @@ const YOKAI_DATA = {
   // ── Purple · Analysts (NT) ───────────────────────────────────
   Tenjin: {
     house:'purple', mbti:'INTJ', emoji:'📜', name:'Tenjin', title:'เทพแห่งปัญญา', dollImage:'',
-    male:   { image:'', tagline:'The God of Knowledge',    why:'[เหตุผลที่คุณคู่กับ Tenjin เพศชาย]',   quote:'"[คำพูดของ Tenjin เพศชาย]"',   compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] },
-    female: { image:'', tagline:'The Goddess of Knowledge',why:'[เหตุผลที่คุณคู่กับ Tenjin เพศหญิง]', quote:'"[คำพูดของ Tenjin เพศหญิง]"', compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] }
+    memory: {
+      e1: 'เอาละ กระดิ่งใบนั้นไม่ต้องหาแล้ว งานในเรือนข้าจัดใหม่หมด คืนนี้เจ้าพักได้',
+      e2: 'ร่มกองนั้นข้าผูกป้ายชื่อครบทุกคันตั้งแต่ก่อนฝนตก เรียงตามห้องด้วย ต่อจากนี้ใครมาก็หยิบเองได้',
+      e3: 'วางโคมดวงนั้นลงเถิด ข้าแขวนโคมรอไว้ทั่วทางเดินแล้ว',
+      e4: 'คนอื่นเรียกเจ้าว่าเจ้าของเรียวกัง ข้าเลือกไว้นานแล้วว่าจะเรียกชื่อจริง',
+      e5: 'ในแผนของข้าไม่มีเรื่องอะไรให้เจ้าต้องดูแล มีแค่ที่ว่างข้างข้า… มาสิ'
+    },
+    near: {
+      JP: 'บางทีเจ้าก็ลองอะไรใหม่ๆ ขึ้นมาเฉยๆ แผนของข้าเลยมีเรื่องให้ตื่นเต้นบ้าง ข้าชอบนะ',
+      EI: 'เวลาเจ้าออกไปก่อนข้าอ่านจบ ข้าก็หนีบตำราตามไปตลาด ได้เห็นของจริงที่เคยอ่านแต่ในตำรา'
+    },
+    male:   { image:'', tagline:'The God of Knowledge',    why:'[เหตุผลที่คุณคู่กับ Tenjin เพศชาย]',   compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] },
+    female: { image:'', tagline:'The Goddess of Knowledge',why:'[เหตุผลที่คุณคู่กับ Tenjin เพศหญิง]', compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] }
   },
   Yumekui: {
     house:'purple', mbti:'INTP', emoji:'💤', name:'Yumekui', title:'ปีศาจกินฝัน', dollImage:'',
-    male:   { image:'', tagline:'The Dream Devourer', why:'[เหตุผลที่คุณคู่กับ Yumekui เพศชาย]',   quote:'"[คำพูดของ Yumekui เพศชาย]"',   compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] },
-    female: { image:'assets/yokai/yumekui_f.png', tagline:'The Dream Devourer', why:'[เหตุผลที่คุณคู่กับ Yumekui เพศหญิง]', quote:'"[คำพูดของ Yumekui เพศหญิง]"', compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] }
+    memory: null, near: null,
+    male:   { image:'', tagline:'The Dream Devourer', why:'[เหตุผลที่คุณคู่กับ Yumekui เพศชาย]',   compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] },
+    female: { image:'assets/yokai/yumekui_f.png', tagline:'The Dream Devourer', why:'[เหตุผลที่คุณคู่กับ Yumekui เพศหญิง]', compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] }
   },
   Ryuu: {
     house:'purple', mbti:'ENTJ', emoji:'🐉', name:'Ryuu', title:'มังกรเทพเจ้า', dollImage:'',
-    male:   { image:'', tagline:'The Dragon God',     why:'[เหตุผลที่คุณคู่กับ Ryuu เพศชาย]',   quote:'"[คำพูดของ Ryuu เพศชาย]"',   compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] },
-    female: { image:'', tagline:'The Dragon Goddess', why:'[เหตุผลที่คุณคู่กับ Ryuu เพศหญิง]', quote:'"[คำพูดของ Ryuu เพศหญิง]"', compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] }
+    memory: null, near: null,
+    male:   { image:'', tagline:'The Dragon God',     why:'[เหตุผลที่คุณคู่กับ Ryuu เพศชาย]',   compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] },
+    female: { image:'', tagline:'The Dragon Goddess', why:'[เหตุผลที่คุณคู่กับ Ryuu เพศหญิง]', compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] }
   },
   Kitsune: {
     house:'purple', mbti:'ENTP', emoji:'🦊', name:'Kitsune', title:'จิ้งจอกเก้าหาง', dollImage:'',
-    male:   { image:'', tagline:'The Nine-Tailed Fox', why:'[เหตุผลที่คุณคู่กับ Kitsune เพศชาย]',   quote:'"[คำพูดของ Kitsune เพศชาย]"',   compat:[{label:'Wit & Banter',value:95},{label:'Curiosity',value:86},{label:'Stability',value:34}] },
-    female: { image:'', tagline:'The Nine-Tailed Fox', why:'[เหตุผลที่คุณคู่กับ Kitsune เพศหญิง]', quote:'"[คำพูดของ Kitsune เพศหญิง]"', compat:[{label:'Wit & Banter',value:95},{label:'Curiosity',value:86},{label:'Stability',value:34}] }
+    memory: {
+      e1: 'ฮิฮิ กระดิ่งน่ะข้าซ่อนเอง ถ้าคืนนี้ไม่มีเสียงเรียก เจ้าจะหลับลงไหมล่ะ',
+      e2: 'ฮิฮิ ร่มกองนั้นมาทายกับข้าไหมว่าคันไหนของใคร ทายผิดก็ไม่มีใครว่าหรอก',
+      e3: 'เอ๊ะ ไฟจิ้งจอกของข้าก็ลอยส่องทั่วทางอยู่แล้ว โคมหนักๆ นั่นเจ้าจะแบกไปถึงไหนล่ะ',
+      e4: 'เสียงนั้นเรียกหาเจ้าของเรียวกัง… ตำแหน่งน่ะข้าไม่สนหรอก ว่าแต่เจ้าตัวจริงชื่ออะไรกันนะ?',
+      e5: 'ใครตั้งกฎว่าอยู่ด้วยกันต้องเอาใจกันล่ะ ขนมของเจ้า ข้าก็หยิบกินเองไปชิ้นหนึ่งแล้ว เจ้ายังไม่ทันเห็นเลยใช่ไหม'
+    },
+    near: {
+      JP: 'ข้าคิดได้เก้าทาง เจ้าชี้ทางเดียวก็จบเรื่อง เข้าคู่กันดีไหมล่ะ',
+      EI: 'เวลาเจ้านั่งดูเงียบๆ ข้าก็ซนได้ทั้งคืน ซนจนเหนื่อยเมื่อไหร่ ก็กลับมานอนข้างเจ้า'
+    },
+    male:   { image:'', tagline:'The Nine-Tailed Fox', why:'[เหตุผลที่คุณคู่กับ Kitsune เพศชาย]',   compat:[{label:'Wit & Banter',value:95},{label:'Curiosity',value:86},{label:'Stability',value:34}] },
+    female: { image:'', tagline:'The Nine-Tailed Fox', why:'[เหตุผลที่คุณคู่กับ Kitsune เพศหญิง]', compat:[{label:'Wit & Banter',value:95},{label:'Curiosity',value:86},{label:'Stability',value:34}] }
   },
 
   // ── Green · Diplomats (NF) ───────────────────────────────────
   Shinigami: {
     house:'green', mbti:'INFJ', emoji:'💀', name:'Shinigami', title:'ยมทูต', dollImage:'',
-    male:   { image:'', tagline:'The Soul Guide', why:'[เหตุผลที่คุณคู่กับ Shinigami เพศชาย]',   quote:'"[คำพูดของ Shinigami เพศชาย]"',   compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] },
-    female: { image:'assets/yokai/shinigami_f.png', tagline:'The Soul Guide', why:'[เหตุผลที่คุณคู่กับ Shinigami เพศหญิง]', quote:'"[คำพูดของ Shinigami เพศหญิง]"', compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] }
+    memory: null, near: null,
+    male:   { image:'', tagline:'The Soul Guide', why:'[เหตุผลที่คุณคู่กับ Shinigami เพศชาย]',   compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] },
+    female: { image:'assets/yokai/shinigami_f.png', tagline:'The Soul Guide', why:'[เหตุผลที่คุณคู่กับ Shinigami เพศหญิง]', compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] }
   },
   Yukionna: {
     house:'green', mbti:'INFP', emoji:'❄️', name:'Yukionna', title:'ปีศาจหิมะ', dollImage:'',
-    male:   { image:'', tagline:'The Snow Spirit', why:'[เหตุผลที่คุณคู่กับ Yukionna เพศชาย]',   quote:'"[คำพูดของ Yukionna เพศชาย]"',   compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] },
-    female: { image:'assets/yokai/yukionna_f.png', tagline:'The Snow Spirit', why:'[เหตุผลที่คุณคู่กับ Yukionna เพศหญิง]', quote:'"[คำพูดของ Yukionna เพศหญิง]"', compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] }
+    memory: {
+      e1: 'สมุดเล่มนั้น ข้าไม่ขอเปิดหรอก… ข้าเองก็มีอยู่เล่มหนึ่ง ถ้าเจ้าอยากดู ข้าให้ดูก่อนก็ได้',
+      e2: 'ชาถ้วยนั้นร้อนเกินมือข้าไปหน่อย… ฟู่… ข้าจะค่อยๆ จิบจนหมดเลยนะ',
+      e3: 'ตะเกียงดวงนั้น… ข้าขอนั่งตรงขอบแสงสักมุมได้ไหม ไม่พูดอะไรเลยก็ได้',
+      e4: 'ฟู่… เพลงนั้นข้ารู้จักท่อนต่อนะ ข้าเคยฮัมอยู่คนเดียวเหมือนกัน',
+      e5: 'เรื่องเล็กๆ ที่เจ้านึกว่าเห็นอยู่คนเดียว… ข้าก็เห็นนะ นึกว่ามีข้าคนเดียวเสียอีก'
+    },
+    near: {
+      JP: 'เจ้าน่ะ ทำอะไรก็ทำจนจบ… ข้าเห็นแล้วก็อยากปั้นตุ๊กตาหิมะให้เสร็จสักตัวบ้าง',
+      EI: 'เวลาเจ้าเดินมาทักก่อน… ข้าถึงได้พูดคำแรกของวัน เสียงแหบหน่อยนะ อย่าหัวเราะล่ะ'
+    },
+    male:   { image:'', tagline:'The Snow Spirit', why:'[เหตุผลที่คุณคู่กับ Yukionna เพศชาย]',   compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] },
+    female: { image:'assets/yokai/yukionna_f.png', tagline:'The Snow Spirit', why:'[เหตุผลที่คุณคู่กับ Yukionna เพศหญิง]', compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] }
   },
   Oni: {
     house:'green', mbti:'ENFJ', emoji:'👹', name:'Oni', title:'ยักษ์โอนิ', dollImage:'',
-    male:   { image:'assets/yokai/oni_m.png', tagline:'The Iron Guardian', why:'[เหตุผลที่คุณคู่กับ Oni เพศชาย]',   quote:'"[คำพูดของ Oni เพศชาย]"',   compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] },
-    female: { image:'assets/yokai/oni_f.png', tagline:'The Iron Guardian', why:'[เหตุผลที่คุณคู่กับ Oni เพศหญิง]', quote:'"[คำพูดของ Oni เพศหญิง]"', compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] }
+    memory: {
+      e1: 'เล่าเรื่องในสมุดเล่มนั้นให้ข้าฟังสักเรื่องสิ ข้าแบกโต๊ะมาให้เจ้าขึ้นยืนเล่าแล้วนะ',
+      e2: 'ฮ่าๆๆ ชาที่เจ้ารินไว้ ข้ายกดื่มเป็นคนแรกแล้ว ใครถามว่าฝีมือใคร ข้าจะชี้มาที่เจ้า',
+      e3: 'เอาตะเกียงดวงนั้นออกมาตั้งกลางโถงสิ แสงสวยขนาดนี้ เก็บไว้ดูคนเดียวเสียดายแย่',
+      e4: 'ฮ่าๆๆ ประตูห้องนั้นข้างัดออกทั้งบานแล้ว ฮัมเพลงนั้นอีกทีสิ ให้ข้าได้จำไว้',
+      e5: 'นกตัวเล็กบนชายคาที่เจ้าแอบมองอยู่ ข้าก็เห็นนะ เดี๋ยวข้าชี้ให้ทั้งเรือนดู แล้วบอกว่าเจ้าเห็นก่อน'
+    },
+    near: {
+      JP: 'คนอย่างเจ้า คงลากข้าเข้าวงรำก่อนข้าได้กล่าวเปิดงาน ฮ่าๆๆ ก็ดี สนุกกว่าตั้งเยอะ',
+      EI: 'เวลาเจ้านิ่งคิด ยักษ์เสียงดังอย่างข้าก็ยอมปิดปากรอ คำที่เจ้าพูดออกมาทีหลังน่ะ ดีทุกคำ'
+    },
+    male:   { image:'assets/yokai/oni_m.png', tagline:'The Iron Guardian', why:'[เหตุผลที่คุณคู่กับ Oni เพศชาย]',   compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] },
+    female: { image:'assets/yokai/oni_f.png', tagline:'The Iron Guardian', why:'[เหตุผลที่คุณคู่กับ Oni เพศหญิง]', compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] }
   },
   Tanuki: {
     house:'green', mbti:'ENFP', emoji:'🍃', name:'Tanuki', title:'ทานุกิ', dollImage:'',
-    male:   { image:'assets/yokai/tanuki_m.png', tagline:'The Shapeshifting Tanuki', why:'[เหตุผลที่คุณคู่กับ Tanuki เพศชาย]',   quote:'"[คำพูดของ Tanuki เพศชาย]"',   compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] },
-    female: { image:'assets/yokai/RYO_tanukiFall.mp4', tagline:'The Shapeshifting Tanuki', why:'Because you overthink and carry too much weight on your shoulders. She is the chaotic sunshine who will break down your walls, teach you to let go, and heal your heart when you\'re exhausted.', quote:'"Stop frowning! Let me magic all that stress away.🍃"', compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] }
+    memory: null, near: null,
+    male:   { image:'assets/yokai/tanuki_m.png', tagline:'The Shapeshifting Tanuki', why:'[เหตุผลที่คุณคู่กับ Tanuki เพศชาย]',   compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] },
+    female: { image:'assets/yokai/RYO_tanukiFall.mp4', tagline:'The Shapeshifting Tanuki', why:'Because you overthink and carry too much weight on your shoulders. She is the chaotic sunshine who will break down your walls, teach you to let go, and heal your heart when you\'re exhausted.', compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] }
   },
 
   // ── Blue · Sentinels (SJ) ────────────────────────────────────
   Tengu: {
     house:'blue', mbti:'ISTJ', emoji:'👺', name:'Tengu', title:'เทนกุ', dollImage:'',
-    male:   { image:'assets/yokai/tengu_m.png', tagline:'The Mountain Sentinel', why:'[เหตุผลที่คุณคู่กับ Tengu เพศชาย]',   quote:'"[คำพูดของ Tengu เพศชาย]"',   compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] },
-    female: { image:'assets/yokai/tengu_f.png', tagline:'The Mountain Sentinel', why:'[เหตุผลที่คุณคู่กับ Tengu เพศหญิง]', quote:'"[คำพูดของ Tengu เพศหญิง]"', compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] }
+    memory: {
+      e1: 'เครื่องรางนั้นห้อยอยู่ซ้ายมือเจ้าทุกวัน ข้าจำได้ ต่อไปข้าก็ยืนอยู่ซ้ายมือเจ้า ที่เดิม',
+      e2: 'หึ กลอนประตูนั้นข้าตรวจก่อนนอนเสมอ หลับเถอะ',
+      e3: 'ตะเกียงนั้นข้าเติมน้ำมันเอง ตื่นมาตอนไหน เจ้าก็ยังเห็นแสง',
+      e4: 'กล่องดนตรีนั้น ข้าไขลานให้ทุกคืน เวลาเดิม เพลงที่เจ้าชอบจะไม่หยุดกลางท่อน',
+      e5: 'หึ เมื่อวานข้าอยู่ วันนี้ข้าอยู่ พรุ่งนี้ก็เหมือนเดิม'
+    },
+    near: {
+      TF: 'เจ้าน่ะ เห็นแขกหน้าเศร้าทีไร ก็แอบวางขนมเกินให้ ข้าเห็นนะ ข้าก็วางเกินตามไปชิ้นหนึ่ง',
+      EI: 'เวลาเจ้าคว้ามือข้าวิ่งไปก่อน ข้าผูกเกี๊ยะไม่ทันทุกที หึ ข้างเดียวก็ลงเขาได้'
+    },
+    male:   { image:'assets/yokai/tengu_m.png', tagline:'The Mountain Sentinel', why:'[เหตุผลที่คุณคู่กับ Tengu เพศชาย]',   compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] },
+    female: { image:'assets/yokai/tengu_f.png', tagline:'The Mountain Sentinel', why:'[เหตุผลที่คุณคู่กับ Tengu เพศหญิง]', compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] }
   },
   Ningyo: {
     house:'blue', mbti:'ISFJ', emoji:'🧜', name:'Ningyo', title:'เงือกญี่ปุ่น', dollImage:'',
-    male:   { image:'', tagline:'The Eternal Mermaid', why:'[เหตุผลที่คุณคู่กับ Ningyo เพศชาย]',   quote:'"[คำพูดของ Ningyo เพศชาย]"',   compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] },
-    female: { image:'assets/yokai/ningyo_f.png', tagline:'The Eternal Mermaid', why:'[เหตุผลที่คุณคู่กับ Ningyo เพศหญิง]', quote:'"[คำพูดของ Ningyo เพศหญิง]"', compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] }
+    memory: null, near: null,
+    male:   { image:'', tagline:'The Eternal Mermaid', why:'[เหตุผลที่คุณคู่กับ Ningyo เพศชาย]',   compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] },
+    female: { image:'assets/yokai/ningyo_f.png', tagline:'The Eternal Mermaid', why:'[เหตุผลที่คุณคู่กับ Ningyo เพศหญิง]', compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] }
   },
   Jorogumo: {
     house:'blue', mbti:'ESTJ', emoji:'🕸️', name:'Jorogumo', title:'ปีศาจแมงมุม', dollImage:'',
-    male:   { image:'', tagline:'The Spider Enchantress', why:'[เหตุผลที่คุณคู่กับ Jorogumo เพศชาย]',   quote:'"[คำพูดของ Jorogumo เพศชาย]"',   compat:[{label:'Command',value:94},{label:'Dependability',value:89},{label:'Flexibility',value:30}] },
-    female: { image:'', tagline:'The Spider Enchantress', why:'[เหตุผลที่คุณคู่กับ Jorogumo เพศหญิง]', quote:'"[คำพูดของ Jorogumo เพศหญิง]"', compat:[{label:'Command',value:94},{label:'Dependability',value:89},{label:'Flexibility',value:30}] }
+    memory: null, near: null,
+    male:   { image:'', tagline:'The Spider Enchantress', why:'[เหตุผลที่คุณคู่กับ Jorogumo เพศชาย]',   compat:[{label:'Command',value:94},{label:'Dependability',value:89},{label:'Flexibility',value:30}] },
+    female: { image:'', tagline:'The Spider Enchantress', why:'[เหตุผลที่คุณคู่กับ Jorogumo เพศหญิง]', compat:[{label:'Command',value:94},{label:'Dependability',value:89},{label:'Flexibility',value:30}] }
   },
   Inugami: {
     house:'blue', mbti:'ESFJ', emoji:'🐕', name:'Inugami', title:'เทพสุนัข', dollImage:'',
-    male:   { image:'assets/yokai/inugami_m.png', tagline:'The Spirit Hound', why:'[เหตุผลที่คุณคู่กับ Inugami เพศชาย]',   quote:'"[คำพูดของ Inugami เพศชาย]"',   compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] },
-    female: { image:'assets/yokai/inugami_f.png', tagline:'The Spirit Hound', why:'[เหตุผลที่คุณคู่กับ Inugami เพศหญิง]', quote:'"[คำพูดของ Inugami เพศหญิง]"', compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] }
+    memory: {
+      e1: 'ฟุดฟิด เครื่องรางนั้นมีกลิ่นเจ้าติดอยู่ ข้าหาเจอแน่ ต่อไปของสำคัญ ข้าจำไว้ให้เอง',
+      e2: 'ลมกระแทกประตูทีไร ข้าก็เห่าใส่มันทีนั้น เห็นไหม มันเงียบไปแล้ว มานั่งพิงข้านะ',
+      e3: 'แสงตะเกียงนั้นน้อยไปหน่อย ข้าเลยเอาขนมาห่มเจ้าเพิ่ม หนาวไหม ขยับเข้ามาอีกนิดสิ',
+      e4: 'ลานใกล้หมดแล้ว มาผลัดกันไขนะ รอบนี้ข้าเอง อุ๊ย ไขแรงไป เพลงวิ่งเร็วเชียว',
+      e5: 'เช้าไหนเจ้าตื่นมา ก็ต้องก้าวข้ามข้าที่นอนขวางประตูอยู่ก่อนนะ หิวหรือยัง ไปกินข้าวต้มอุ่นๆ กัน'
+    },
+    near: {
+      TF: 'ข้ามัวห่วงคนอื่นจนลืมกินทุกที เจ้าก็วางชามตรงหน้า บอกคำเดียวว่ากิน ข้าก็กินเกลี้ยงเลยนะ',
+      EI: 'เวลาเจ้าขอนั่งดูเงียบๆ ข้าก็หมอบลงข้างๆ หางยังกระดิกอยู่เลย แบบนี้ก็อยู่ด้วยกันเหมือนกันนะ'
+    },
+    male:   { image:'assets/yokai/inugami_m.png', tagline:'The Spirit Hound', why:'[เหตุผลที่คุณคู่กับ Inugami เพศชาย]',   compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] },
+    female: { image:'assets/yokai/inugami_f.png', tagline:'The Spirit Hound', why:'[เหตุผลที่คุณคู่กับ Inugami เพศหญิง]', compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] }
   },
 
   // ── Yellow · Explorers (SP) ──────────────────────────────────
   Nekomata: {
     house:'yellow', mbti:'ISTP', emoji:'🐈‍⬛', name:'Nekomata', title:'แมวปีศาจสองหาง', dollImage:'',
-    male:   { image:'assets/yokai/nekomata_m.png', tagline:'The Twin-Tailed Cat Demon', why:'[เหตุผลที่คุณคู่กับ Nekomata เพศชาย]',   quote:'"[คำพูดของ Nekomata เพศชาย]"',   compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] },
-    female: { image:'assets/yokai/nekomata_f.png', tagline:'The Twin-Tailed Cat Demon', why:'[เหตุผลที่คุณคู่กับ Nekomata เพศหญิง]', quote:'"[คำพูดของ Nekomata เพศหญิง]"', compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] }
+    memory: {
+      e1: 'หาววว นาฬิกานั่นเร็วไปห้านาที ข้าเขี่ยเข็มกลับให้แล้ว งีบต่อได้',
+      e2: 'รองเท้าพวกนั้น ข้าเขี่ยแค่คู่ที่ขวางทางออก ที่เหลือช่างมัน แค่นี้ก็พอ',
+      e3: 'โคมนั่น ข้าคาบเดินนำเอง คนเขามัวมองแมวคาบโคม ไม่มีใครมองเจ้าหรอก',
+      e4: 'หาววว กระดาษที่ขยำทิ้ง ข้าคลี่ออกมาแผ่นหนึ่ง แผ่นนี้ใช้ได้',
+      e5: 'ของที่ไม่เป๊ะ ไม่ต้องขอโทษใคร ใช้ได้ก็พอ เบาะเย็บเบี้ยวๆ ข้าก็ขดหลับได้สบาย'
+    },
+    near: {
+      TF: 'เรื่องทำให้ใครยิ้ม ข้าทำไม่เป็น เจ้าทำไปเลย ข้าชอบนั่งดู',
+      EI: 'เวลาเจ้าดึงข้าเข้าไปด้วย แมวที่ชอบนอนในเงาอย่างข้า ก็ได้ออกไปนอนตากแดดบ้าง'
+    },
+    male:   { image:'assets/yokai/nekomata_m.png', tagline:'The Twin-Tailed Cat Demon', why:'[เหตุผลที่คุณคู่กับ Nekomata เพศชาย]',   compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] },
+    female: { image:'assets/yokai/nekomata_f.png', tagline:'The Twin-Tailed Cat Demon', why:'[เหตุผลที่คุณคู่กับ Nekomata เพศหญิง]', compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] }
   },
   Hebi: {
     house:'yellow', mbti:'ISFP', emoji:'🐍', name:'Hebi', title:'ปีศาจงูขาว', dollImage:'',
-    male:   { image:'assets/yokai/hebi_m.png', tagline:'The White Serpent', why:'[เหตุผลที่คุณคู่กับ Hebi เพศชาย]',   quote:'"[คำพูดของ Hebi เพศชาย]"',   compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] },
-    female: { image:'', tagline:'The White Serpent', why:'[เหตุผลที่คุณคู่กับ Hebi เพศหญิง]', quote:'"[คำพูดของ Hebi เพศหญิง]"', compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] }
+    memory: null, near: null,
+    male:   { image:'assets/yokai/hebi_m.png', tagline:'The White Serpent', why:'[เหตุผลที่คุณคู่กับ Hebi เพศชาย]',   compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] },
+    female: { image:'', tagline:'The White Serpent', why:'[เหตุผลที่คุณคู่กับ Hebi เพศหญิง]', compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] }
   },
   Raijin: {
     house:'yellow', mbti:'ESTP', emoji:'⚡', name:'Raijin', title:'เทพสายฟ้า', dollImage:'',
-    male:   { image:'assets/yokai/raijin_m.png', tagline:'The God of Thunder',     why:'[เหตุผลที่คุณคู่กับ Raijin เพศชาย]',   quote:'"[คำพูดของ Raijin เพศชาย]"',   compat:[{label:'Electric Energy',value:95},{label:'Thrill',value:88},{label:'Patience',value:24}] },
-    female: { image:'', tagline:'The Goddess of Thunder', why:'[เหตุผลที่คุณคู่กับ Raijin เพศหญิง]', quote:'"[คำพูดของ Raijin เพศหญิง]"', compat:[{label:'Electric Energy',value:95},{label:'Thrill',value:88},{label:'Patience',value:24}] }
+    memory: null, near: null,
+    male:   { image:'assets/yokai/raijin_m.png', tagline:'The God of Thunder',     why:'[เหตุผลที่คุณคู่กับ Raijin เพศชาย]',   compat:[{label:'Electric Energy',value:95},{label:'Thrill',value:88},{label:'Patience',value:24}] },
+    female: { image:'', tagline:'The Goddess of Thunder', why:'[เหตุผลที่คุณคู่กับ Raijin เพศหญิง]', compat:[{label:'Electric Energy',value:95},{label:'Thrill',value:88},{label:'Patience',value:24}] }
   },
   Fuujin: {
     house:'yellow', mbti:'ESFP', emoji:'🌪️', name:'Fuujin', title:'เทพวายุ', dollImage:'',
-    male:   { image:'', tagline:'The Wind God',     why:'[เหตุผลที่คุณคู่กับ Fuujin เพศชาย]',   quote:'"[คำพูดของ Fuujin เพศชาย]"',   compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] },
-    female: { image:'assets/yokai/fuujin_f.png', tagline:'The Wind Goddess', why:'[เหตุผลที่คุณคู่กับ Fuujin เพศหญิง]', quote:'"[คำพูดของ Fuujin เพศหญิง]"', compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] }
+    memory: {
+      e1: 'ห้านาทีที่ได้คืนมา เอามานอนนับเมฆกับข้า!',
+      e2: 'รองเท้าเกลื่อนขนาดนี้ มาแข่งโยนเข้าชั้นกันดีกว่า ใครเข้าก่อนชนะ!',
+      e3: 'ฟิ้ววว สายตาพวกนั้นโดนลมข้าจนหลับตาปี๋หมดแล้ว เจ้าพักก่อนเลย!',
+      e4: 'กระดาษพวกนั้นขยำเป็นลูกกลมๆ แล้วโยนมา ข้าเปิดถุงลมรอแล้ว ฟิ้ววว ขึ้นฟ้า!',
+      e5: 'ไม่ต้องรอให้งานเสร็จหรอก หัวเราะตอนนี้เลยก็ได้ มากับข้า!'
+    },
+    near: {
+      TF: 'เจ้าน่ะ ต้องรู้ก่อนว่าว่าวลอยได้เพราะอะไร แล้วผูกสายจนแน่น ว่าวแบบนั้น ข้าพัดแรงแค่ไหนก็ไม่หลุด!',
+      EI: 'เวลาเจ้าหยุดดูทางก่อนก้าว ข้าก็หยุดพัดด้วย ใบไม้ค่อยๆ ร่วงลงมา ข้าชอบดูตอนนั้นที่สุด!'
+    },
+    male:   { image:'', tagline:'The Wind God',     why:'[เหตุผลที่คุณคู่กับ Fuujin เพศชาย]',   compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] },
+    female: { image:'assets/yokai/fuujin_f.png', tagline:'The Wind Goddess', why:'[เหตุผลที่คุณคู่กับ Fuujin เพศหญิง]', compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] }
   }
 
 };
+
+validateYokaiData();   // fail fast if memory/near break DATA_SCHEMA §3
 
 // ── BGM STUB — filled in Step 8 ──────────────────────────────
 document.getElementById('btn-bgm').addEventListener('click', () => {

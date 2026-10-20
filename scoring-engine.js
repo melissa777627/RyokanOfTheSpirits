@@ -156,7 +156,7 @@ function validateChoiceSet(id, axis, choices) {
   }
 }
 
-// Narration page = string, or array of strings / { reply: [2+ strings] }
+// Narration page = string, or array of strings / { reply: [2+ strings] } / { slow: [1+ phrases], breath? } / { say, auto }
 function validateNarration(where, pages) {
   if (!Array.isArray(pages)) throw new Error(`[Ryokan] ${where}: narration must be an array of pages`);
   for (const page of pages) {
@@ -164,9 +164,10 @@ function validateNarration(where, pages) {
     if (!Array.isArray(page)) throw new Error(`[Ryokan] ${where}: page must be a string or an array`);
     for (const line of page) {
       if (typeof line === 'string') continue;
-      if (!line || !Array.isArray(line.reply) || line.reply.length < 2) {
-        throw new Error(`[Ryokan] ${where}: line must be a string or { reply: [2+ options] }`);
-      }
+      if (line && Array.isArray(line.reply) && line.reply.length >= 2) continue;
+      if (line && Array.isArray(line.slow) && line.slow.length >= 1) continue;
+      if (line && typeof line.say === 'string' && line.auto === true) continue;
+      throw new Error(`[Ryokan] ${where}: line must be a string, { reply: [2+ options] } or { slow: [1+ phrases] } or { say, auto: true }`);
     }
   }
 }
@@ -175,6 +176,7 @@ function validateQuestions() {
   const { house, yokai, outro } = QUESTIONS;
   [...house, ...yokai].forEach(q => validateNarration(q.id + '.lead', q.lead));
   validateNarration('outro', outro);
+  validateNarration('bento.afterArrange', yokai[0].afterArrange);
   if (house.length !== 5) throw new Error('[Ryokan] QUESTIONS.house must have 5 questions');
   if (yokai.length !== 6) throw new Error('[Ryokan] QUESTIONS.yokai must have 6 questions');
   if (!outro.length)      throw new Error('[Ryokan] QUESTIONS.outro is empty');
@@ -202,6 +204,23 @@ function validateQuestions() {
   });
 }
 
+// memory / near ต่อ Yokai: null = ยังไม่เขียน · ถ้ามี object ต้องครบทุก key (DATA_SCHEMA §3)
+function validateYokaiData() {
+  for (const [name, y] of Object.entries(YOKAI_DATA)) {
+    if (y.memory !== null) {
+      const ok = y.memory && ['e1', 'e2', 'e3', 'e4', 'e5'].every(k => typeof y.memory[k] === 'string' && y.memory[k]);
+      if (!ok) throw new Error(`[Ryokan] YOKAI_DATA.${name}.memory needs e1–e5 (or null)`);
+    }
+    if (y.near !== null) {
+      const ok = y.near && ['EI', HOUSE_AXIS[y.house]].every(k => typeof y.near[k] === 'string' && y.near[k]);
+      if (!ok) throw new Error(`[Ryokan] YOKAI_DATA.${name}.near needs EI + ${HOUSE_AXIS[y.house]} (or null)`);
+    }
+    if ((y.memory === null) !== (y.near === null)) {
+      throw new Error(`[Ryokan] YOKAI_DATA.${name}: memory and near must both be written or both null`);
+    }
+  }
+}
+
 // ── 7. RESULT HELPERS ────────────────────────────────────────
 
 function getResult() {
@@ -216,9 +235,35 @@ function getResult() {
     image:   yokai[gender].image,
     tagline: yokai[gender].tagline,
     why:     yokai[gender].why,
-    quote:   yokai[gender].quote,
-    compat:  yokai[gender].compat
+    compat:  yokai[gender].compat,
+    memory:  yokai.memory ? pickMemoryLine() : '',   // ชั้น A
+    near:    yokai.near   ? pickNearLines()  : []    // ชั้น B (0–2 บรรทัด)
   };
+}
+
+function countPole(axis, pole) {
+  return state.stage2Answers.filter(a => a.axis === axis && a.pole === pole).length;
+}
+
+// 'ENTP', 'JP' → 'P'
+function yokaiLetter(mbti, axis) {
+  return [...mbti].find(ch => axis.includes(ch));
+}
+
+// ชั้น A — ข้อแรกที่ผู้เล่นเลือกบ้านนี้เป็นบ้านหลัก · แต่ละข้อมีช้อยของแต่ละบ้านพอดี 1 ตัว
+// ไม่เคยเลือกเลย = ชนะไม่ได้ทางคณิตศาสตร์ → state เสีย
+function pickMemoryLine() {
+  const i = state.houseAnswers.indexOf(state.winningHouse);
+  if (i === -1) throw new Error('[Ryokan] pickMemoryLine: winningHouse never chosen as primary');
+  return YOKAI_DATA[state.winningYokai].memory['e' + (i + 1)];
+}
+
+// ชั้น B — แกนที่ชนะ 2-1 (ผู้เล่นมีอีกขั้วอยู่บ้าง) · ลำดับ: แกนที่ 2 ของบ้าน แล้ว E/I
+function pickNearLines() {
+  const yokai = YOKAI_DATA[state.winningYokai];
+  return [HOUSE_AXIS[state.winningHouse], 'EI']
+    .filter(axis => countPole(axis, yokaiLetter(yokai.mbti, axis)) === 2)
+    .map(axis => yokai.near[axis]);
 }
 
 function toggleResultGender() {

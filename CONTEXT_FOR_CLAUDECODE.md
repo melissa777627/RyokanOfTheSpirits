@@ -37,7 +37,7 @@ view-landing → view-gender → view-quiz (Stage 1 · e1–e5)
                             view-quiz (Stage 2 · e6–e10)
                                    ↓  outro → calcYokai()
                             view-loading (3.5s kanji cycle)
-                                   ↓
+                                   ↓  showResultSpeech() — ภูตพูด A + B (ข้ามถ้า memory: null)
                             view-result
 ```
 
@@ -145,7 +145,7 @@ Full guide → `assets/README.md`.
 | `calcYokai()` | Builds MBTI from house template + 2 majorities, picks yokai, sets resultGenderShown; throws if none |
 | `validateQuestions()` | Checks QUESTIONS shape at load (DATA_SCHEMA §4 rules); throws on violation |
 | `getResult()` | Returns result data object from YOKAI_DATA |
-| `toggleResultGender()` | Flips resultGenderShown, calls renderResult() |
+| `toggleResultGender()` | Flips resultGenderShown, calls renderResult() — called by `flipGenderCard()` after the flip animation ends |
 | `resetGame()` | Resets state, returns to landing |
 | `guardState(requiredStage)` | Throws if state is invalid for the view (Rule 5 — no silent reset) |
 | `debugScores()` | Console logs all scores (remove before production) |
@@ -157,16 +157,19 @@ Full guide → `assets/README.md`.
 | Function | Purpose |
 |---|---|
 | `showNarration(pages, onDone)` / `advanceNarration()` | Narration overlay for `lead` / `afterArrange` / `outro` (typewriter, tap) |
+| `showResultSpeech()` | After loading: the matched Yokai speaks its memory line (A) + near lines (B) via narration, tap → result · skipped when `memory` is null |
 | `currentQuestion()` | `QUESTIONS.house` or `QUESTIONS.yokai` item at `state.currentQ` |
 | `loadQuestion()` → `renderQuestion(q)` | Shows `q.lead` first, then renders scene + choices (Stage 2 via `getStage2Set`) |
 | `confirmAnswer()` | Records answer; after E5 → `calcHouse()` + bento; after E10 → outro → `calcYokai()` + loading |
 | `journeyStep()` | Progress step 1–11 |
-| `initBento()` → `dismissBentoIntro()` → `showBentoQuestion()` | Bento: lead narration → intro → pop-up Q first |
+| `initBento()` → `dismissBentoIntro()` → `showBentoQuestion()` | Bento: intro → pop-up Q first (the lead narration runs in `confirmAnswer()` over E5, before `showView('bento')`) |
 | `confirmBentoChoice()` / `onBentoContinue()` | Records Bento answer → arrange phase → afterArrange → quiz E6 |
 | `dollOrder(q)` | `'before'` / `'after'` / null — when view-doll runs around E7 for this house |
 | `startDoll(storyText, onDone)` / `finishDoll()` → `revealDoll()` | Opens view-doll (intro card first), saves `state.dollImage`, plays the reveal, then continues the flow |
 | `resetSceneIntro` / `showSceneIntro` / `dismissSceneIntro` | Shared intro card (Bento + Doll) |
 | `fadeThrough(fn)` | Black curtain down → run fn → curtain up |
+| `flipGenderCard(card)` | Result page: starts the flip-card rotation and `blindsThrough(toggleResultGender)` together (card re-renders already turned via `.is-flipped`) |
+| `blindsThrough(fn)` | Red sudare blinds close → run fn → hold 150ms → open (like `fadeThrough`) |
 | `initDollCanvas()` | Builds the face mask from `teru_body.png`, wires pointer drawing, palette, sizes, undo/clear, color wheel |
 
 ---

@@ -283,6 +283,7 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 | `README.md` | ✅ | Asset naming guide + folder structure |
 | `.claude/agents/spirit-psychologist.md` | ✅ | Subagent: MBTI/psychometrics — เขียน/ตรวจ/จำลองคำถาม + เนื้อหาผลลัพธ์ (read-only, เสนอร่างเท่านั้น) |
 | `.claude/agents/ryokan-storyteller.md` | ✅ | Subagent: นักเขียนนิยายไทย — ขัดเกลาฉาก/ช้อย/บทพูดให้สละสลวย พีเรียดเบาๆ อ่านง่าย โดยไม่เปลี่ยนสิ่งที่คำถามวัด (read-only, เสนอร่างเท่านั้น) |
+| `.claude/agents/thai-line-editor.md` | ✅ | Subagent: บรรณาธิการภาษาไทย — เกลาบทพูด/ช้อยที่ร่างแล้วให้เป็นภาษาที่คนพูดจริง อ่านรอบเดียวเข้าใจ ไม่เหมือนแปลมา (ใช้หลัง storyteller · read-only) |
 | `assets/yokai/` | 🔄 | Yokai art — `{name}_{m|f}.png` × 32 · มีแล้ว 16 + Tanuki_f (mp4) · ยังขาด: ♂ Tenjin Yumekui Ryuu Kitsune Shinigami Yukionna Ningyo Jorogumo Fuujin · ♀ Tenjin Ryuu Kitsune Jorogumo Hebi Raijin |
 | `assets/ui/` | ⬜ | hero_art, seigaiha, ornament_divider |
 | `assets/audio/` | ⬜ | BGM + SFX |
@@ -318,3 +319,6 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 - [ ] รูปตุ๊กตาไล่ฝนประจำ Yokai 16 ตัว (`YOKAI_DATA[x].dollImage`)
 - [x] BG เมฆ `assets/ui/quiz/cloud_bg.png` ทุกอีเวนต์คำถาม (E3 เลิกใช้ภาพโคมไฟ เหลือแค่ glass)
 - [ ] การ์ดช้อยยังไม่มีรูป
+- [x] บทพูดหน้า result ชั้น A (ความทรงจำ) + B (แกนเฉียด) — 8 ตัวแรก: Tenjin Kitsune Yukionna Oni Tengu Inugami Nekomata Fuujin · narration หลัง loading + กล่องโควท
+- [ ] บทพูด A+B อีก 8 ตัว: Yumekui Ryuu Shinigami Tanuki Ningyo Jorogumo Hebi Raijin (ตอนนี้ `memory: null`)
+- [ ] `why` ทุกตัวยังเป็น placeholder

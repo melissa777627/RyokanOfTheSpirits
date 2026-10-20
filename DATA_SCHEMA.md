@@ -70,11 +70,21 @@ const YOKAI_DATA = {
     title:   'เทพแห่งปัญญา',
     dollImage: '',            // ตุ๊กตาไล่ฝนประจำตัว (ทั้งสองเพศใช้รูปเดียว) — ว่าง = ยังไม่มีรูป, หน้า result โชว์เฉพาะตุ๊กตาผู้เล่น
 
+    // คำพูดเฉพาะผู้เล่น — ใช้ร่วมทั้งสองเพศ (ข้า/เจ้า ไม่บอกเพศ) · ดู Section 9
+    // null = ยังไม่เขียน (ทยอยทำ) → หน้า result ไม่แสดงส่วนนี้ · ถ้ามี object ต้องครบทุก key ไม่งั้น throw
+    memory: {                 // ชั้น A "ความทรงจำคืนพายุ" — 1 บรรทัดต่อข้อ = ช้อยของบ้านนี้ในข้อนั้น
+      e1: '"…"', e2: '"…"', e3: '"…"', e4: '"…"',
+      e5: '"…"'               // พูดถึงความต้องการเท่านั้น ห้ามอ้างสิ่งที่แขกในหมอกทำ
+    },
+    near: {                   // ชั้น B "แกนเฉียด" — แสดงเมื่อแกนนั้นชนะ 2-1 · key = 'EI' + HOUSE_AXIS ของบ้าน
+      EI: '"…"',              // ผู้เล่นมีขั้วตรงข้ามกับตัวอักษรของ Yokai อยู่บ้าง → Yokai มองว่าเติมเต็ม
+      JP: '"…"'               // บ้าน blue/yellow ใช้ TF แทน
+    },
+
     male: {
       image:       'assets/yokai/tenjin_m.png',   // รองรับ .gif / .webm / .mp4
       tagline:     'The God of Knowledge',
       why:         '...',
-      quote:       '"..."',
       compat: [
         { label: 'Intellectual Bond', value: 97 },
         { label: 'Passion',           value: 58 },
@@ -155,7 +165,7 @@ const QUESTIONS = {
         },
         TF: { prompt: '…', choices: [ /* T·Ti, F·Fe, T·Te, F·Fi */ ] }
       },
-      afterArrange: 'Line he says after Continue'   // เฉพาะ bento
+      afterArrange: [[{ slow: ['…', '…'] }]]   // เฉพาะ bento — narration pages แบบเดียวกับ lead
     },
     // e6 — โครงเดียวกับ bento (ไม่มี afterArrange)
     // e7 — โครงเดียวกัน + doll: { JP: 'after', TF: 'before' }  (วาดหน้าตุ๊กตาหลัง/ก่อนตอบ ตามชุดที่บ้านใช้)
@@ -301,6 +311,8 @@ function calcYokai() {
 ```
 ตอบสุ่มแล้วแต่ละตัวในบ้านออก 25% พอดี
 
+ขั้วที่ชนะ = ตัวอักษรของ Yokai โดยตรง → ถ้าแกนชนะ 2-1 เสียงข้างน้อยคือขั้วตรงข้ามกับ Yokai เสมอ (ใช้กับ `near` ใน Section 3/9)
+
 ### Function ของผู้เล่น (เก็บไว้ใช้หน้า result — ไม่มีผลกับคะแนน)
 `state.stage2Answers[].fn` = Te/Ti/Fe/Fi/Ne/Se (แกนที่ 2) และ Pe/Pi/Je/Ji (E/I) — สูตรใช้กับ compat bars / ประโยคเฉพาะตัว จะกำหนดตอนทำหน้า result
 
@@ -331,8 +343,8 @@ TF (blue/yellow):   lead → view-doll (intro card → story box = E7 scene → 
 
 | ที่อยู่ในข้อมูล | ใช้ตอนไหน |
 |---|---|
-| `q.lead` | แสดงก่อนฉากของข้อนั้น (เช่น บทเชื่อม E1→E2 อยู่ที่ `house[1].lead`) · array — 1 string = 1 หน้า · `\n` แบ่งบรรทัด = ขึ้นทีละแตะ · บรรทัดขึ้นต้นด้วย `"` = บทพูด · หน้าเขียนเป็น array ได้ (1 รายการ = 1 บรรทัด) และบรรทัดเป็น `{ reply: ['…', '…'] }` = ผู้เล่นเลือกประโยคตอบ (cosmetic) · ตรวจโดย `validateNarration()` |
-| `yokai[0].afterArrange` | หลังกด Continue ใน Bento |
+| `q.lead` | แสดงก่อนฉากของข้อนั้น (เช่น บทเชื่อม E1→E2 อยู่ที่ `house[1].lead`) · array — 1 string = 1 หน้า · `\n` แบ่งบรรทัด = ขึ้นทีละแตะ · บรรทัดขึ้นต้นด้วย `"` = บทพูด · หน้าเขียนเป็น array ได้ (1 รายการ = 1 บรรทัด) และบรรทัดเป็น `{ reply: ['…', '…'] }` = ผู้เล่นเลือกประโยคตอบ (cosmetic, ไม่ใส่ `"` — ระบบครอบให้ตอนเลือก) หรือ `{ slow: ['วลี', 'วลี'], breath? }` = บรรทัดสะเทือนใจ ค่อยๆ โผล่ทีละวลีเองไม่ต้องแตะ (`breath` = แยกบรรทัดต่อวลี · `auto: true` = จบแล้วไหลไปบรรทัดถัดไปเอง) หรือ `{ say: '…', auto: true }` = ขึ้นบรรทัดถัดไปเองไม่ต้องแตะ (บรรทัดที่ผู้เล่นเลือกก็ไหลต่อเองเสมอ) · ตรวจโดย `validateNarration()` |
+| `yokai[0].afterArrange` | หลังกด Continue ใน Bento · รูปแบบเดียวกับ `lead` · ตรวจโดย `validateNarration()` |
 | `QUESTIONS.outro` | หลังตอบ E10 ก่อน Loading (บทเชื่อม E10→ปิด + ข้อความปิด) |
 
 แสดงด้วย `showNarration(pages, onDone)` ใน index.html — สเปก UI ดู `DESIGN_SYSTEM.md` "Narration Overlay"
@@ -363,10 +375,34 @@ function getResult() {
     image:   yokai[gender].image,
     tagline: yokai[gender].tagline,
     why:     yokai[gender].why,
-    quote:   yokai[gender].quote,
-    compat:  yokai[gender].compat
+    compat:  yokai[gender].compat,
+    memory:  yokai.memory ? pickMemoryLine() : '',   // ชั้น A
+    near:    yokai.near   ? pickNearLines()  : []    // ชั้น B (0–2 บรรทัด)
   };
 }
+
+// ชั้น A — ข้อแรกที่ผู้เล่นเลือกบ้านนี้เป็นบ้านหลัก ("สิ่งที่เจ้ารู้สึกก่อนทันระวัง")
+// แต่ละข้อมีช้อยของแต่ละบ้านพอดี 1 ตัว → houseAnswers[i] บอกได้เลยว่าเลือกช้อยไหน
+// ไม่เคยเลือกเลย = ชนะไม่ได้ทางคณิตศาสตร์ → throw
+// ⚠ จำลองครบ 1024 แบบคำตอบ: บ้านที่ชนะถูกเลือกเป็นบ้านหลักใน E1–E4 เสมอ → e5 ไม่เคยถูกเลือก (e1 48% · e2 29% · e3 16% · e4 7%)
+function pickMemoryLine() {
+  const i = state.houseAnswers.indexOf(state.winningHouse);
+  if (i === -1) throw new Error('[Ryokan] pickMemoryLine: winningHouse never chosen as primary');
+  return YOKAI_DATA[state.winningYokai].memory['e' + (i + 1)];
+}
+
+// ชั้น B — แกนที่ชนะ 2-1 (ผู้เล่นมีอีกขั้วอยู่บ้าง) · ลำดับ: แกนที่ 2 ของบ้าน แล้ว E/I
+function pickNearLines() {
+  const yokai = YOKAI_DATA[state.winningYokai];
+  return [HOUSE_AXIS[state.winningHouse], 'EI']
+    .filter(axis => countPole(axis, yokaiLetter(yokai.mbti, axis)) === 2)
+    .map(axis => yokai.near[axis]);
+}
+
+// ข้อความใน memory/near เก็บแบบไม่มี " — UI ครอบเป็นบทพูดเอง
+// ใช้ 2 ที่: (1) showResultSpeech() — narration หลัง loading ก่อนเข้า result · A = { slow } แล้ว B ไหลต่อเอง ({ auto }) บรรทัดสุดท้ายรอแตะ
+//          (2) กล่องโควทบนหน้า result — A + B ชุดเดียวกัน (ไว้แคปแชร์)
+// memory: null → ข้าม narration และไม่แสดงกล่องโควท · ตรวจโดย validateYokaiData() ตอนโหลดหน้า
 
 function toggleResultGender() {
   state.resultGenderShown =

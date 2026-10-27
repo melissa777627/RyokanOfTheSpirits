@@ -6,7 +6,7 @@
   <title>Ryokan of The Spirits · 妖怪の宿</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Serif+JP:wght@400;700&family=Noto+Serif+Thai:wght@400;700&family=Sarabun:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -40,6 +40,8 @@
         One of them has been waiting for you.
       </p>
       <button class="btn-primary" onclick="startJourney()">Begin Journey &nbsp;→</button>
+      <!-- DEV (temporary): jump to a random finished result — remove before production -->
+      <button class="dev-shortcut" onclick="devRandomResult()">test</button>
     </section>
 
     <div class="texture-strip" aria-hidden="true"></div>
@@ -177,6 +179,8 @@
       <p id="quiz-story">TBA</p>
     </div>
 
+    <p class="bento-instruction quiz-doors-hint hidden" id="quiz-doors-hint">— Tap each door to slide it open —</p>
+
     <div class="quiz-choices" id="quiz-choices">
       <!-- Rendered by loadQuestion() -->
     </div>
@@ -195,7 +199,7 @@
   <div id="view-bento" class="view">
 
     <!-- Intro overlay — tap to dismiss -->
-    <div id="bento-intro" class="scene-intro" onclick="dismissBentoIntro()">
+    <div id="bento-intro" class="scene-intro" onclick="dismissBentoIntro(event)">
       <div class="scene-intro-title-wrap frost-band">
         <div class="sakura-stamp" aria-hidden="true">
           <span class="ss-flower">🌸</span>
@@ -228,21 +232,22 @@
 
       <p class="bento-instruction">— Place your offering —</p>
 
-      <!-- Draggable food palette — 3×4 grid, scrollable -->
-      <div class="bento-palette" id="bento-palette">
-        <div class="food-item" data-idx="0"><div class="food-img" style="background-image:url('assets/ui/food/Onigiri.PNG')"></div><span class="food-label">おにぎり</span></div>
-        <div class="food-item" data-idx="1"><div class="food-img" style="background-image:url('assets/ui/food/Karaage%20.PNG')"></div><span class="food-label">から揚げ</span></div>
-        <div class="food-item" data-idx="2"><div class="food-img" style="background-image:url('assets/ui/food/Ebi%20tempura.PNG')"></div><span class="food-label">えびてんぷら</span></div>
-        <div class="food-item" data-idx="3"><div class="food-img" style="background-image:url('assets/ui/food/Sashimi.PNG')"></div><span class="food-label">さしみ</span></div>
-        <div class="food-item" data-idx="4"><div class="food-img" style="background-image:url('assets/ui/food/Saba.PNG')"></div><span class="food-label">さば</span></div>
-        <div class="food-item" data-idx="5"><div class="food-img" style="background-image:url('assets/ui/food/Tamako.PNG')"></div><span class="food-label">たまこ</span></div>
-        <div class="food-item" data-idx="6"><div class="food-img" style="background-image:url('assets/ui/food/Lemon.PNG')"></div><span class="food-label">レモン</span></div>
-        <div class="food-item" data-idx="7"><div class="food-img" style="background-image:url('assets/ui/food/Oba%20leaf.PNG')"></div><span class="food-label">大葉</span></div>
-        <div class="food-item" data-idx="8"><div class="food-img" style="background-image:url('assets/ui/food/Ume%20boshi.PNG')"></div><span class="food-label">うめぼし</span></div>
+      <!-- Draggable food shelf — swipe sideways to scroll, drag up to place -->
+      <div class="item-shelf" id="bento-palette">
+        <div class="shelf-item" data-idx="0"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Onigiri.PNG')"></div><span class="shelf-item-label">おにぎり</span></div>
+        <div class="shelf-item" data-idx="1"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Karaage%20.PNG')"></div><span class="shelf-item-label">から揚げ</span></div>
+        <div class="shelf-item" data-idx="2"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Ebi%20tempura.PNG')"></div><span class="shelf-item-label">えびてんぷら</span></div>
+        <div class="shelf-item" data-idx="3"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Sashimi.PNG')"></div><span class="shelf-item-label">さしみ</span></div>
+        <div class="shelf-item" data-idx="4"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Saba.PNG')"></div><span class="shelf-item-label">さば</span></div>
+        <div class="shelf-item" data-idx="5"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Tamako.PNG')"></div><span class="shelf-item-label">たまこ</span></div>
+        <div class="shelf-item" data-idx="6"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Lemon.PNG')"></div><span class="shelf-item-label">レモン</span></div>
+        <div class="shelf-item" data-idx="7"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Oba%20leaf.PNG')"></div><span class="shelf-item-label">大葉</span></div>
+        <div class="shelf-item" data-idx="8"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Ume%20boshi.PNG')"></div><span class="shelf-item-label">うめぼし</span></div>
       </div>
 
-      <!-- Continue button -->
-      <div class="bento-next-wrap">
+      <!-- Undo + Continue -->
+      <div class="bento-next-wrap bento-next-wrap--split">
+        <button id="btn-bento-undo" class="tool-btn" onclick="bentoShelf.undo()" disabled>↶ Undo</button>
         <button id="btn-bento-next" class="btn-gender-next" onclick="onBentoContinue()" disabled>
           Continue &nbsp;→
         </button>
@@ -273,7 +278,7 @@
   <div id="view-doll" class="view">
 
     <!-- Intro card — tap to dismiss (shared .scene-intro template) -->
-    <div id="doll-intro" class="scene-intro scene-intro--rain" onclick="dismissDollIntro()">
+    <div id="doll-intro" class="scene-intro scene-intro--rain" onclick="dismissDollIntro(event)">
       <div class="scene-intro-title-wrap frost-band">
         <div class="sakura-stamp" aria-hidden="true">
           <span class="ss-flower">☔</span>
@@ -292,33 +297,45 @@
       <span class="event-badge">Event 7</span>
     </header>
 
-    <div class="story-box doll-story-box" id="doll-story-box">
-      <p id="doll-story"></p>
-    </div>
-
-    <p class="bento-instruction">— Draw its face —</p>
+    <!-- Two steps: face (zoomed on the head, draw) → dress (whole doll, drag accessories) — #view-doll.doll-dress -->
+    <p class="bento-instruction doll-face-only">— Draw its face —</p>
+    <p class="bento-instruction doll-dress-only">— Dress it up —</p>
 
     <div class="doll-stage">
       <!-- Rain-puddle ripples under the doll — src set in startDoll() so the 3.9MB file preloads while drawing -->
       <img class="doll-ripples" id="doll-ripples" alt="" aria-hidden="true">
-      <!-- body + drawn face as one figure, so the reveal glow wraps them together -->
-      <div class="doll-figure">
-        <img class="doll-body" id="doll-body" src="assets/ui/doll/teru_body.png" alt="">
-        <canvas id="doll-canvas" class="doll-canvas" width="1000" height="1000"></canvas>
+      <!-- frame = zoom window + accessory drop zone; the reveal glow wraps body, face and accessories together -->
+      <div class="doll-frame" id="doll-frame">
+        <div class="doll-figure">
+          <img class="doll-body" id="doll-body" src="assets/ui/doll/teru_body.png" alt="">
+          <canvas id="doll-canvas" class="doll-canvas" width="1000" height="1000"></canvas>
+        </div>
+        <div class="doll-placed-items" id="doll-placed-items"></div>
       </div>
     </div>
 
-    <div class="doll-tools">
+    <div class="doll-tools doll-face-only">
       <div class="doll-swatches" id="doll-swatches"><!-- Rendered by initDollCanvas() --></div>
       <div class="doll-tool-row">
         <div class="doll-sizes" id="doll-sizes"><!-- Rendered by initDollCanvas() --></div>
-        <button class="doll-tool-btn" onclick="undoDollStroke()">↶ Undo</button>
-        <button class="doll-tool-btn" onclick="clearDoll()">Clear</button>
+        <button class="tool-btn" onclick="undoDollStroke()">↶ Undo</button>
+        <button class="tool-btn" onclick="clearDoll()">Clear</button>
       </div>
     </div>
 
-    <div class="bento-next-wrap">
-      <button id="btn-doll-done" class="btn-gender-next" onclick="finishDoll()" disabled>
+    <div class="doll-dress-only">
+      <div class="doll-tabs" id="doll-tabs" role="tablist"><!-- Rendered by initDollCanvas() --></div>
+      <div class="item-shelf" id="doll-shelf"><!-- Rendered by showDollTab() --></div>
+    </div>
+
+    <div class="bento-next-wrap doll-face-only">
+      <button id="btn-doll-next" class="btn-gender-next" onclick="showDollDress()" disabled>
+        Next &nbsp;→
+      </button>
+    </div>
+    <div class="bento-next-wrap bento-next-wrap--split doll-dress-only">
+      <button id="btn-doll-undo" class="tool-btn" onclick="dollShelf.undo()" disabled>↶ Undo</button>
+      <button class="btn-gender-next" onclick="finishDoll()">
         Done &nbsp;→
       </button>
     </div>
@@ -343,7 +360,7 @@
     <div class="loading-inner">
       <div class="loading-sakura" aria-hidden="true">🌸</div>
       <p class="loading-kanji" id="loading-kanji">運</p>
-      <p class="loading-caption">Your spirit is awakening…</p>
+      <p class="loading-caption">Your destined one is awakening…</p>
     </div>
   </div>
 
@@ -351,6 +368,27 @@
        VIEW: RESULT — Step 7
   ════════════════════════════════════════ -->
   <div id="view-result" class="view"></div>
+
+  <!-- Doll "line boil" (hand-drawn wobble): turbulence nudges every pixel; startDollBoil() swaps the seed each frame -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="doll-boil" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence id="doll-boil-noise" type="fractalNoise" baseFrequency="0.031" numOctaves="2" seed="1" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="4.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+
+  <!-- Chapter intro — number → line → title (QUESTIONS.chapters) · sits under narration -->
+  <div id="chapter-intro" class="chapter-intro" onclick="finishChapter()" aria-live="polite">
+    <div class="chapter-intro-content">
+      <p class="chapter-label">CHAPTER <span id="chapter-number" class="chapter-number"></span></p>
+      <div class="chapter-rule" aria-hidden="true">
+        <span class="chapter-rule-line"></span>
+        <span class="chapter-rule-gem chapter-rule-gem--left"></span>
+        <span class="chapter-rule-gem chapter-rule-gem--right"></span>
+      </div>
+      <div class="chapter-title-mask"><h2 id="chapter-title" class="chapter-title"></h2></div>
+    </div>
+  </div>
 
   <!-- Narration overlay — scene bridges (QUESTIONS lead / afterArrange / outro) -->
   <div id="narration" class="narration" onclick="advanceNarration()">
@@ -381,9 +419,38 @@
 
 <script src="scoring-engine.js"></script>
 <script src="questions.js"></script>
+<script src="thai-break.js"></script>
 <script>
 
 validateQuestions();   // fail fast if questions.js breaks DATA_SCHEMA §4
+validateThaiBreak();   // fail fast if a thai-break.js list entry can never match
+
+// ── THAI LINE BREAKING — every Thai string goes on screen through this ──
+// Units from thaiTokens() (thai-break.js) never wrap inside; <wbr> marks where a phrase may wrap.
+// perGrapheme = each grapheme in its own .th-g span (narration typewriter reveals them one by one)
+function thaiBreakable(text, perGrapheme) {
+  const frag = document.createDocumentFragment();
+  let prevUnit = false;
+  for (const tok of thaiTokens(text)) {
+    if (tok === ' ' || tok === '\n') { frag.append(tok); prevUnit = false; continue; }
+    if (prevUnit) frag.append(document.createElement('wbr'));
+    const unit = document.createElement('span');
+    unit.className = 'th-unit';
+    if (perGrapheme) {
+      for (const g of toGraphemes(tok)) {
+        const span = document.createElement('span');
+        span.className = 'th-g';
+        span.textContent = g;
+        unit.append(span);
+      }
+    } else {
+      unit.textContent = tok;
+    }
+    frag.append(unit);
+    prevUnit = true;
+  }
+  return frag;
+}
 
 // ── VIEW MANAGER ─────────────────────────────────────────────
 function showView(id) {
@@ -459,8 +526,37 @@ function selectGender(gender, cardEl) {
 function confirmGender() {
   if (!_pendingGender) return;
   setPlayerGender(_pendingGender);
-  showView('quiz');
-  loadQuestion();
+  showChapter(QUESTIONS.chapters.house, () => {
+    showView('quiz');
+    loadQuestion();
+  });
+}
+
+// ── CHAPTER INTRO — number → red rule → title, then fades (DESIGN_SYSTEM "Chapter Intro") ──
+const CHAPTER_MS = 2800;   // drives the CSS keyframes through --chapter-ms
+let _chapterDone  = null;
+let _chapterTimer = null;
+
+function showChapter(chapter, onDone) {
+  const el = document.getElementById('chapter-intro');
+  document.getElementById('chapter-number').textContent = chapter.number;
+  document.getElementById('chapter-title').replaceChildren(thaiBreakable(chapter.title));
+  el.style.setProperty('--chapter-ms', CHAPTER_MS + 'ms');
+  _chapterDone = onDone;
+  el.classList.remove('playing');
+  void el.offsetWidth;   // restart the keyframes for the next chapter
+  el.classList.add('open', 'playing');
+  _chapterTimer = setTimeout(finishChapter, CHAPTER_MS);
+}
+
+// Tap skips. Next step runs first (its narration fades in on top), then the dark backdrop fades out underneath
+function finishChapter() {
+  if (!_chapterDone) return;
+  clearTimeout(_chapterTimer);
+  const done = _chapterDone;
+  _chapterDone = null;
+  done();
+  document.getElementById('chapter-intro').classList.remove('open');
 }
 
 function shuffled(arr) {
@@ -486,14 +582,9 @@ let _narrationPages = [];
 let _narrationLines = [];
 let _narrationDone  = null;
 let _narrationTimer = null;   // typing interval or speech fade timeout
-let _narrationLine  = null;   // { el, text, timed, phrased, auto } of the line being revealed (timed = timeout, else typing interval)
+let _narrationLine  = null;   // { el, timed, auto } of the line being revealed (timed = timeout, else typing interval)
 let _narrationAwaitingReply = false;
 let _narrationAutoTimer = null;   // pending auto-advance after an { auto } / player line
-
-function toGraphemes(text) {
-  // Thai vowels/tone marks must stay attached to their consonant while typing
-  return [...new Intl.Segmenter('th', { granularity: 'grapheme' }).segment(text)].map(s => s.segment);
-}
 
 function showNarration(pages, onDone) {
   if (!pages.length) { onDone(); return; }
@@ -525,7 +616,7 @@ function showNarrationReply(options) {
   options.forEach((text, i) => {
     const btn = document.createElement('button');
     btn.className = 'narration-reply-btn';
-    btn.textContent = text;
+    btn.append(thaiBreakable(text));
     btn.style.animationDelay = (i * NARRATION_REPLY_STAGGER_MS) + 'ms';
     btn.addEventListener('click', e => {
       e.stopPropagation();
@@ -552,18 +643,21 @@ function revealNarrationLine(chosenText, byPlayer) {
   el.className = 'narration-line' + (speech ? ' narration-line--speech' : '') + (byPlayer ? ' narration-line--player' : '');
   document.getElementById('narration-text').appendChild(el);
   document.getElementById('narration-tap').classList.remove('ready');
-  _narrationLine = { el, text, timed: speech, phrased: false, auto };
+  _narrationLine = { el, timed: speech, auto };
 
   if (speech) {
-    el.textContent = text;
+    el.append(thaiBreakable(text));
     _narrationTimer = setTimeout(finishNarrationLine, NARRATION_SPEECH_MS);
     return;
   }
-  const chars = toGraphemes(text);
+  // Full line is laid out from the first frame (graphemes hidden) so typing never re-centres or re-wraps it
+  el.append(thaiBreakable(text, true));
+  const graphemes = [...el.querySelectorAll('.th-g')];
+  graphemes.forEach(g => g.classList.add('narration-unrevealed'));
   let i = 0;
   _narrationTimer = setInterval(() => {
-    el.textContent += chars[i++];
-    if (i >= chars.length) finishNarrationLine();
+    graphemes[i++].classList.remove('narration-unrevealed');
+    if (i >= graphemes.length) finishNarrationLine();
   }, 38);
 }
 
@@ -575,23 +669,24 @@ function revealSlowLine(phrases, breath, auto) {
   phrases.forEach((phrase, i) => {
     const span = document.createElement('span');
     span.className = 'narration-phrase';
-    span.textContent = phrase;
+    span.append(thaiBreakable(phrase));
     span.style.animationDelay = (NARRATION_SLOW_PAUSE_MS + i * NARRATION_SLOW_STEP_MS) + 'ms';
     if (i) el.append(' ');
     el.appendChild(span);
   });
   document.getElementById('narration-text').appendChild(el);
   document.getElementById('narration-tap').classList.remove('ready');
-  _narrationLine = { el, text, timed: true, phrased: true, auto };
+  _narrationLine = { el, timed: true, auto };
   const total = NARRATION_SLOW_PAUSE_MS + (phrases.length - 1) * NARRATION_SLOW_STEP_MS + NARRATION_SLOW_FADE_MS;
   _narrationTimer = setTimeout(finishNarrationLine, total);
 }
 
 function finishNarrationLine() {
-  const { el, text, timed, phrased, auto } = _narrationLine;
+  const { el, timed, auto } = _narrationLine;
   if (timed) clearTimeout(_narrationTimer); else clearInterval(_narrationTimer);
   _narrationTimer = null;
-  if (!phrased) el.textContent = text;   // phrase spans stay put — re-flowing them made the line jump
+  // reveal in place — never re-render, re-flowing the line made it jump
+  el.querySelectorAll('.narration-unrevealed').forEach(g => g.classList.remove('narration-unrevealed'));
   el.classList.add('shown');
   if (auto && _narrationLines.length) {
     _narrationAutoTimer = setTimeout(advanceNarration, NARRATION_AUTO_GAP_MS);
@@ -630,8 +725,11 @@ function confirmAnswer() {
     pickHouseAnswer(choice.house);
     if (state.currentQ < QUESTIONS.house.length) { loadQuestion(); return; }
     calcHouse();
-    // lead narration opens over E5 — switching to bento first let it show through the fade-in
-    showNarration(QUESTIONS.yokai[0].lead, () => showView('bento'));
+    // chapter + lead narration open over E5 — switching to bento first let it show through the fade-in
+    // The Bento scene plays as its own narration page before the intro card, so the pop-up shows only the prompt
+    const bento = QUESTIONS.yokai[0];
+    showChapter(QUESTIONS.chapters.yokai, () =>
+      showNarration([...bento.lead, bento.text], () => showView('bento')));
     return;
   }
 
@@ -645,7 +743,7 @@ function confirmAnswer() {
     });
   };
   if (dollOrder(q) === 'after') {
-    startDoll('', () => { showView('quiz'); next(); });
+    startDoll(() => { showView('quiz'); next(); });
     return;
   }
   next();
@@ -658,17 +756,19 @@ function journeyStep() {
 
 function loadQuestion() {
   const q = currentQuestion();
-  showNarration(q.lead, () => {
+  // The doll question's scene plays as narration (both sets), so its quiz card shows only the prompt
+  const pages = q.doll ? [...q.lead, q.text] : q.lead;
+  showNarration(pages, () => {
     if (dollOrder(q) === 'before') {
-      // T/F set: draw first (scene shown on the doll screen), then only the prompt
-      startDoll(q.text, () => { showView('quiz'); renderQuestion(q, true); });
+      // T/F set: draw first, then the prompt
+      startDoll(() => { showView('quiz'); renderQuestion(q, true); });
       return;
     }
-    renderQuestion(q, false);
+    renderQuestion(q, Boolean(q.doll));
   });
 }
 
-// sceneShown = scene text was already shown (doll screen) → show prompt only
+// sceneShown = scene text was already shown (narration) → show prompt only
 function renderQuestion(q, sceneShown) {
   const isStage2 = state.stage === 2;
   if (isStage2) guardState(2);
@@ -700,51 +800,80 @@ function renderQuestion(q, sceneShown) {
 
   // Header + scene
   document.getElementById('quiz-event-badge').textContent = 'Event ' + eventNum;
-  document.getElementById('quiz-scene').textContent = q.scene;
+  document.getElementById('quiz-scene').replaceChildren(thaiBreakable(q.scene));
   // scene text may be empty when the whole scene lives in the lead narration (E9)
-  document.getElementById('quiz-story').textContent =
-    (sceneShown ? [set.prompt] : [q.text, set.prompt]).filter(Boolean).join('\n\n');
+  document.getElementById('quiz-story').replaceChildren(thaiBreakable(
+    (sceneShown ? [set.prompt] : [q.text, set.prompt]).filter(Boolean).join('\n\n')));
 
   // Reset next button for new question
   _pendingChoice = null;
   document.getElementById('btn-quiz-next').disabled = true;
 
-  // Choices
+  // Choices — q.doors: text-only cards, each behind closed sliding doors (Split Reveal) + a hint line
   const wrap = document.getElementById('quiz-choices');
   wrap.innerHTML = '';
+  wrap.classList.toggle('quiz-choices--doors', Boolean(q.doors));
+  document.getElementById('quiz-doors-hint').classList.toggle('hidden', !q.doors);
   shuffled(set.choices).forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
 
-    const img = document.createElement('div');
-    img.className = 'choice-img';
-    if (c.image) {
-      img.style.backgroundImage = `url('${c.image}')`;
-      img.style.backgroundSize  = 'cover';
-      img.style.backgroundPosition = 'center';
-      img.classList.add('choice-img--has-img');
+    if (!q.doors) {
+      const img = document.createElement('div');
+      img.className = 'choice-img';
+      if (c.image) {
+        img.style.backgroundImage = `url('${c.image}')`;
+        img.style.backgroundSize  = 'cover';
+        img.style.backgroundPosition = 'center';
+        img.classList.add('choice-img--has-img');
+      }
+      btn.appendChild(img);
     }
 
     const txt = document.createElement('span');
     txt.className = 'choice-text';
-    txt.textContent = c.text;
-
-    btn.appendChild(img);
+    txt.append(thaiBreakable(c.text));
     btn.appendChild(txt);
+    if (q.doors) btn.appendChild(buildChoiceDoors(btn));
 
     btn.addEventListener('click', () => {
+      if (q.doors && !btn.classList.contains('doors-open')) { btn.classList.add('doors-open'); return; }
+      if (q.doors && !btn.classList.contains('doors-ready')) return;   // still sliding — a quick double tap only opens
       wrap.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       _pendingChoice = c;
-      document.getElementById('btn-quiz-next').disabled = false;
+      updateQuizNext(wrap);
     });
     wrap.appendChild(btn);
   });
 }
 
+// Next needs a choice — and on a doors question every door opened first, so all four were read
+function updateQuizNext(wrap) {
+  const allOpen = !wrap.querySelector('.choice-doors') || !wrap.querySelector('.choice-btn:not(.doors-open)');
+  document.getElementById('btn-quiz-next').disabled = !_pendingChoice || !allOpen;
+}
+
+// Two fusuma panels meeting at the card's centre; once they've slid away the card can be picked
+function buildChoiceDoors(btn) {
+  const doors = document.createElement('div');
+  doors.className = 'choice-doors';
+  doors.setAttribute('aria-hidden', 'true');
+  ['choice-door choice-door--l', 'choice-door choice-door--r'].forEach(className => {
+    const door = document.createElement('div');
+    door.className = className;
+    doors.appendChild(door);
+  });
+  doors.firstChild.addEventListener('animationend', e => {
+    if (e.animationName !== 'doorOpenL') return;   // the nudge loop never ends; only the opening counts
+    btn.classList.add('doors-ready');
+    updateQuizNext(btn.parentElement);
+  });
+  return doors;
+}
+
 // ── BENTO ─────────────────────────────────────────────────────
 // Flow (DATA_SCHEMA §6): lead narration → intro → pop-up Q → drag food → Continue → afterArrange → E6
-let _bentoFoodPlaced    = 0;
 let _bentoPendingChoice = null;
 let _bentoPhase = 'question'; // 'question' | 'arrange'
 
@@ -752,6 +881,7 @@ let _bentoPhase = 'question'; // 'question' | 'arrange'
 function resetSceneIntro(introId, mainId) {
   const intro = document.getElementById(introId);
   intro.style.display = '';
+  intro.classList.remove('dismissing');
   intro.classList.add('hidden');
   document.getElementById(mainId).classList.add('hidden');
 }
@@ -760,41 +890,59 @@ function showSceneIntro(introId) {
   document.getElementById(introId).classList.remove('hidden');
 }
 
-// White flash, hide the card, reveal the main content
-function dismissSceneIntro(introId, mainId) {
+// Two rings spread from the tap point (Ripple Reveal — DESIGN_SYSTEM "Scene Intro Card")
+// The card hides before they finish, so flashOutSceneIntro() removes them under the white curtain
+function spawnRipple(parent, clientX, clientY) {
+  const r = parent.getBoundingClientRect();
+  ['tap-ripple', 'tap-ripple tap-ripple--echo'].forEach(className => {
+    const ring = document.createElement('span');
+    ring.className  = className;
+    ring.style.left = (clientX - r.left) + 'px';
+    ring.style.top  = (clientY - r.top) + 'px';
+    parent.appendChild(ring);
+  });
+}
+
+const SCENE_RIPPLE_LEAD_MS = 380;   // the white flash starts while the first ring is still spreading
+
+// Tap → ripple from the finger → white flash, hide the card, reveal the main content → onRevealed
+// A second tap while it plays does nothing
+function dismissSceneIntro(introId, mainId, e, onRevealed) {
+  const intro = document.getElementById(introId);
+  if (intro.classList.contains('dismissing')) return;
+  intro.classList.add('dismissing');
+  spawnRipple(intro, e.clientX, e.clientY);
+  setTimeout(() => flashOutSceneIntro(intro, mainId, onRevealed), SCENE_RIPPLE_LEAD_MS);
+}
+
+function flashOutSceneIntro(intro, mainId, onRevealed) {
   const curtain = document.getElementById('fade-curtain');
-  const intro   = document.getElementById(introId);
   curtain.style.background = '#fff';
   curtain.classList.add('visible');
   curtain.addEventListener('transitionend', function handler() {
     curtain.removeEventListener('transitionend', handler);
     intro.style.display = 'none';
+    intro.querySelectorAll('.tap-ripple').forEach(ring => ring.remove());
     requestAnimationFrame(() => requestAnimationFrame(() => {
       curtain.classList.remove('visible');
       setTimeout(() => { curtain.style.background = ''; }, 700);
     }));
   }, { once: true });
   document.getElementById(mainId).classList.remove('hidden');
+  if (onRevealed) onRevealed();
 }
 
 function initBento() {
   guardState(2);
+  _bentoPendingChoice = null;
+  _bentoPhase         = 'question';
+  bentoShelf.clear();
   resetSceneIntro('bento-intro', 'bento-main');
   showSceneIntro('bento-intro');
 }
 
-function dismissBentoIntro() {
-  dismissSceneIntro('bento-intro', 'bento-main');
-  // Now set up the actual bento game — question first, then arranging
-  _bentoFoodPlaced    = 0;
-  _bentoPendingChoice = null;
-  _bentoPhase         = 'question';
-  document.getElementById('bento-placed-items').innerHTML = '';
-  document.getElementById('btn-bento-next').disabled = true;
-  document.getElementById('btn-bento-next').textContent = 'Continue →';
-  document.querySelectorAll('.food-item').forEach(f => f.classList.remove('placed','food-ghost'));
-  initBentoDrag();
-  showBentoQuestion();
+function dismissBentoIntro(e) {
+  dismissSceneIntro('bento-intro', 'bento-main', e, showBentoQuestion);
 }
 
 function confirmBentoChoice() {
@@ -803,10 +951,12 @@ function confirmBentoChoice() {
   pickYokaiAnswer(QUESTIONS.yokai[0], _bentoPendingChoice);
   _bentoPendingChoice = null;
   _bentoPhase = 'arrange';
+  updateBentoButtons(bentoShelf.count());
 }
 
 function onBentoContinue() {
-  if (_bentoPhase !== 'arrange' || !_bentoFoodPlaced) return;
+  if (_bentoPhase !== 'arrange' || !bentoShelf.count()) return;
+  bentoShelf.end();
   showNarration(QUESTIONS.yokai[0].afterArrange, () => fadeToView('quiz', loadQuestion));
 }
 
@@ -814,7 +964,7 @@ function showBentoQuestion() {
   _bentoPendingChoice = null;
   const q   = QUESTIONS.yokai[0];
   const set = getStage2Set(q);
-  document.getElementById('bento-question-text').textContent = q.text + '\n\n' + set.prompt;
+  document.getElementById('bento-question-text').replaceChildren(thaiBreakable(set.prompt));
 
   const wrap = document.getElementById('bento-choices');
   wrap.innerHTML = '';
@@ -826,7 +976,7 @@ function showBentoQuestion() {
     img.className = 'bento-choice-img';
     const txt = document.createElement('span');
     txt.className = 'bento-choice-text';
-    txt.textContent = c.text;
+    txt.append(thaiBreakable(c.text));
     btn.appendChild(img);
     btn.appendChild(txt);
 
@@ -843,65 +993,123 @@ function showBentoQuestion() {
   document.getElementById('bento-q-modal').classList.add('open');
 }
 
-function initBentoDrag() {
-  const dropZone = document.getElementById('bento-drop-zone');
+// ── ITEM SHELF — sideways shelf you drag items from onto a drop zone (Bento food, Doll accessories) ──
+// One finger at a time. A press becomes a drag only after it moves (a sideways swipe scrolls the
+// shelf instead — touch-action: pan-x). Every way a drag can end goes through end().
+// The mouse wheel scrolls the shelf sideways (PC has no swipe). Placed copies are kept in order for undo().
+const SHELF_DRAG_START_PX = 6;
 
-  document.querySelectorAll('#bento-palette .food-item').forEach(food => {
-    let ghost = null;
-    let dragSize = 0;
-    let foodBg = '';
+// cfg: { shelf, view, zone, layer, placedClass, onChange } — ghost lives inside view, so it can never outlive it
+function initItemShelf(cfg) {
+  const drag   = { pointerId: null, item: null, ghost: null, startX: 0, startY: 0 };
+  const placed = [];
+  const { shelf } = cfg;
 
-    food.addEventListener('pointerdown', e => {
-      e.preventDefault();
+  // An item's look is its image (background) or its glyph (placeholder text) — copied onto ghost and placed copy
+  function copyLook(from, to) {
+    to.style.backgroundImage = from.style.backgroundImage;
+    to.textContent = from.textContent;
+  }
 
-      dragSize = food.querySelector('.food-img').getBoundingClientRect().width || 60;
-      foodBg   = food.querySelector('.food-img').style.backgroundImage;
-      food.setPointerCapture(e.pointerId);
+  function end() {
+    const { pointerId, item, ghost } = drag;
+    if (pointerId === null) return;
+    Object.assign(drag, { pointerId: null, item: null, ghost: null });
+    if (ghost) ghost.remove();
+    item.classList.remove('shelf-item--lifted');
+    if (shelf.hasPointerCapture(pointerId)) shelf.releasePointerCapture(pointerId);
+  }
 
-      ghost = document.createElement('div');
-      ghost.className = 'food-drag-ghost';
-      ghost.style.width           = dragSize + 'px';
-      ghost.style.height          = dragSize + 'px';
-      ghost.style.left            = (e.clientX - dragSize / 2) + 'px';
-      ghost.style.top             = (e.clientY - dragSize / 2) + 'px';
-      ghost.style.backgroundImage = foodBg;
-      document.body.appendChild(ghost);
-      food.classList.add('food-ghost');
-    });
+  function startGhost() {
+    const img   = drag.item.querySelector('.shelf-item-img');
+    const ghost = document.createElement('div');
+    ghost.className = 'shelf-drag-ghost';
+    ghost.style.width = ghost.style.height = img.getBoundingClientRect().width + 'px';
+    ghost.style.fontSize = getComputedStyle(img).fontSize;
+    copyLook(img, ghost);
+    cfg.view.appendChild(ghost);
+    drag.ghost = ghost;
+    drag.item.classList.add('shelf-item--lifted');
+  }
 
-    food.addEventListener('pointermove', e => {
-      if (!ghost) return;
-      e.preventDefault();
-      ghost.style.left = (e.clientX - dragSize / 2) + 'px';
-      ghost.style.top  = (e.clientY - dragSize / 2) + 'px';
-    });
+  function moveGhost(x, y) {
+    const half = drag.ghost.offsetWidth / 2;
+    drag.ghost.style.left = (x - half) + 'px';
+    drag.ghost.style.top  = (y - half) + 'px';
+  }
 
-    food.addEventListener('pointerup', e => {
-      if (!ghost) return;
-      ghost.remove(); ghost = null;
-      food.classList.remove('food-ghost');
+  function place(x, y) {
+    const dz = cfg.zone.getBoundingClientRect();
+    if (x < dz.left || x > dz.right || y < dz.top || y > dz.bottom) return;
+    const el = document.createElement('div');
+    el.className = cfg.placedClass;
+    el.style.left = ((x - dz.left) / dz.width  * 100).toFixed(1) + '%';
+    el.style.top  = ((y - dz.top)  / dz.height * 100).toFixed(1) + '%';
+    copyLook(drag.ghost, el);
+    cfg.layer.appendChild(el);
+    placed.push(el);
+    cfg.onChange(placed.length);
+  }
 
-      const dz = dropZone.getBoundingClientRect();
-      const inside = e.clientX >= dz.left && e.clientX <= dz.right &&
-                     e.clientY >= dz.top  && e.clientY <= dz.bottom;
-      if (inside) {
-        const dot = document.createElement('div');
-        dot.className = 'bento-placed-food';
-        dot.style.left            = ((e.clientX - dz.left) / dz.width  * 100).toFixed(1) + '%';
-        dot.style.top             = ((e.clientY - dz.top)  / dz.height * 100).toFixed(1) + '%';
-        dot.style.backgroundImage = foodBg;
-        document.getElementById('bento-placed-items').appendChild(dot);
-        _bentoFoodPlaced++;
-        if (_bentoPhase === 'arrange') document.getElementById('btn-bento-next').disabled = false;
-      }
-    });
-
-    food.addEventListener('pointercancel', () => {
-      if (!ghost) return;
-      ghost.remove(); ghost = null;
-      food.classList.remove('food-ghost');
-    });
+  shelf.addEventListener('pointerdown', e => {
+    if (drag.pointerId !== null) return;   // a second finger is ignored mid-drag
+    const item = e.target.closest('.shelf-item');
+    if (!item) return;
+    Object.assign(drag, { pointerId: e.pointerId, item, startX: e.clientX, startY: e.clientY });
+    shelf.setPointerCapture(e.pointerId);
   });
+  shelf.addEventListener('pointermove', e => {
+    if (e.pointerId !== drag.pointerId) return;
+    if (!drag.ghost) {
+      if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < SHELF_DRAG_START_PX) return;
+      startGhost();
+    }
+    moveGhost(e.clientX, e.clientY);
+  });
+  shelf.addEventListener('pointerup', e => {
+    if (e.pointerId !== drag.pointerId) return;
+    if (drag.ghost) place(e.clientX, e.clientY);
+    end();
+  });
+  shelf.addEventListener('pointercancel', end);
+  shelf.addEventListener('lostpointercapture', end);
+  shelf.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;   // trackpad sideways swipe already scrolls
+    e.preventDefault();
+    shelf.scrollLeft += e.deltaY;
+  }, { passive: false });
+
+  return {
+    end,
+    count: () => placed.length,
+    placed: () => [...placed],
+    undo() {
+      const el = placed.pop();
+      if (!el) return;
+      el.remove();
+      cfg.onChange(placed.length);
+    },
+    clear() {
+      end();
+      placed.splice(0).forEach(el => el.remove());
+      shelf.scrollLeft = 0;
+      cfg.onChange(0);
+    }
+  };
+}
+
+const bentoShelf = initItemShelf({
+  shelf:       document.getElementById('bento-palette'),
+  view:        document.getElementById('view-bento'),
+  zone:        document.getElementById('bento-drop-zone'),
+  layer:       document.getElementById('bento-placed-items'),
+  placedClass: 'bento-placed-food',
+  onChange:    updateBentoButtons
+});
+
+function updateBentoButtons(count) {
+  document.getElementById('btn-bento-undo').disabled = !count;
+  document.getElementById('btn-bento-next').disabled = _bentoPhase !== 'arrange' || !count;
 }
 
 // ── DOLL — E7 teru teru bozu face drawing (cosmetic, DATA_SCHEMA §6) ──
@@ -909,11 +1117,28 @@ const DOLL_INKS  = ['--on-surface', '--primary', '--primary-container', '--secon
 const DOLL_SIZES = [10, 20, 34];   // brush width in 1000px canvas units
 // Face of teru_body.png: fill color + head circle (the gown shares the fill color, so both must match)
 const DOLL_FACE  = { r: 231, g: 231, b: 234, tolerance: 14, cx: 482, cy: 386, radius: 172 };
+// Dress step shelf, one tab per section — placeholder glyphs until the accessory art lands (assets/README.md)
+const DOLL_ACCESSORIES = [
+  { label: 'Ribbon', icon: '🎀', items: ['🎀', '🎗️', '🪢'] },
+  { label: 'Hat',    icon: '👒', items: ['👒', '🎩', '👑'] },
+  { label: 'Flower', icon: '🌸', items: ['🌸', '🌺', '🌼', '🍁'] },
+  { label: 'Charm',  icon: '🔔', items: ['🔔', '🏮', '⭐', '🌙'] }
+];
 
 const _doll = {
   strokes: [], color: '', size: DOLL_SIZES[1], drawing: null, onDone: null,
-  mask: null, wired: false, revealing: false, hue: 0, sat: 100, light: 50
+  mask: null, wired: false, revealing: false, hue: 0, sat: 100, light: 50,
+  step: 'face'   // 'face' (zoomed on the head, draw) | 'dress' (whole doll, accessories)
 };
+
+const dollShelf = initItemShelf({
+  shelf:       document.getElementById('doll-shelf'),
+  view:        document.getElementById('view-doll'),
+  zone:        document.getElementById('doll-frame'),
+  layer:       document.getElementById('doll-placed-items'),
+  placedClass: 'doll-placed-item',
+  onChange:    count => { document.getElementById('btn-doll-undo').disabled = !count; }
+});
 
 // 'before' | 'after' | null — when view-doll runs for this question and house
 function dollOrder(q) {
@@ -923,12 +1148,10 @@ function dollOrder(q) {
 
 const DOLL_RIPPLES_SRC = 'assets/ui/fx/rain_ripples_glow.webp';
 
-function startDoll(storyText, onDone) {
+function startDoll(onDone) {
   _doll.onDone = onDone;
   const ripples = document.getElementById('doll-ripples');
   if (!ripples.getAttribute('src')) ripples.src = DOLL_RIPPLES_SRC;   // preload while the player draws
-  document.getElementById('doll-story').textContent = storyText;
-  document.getElementById('doll-story-box').classList.toggle('hidden', !storyText);
   showView('doll');
 }
 
@@ -937,6 +1160,9 @@ function resetDoll() {
   _doll.strokes   = [];
   _doll.drawing   = null;
   _doll.revealing = false;
+  setDollStep('face');
+  dollShelf.clear();
+  showDollTab(0);
   document.getElementById('view-doll').classList.remove('doll-reveal');
   closeDollWheel();
   resetSceneIntro('doll-intro', 'doll-main');
@@ -944,8 +1170,40 @@ function resetDoll() {
   redrawDoll();
 }
 
-function dismissDollIntro() {
-  dismissSceneIntro('doll-intro', 'doll-main');
+function dismissDollIntro(e) {
+  dismissSceneIntro('doll-intro', 'doll-main', e);
+}
+
+function setDollStep(step) {
+  _doll.step = step;
+  document.getElementById('view-doll').classList.toggle('doll-dress', step === 'dress');
+}
+
+// Next → the camera eases out from the head to the whole doll, drawing stops, the accessory shelf opens
+function showDollDress() {
+  if (!_doll.strokes.length || _doll.step !== 'face') return;
+  _doll.drawing = null;
+  closeDollWheel();
+  setDollStep('dress');
+}
+
+function showDollTab(index) {
+  document.querySelectorAll('#doll-tabs .doll-tab').forEach((tab, i) => {
+    tab.classList.toggle('selected', i === index);
+    tab.setAttribute('aria-selected', i === index);
+  });
+  dollShelf.end();
+  const shelf = document.getElementById('doll-shelf');
+  shelf.replaceChildren(...DOLL_ACCESSORIES[index].items.map(glyph => {
+    const item = document.createElement('div');
+    item.className = 'shelf-item';
+    const img = document.createElement('div');
+    img.className = 'shelf-item-img shelf-item-glyph';
+    img.textContent = glyph;
+    item.appendChild(img);
+    return item;
+  }));
+  shelf.scrollLeft = 0;
 }
 
 // Fade the curtain down, run fn behind it, lift the curtain
@@ -973,18 +1231,31 @@ function revealDoll(after) {
 }
 
 function finishDoll() {
-  if (!_doll.strokes.length || _doll.revealing) return;
+  if (_doll.step !== 'dress' || _doll.revealing) return;
   _doll.revealing = true;
-  closeDollWheel();
+  dollShelf.end();
   const out = document.createElement('canvas');
   out.width = out.height = 1000;
   const ctx = out.getContext('2d');
   ctx.drawImage(document.getElementById('doll-body'), 0, 0, 1000, 1000);
   ctx.drawImage(document.getElementById('doll-canvas'), 0, 0);
+  drawDollAccessories(ctx);
   state.dollImage = out.toDataURL('image/png');
   const done = _doll.onDone;
   _doll.onDone = null;
   revealDoll(done);
+}
+
+// Placed glyphs → the 1000px export, at the same spot and size they show on screen (frame width = 1000)
+function drawDollAccessories(ctx) {
+  const frameW = document.getElementById('doll-frame').getBoundingClientRect().width;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  for (const el of dollShelf.placed()) {
+    const px = parseFloat(getComputedStyle(el).fontSize) / frameW * 1000;
+    ctx.font = `${px}px sans-serif`;
+    ctx.fillText(el.textContent, parseFloat(el.style.left) * 10, parseFloat(el.style.top) * 10);
+  }
 }
 
 function buildDollMask(img) {
@@ -1047,6 +1318,17 @@ function initDollCanvas() {
     sizes.appendChild(btn);
   });
 
+  // Accessory section tabs
+  const tabs = document.getElementById('doll-tabs');
+  DOLL_ACCESSORIES.forEach((section, i) => {
+    const tab = document.createElement('button');
+    tab.className = 'doll-tab';
+    tab.setAttribute('role', 'tab');
+    tab.textContent = `${section.icon} ${section.label}`;
+    tab.addEventListener('click', () => showDollTab(i));
+    tabs.appendChild(tab);
+  });
+
   wireDollDrawing();
   wireDollWheel();
 }
@@ -1065,7 +1347,7 @@ function dollPoint(canvas, e) {
 function wireDollDrawing() {
   const canvas = document.getElementById('doll-canvas');
   canvas.addEventListener('pointerdown', e => {
-    if (!_doll.mask || _doll.revealing) return;
+    if (!_doll.mask || _doll.step !== 'face') return;
     e.preventDefault();
     canvas.setPointerCapture(e.pointerId);
     _doll.drawing = { color: _doll.color, size: _doll.size, points: [dollPoint(canvas, e)] };
@@ -1117,7 +1399,7 @@ function redrawDoll() {
     ctx.drawImage(_doll.mask, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
   }
-  document.getElementById('btn-doll-done').disabled = !_doll.strokes.length;
+  document.getElementById('btn-doll-next').disabled = !_doll.strokes.length;
 }
 
 function undoDollStroke() {
@@ -1213,20 +1495,8 @@ function initLoading() {
 
   setTimeout(() => {
     clearInterval(interval);
-    showResultSpeech();
+    fadeToView('result');
   }, 3520);
-}
-
-// The guest finally speaks before the reveal — memory line (A) drifts up, near lines (B) flow on, tap → result
-// Yokai without written lines (memory: null) go straight to the result
-function showResultSpeech() {
-  const { memory, near } = getResult();
-  if (!memory) { fadeToView('result'); return; }
-  const page = [
-    { slow: [`"${memory}"`], auto: near.length > 0 },
-    ...near.map((line, i) => i < near.length - 1 ? { say: `"${line}"`, auto: true } : `"${line}"`)
-  ];
-  showNarration([page], () => fadeToView('result'));
 }
 
 // ── RESULT ────────────────────────────────────────────────────
@@ -1235,6 +1505,7 @@ function spawnSakuraFall() {
   if (!target) return;
   const container = document.createElement('div');
   container.className = 'sakura-fall';
+  container.setAttribute('aria-hidden', 'true');
   for (let i = 0; i < 28; i++) {
     const p = document.createElement('div');
     p.className = 'sakura-petal';
@@ -1268,67 +1539,121 @@ function flipGenderCard(card) {
   blindsThrough(toggleResultGender);
 }
 
+const HOUSE_TINTS = { purple:'rgba(107,79,160,0.14)', green:'rgba(45,122,79,0.12)', blue:'rgba(27,79,114,0.12)', yellow:'rgba(181,138,0,0.10)' };
+const HOUSE_ROLE  = { purple:'นักคิด', green:'นักอุดมคติ', blue:'ผู้พิทักษ์', yellow:'นักศิลป์' };
+
+// "เหมือนกันตรงไหน" — key = function ของ Yokai (Te…) หรือขั้ว (E…) เมื่อ function ตรงกัน 0 ข้อ · ทุกแถวคือสิ่งที่เหมือนกันจริง
+const ALIKE_LABEL = {
+  Te:'ทำให้สำเร็จเป็นขั้นเป็นตอน', Fe:'ดูแลให้คนรอบข้างสบายใจ', Ne:'ชอบคิดทางใหม่ๆ', Se:'ลงมือกับสิ่งที่อยู่ตรงหน้า',
+  Ti:'ชอบแกะว่าทำไมถึงเป็นแบบนั้น', Fi:'ทำตามสิ่งที่ใจรัก',
+  Pe:'ลองก่อน รู้ทีหลัง', Je:'พูดออกมาตรงๆ แล้วพาไปให้ถึง', Pi:'ซึมซับให้ทั่วก่อน แล้วค่อยนึกย้อน', Ji:'กลั่นให้เหลือแต่สิ่งที่ใช่จริงๆ',
+  E:'เข้าหาคนก่อน', I:'ชอบมีเวลาเงียบๆ', J:'ชอบวางแผนไว้ก่อน', P:'ไปตามจังหวะ', T:'ใช้เหตุผลนำ', F:'ใช้ใจนำ'
+};
+// ตรงกันกี่ใน 3 ข้อ (1–3) → คำ + สี · การ์ดนี้ไม่มีแดง — ได้เนื้อคู่แล้วต้องอ่านแล้วรู้สึกดี · getAlike ไม่ส่ง 0 มา
+const ALIKE_LEVELS = { 1: ['มีบ้าง', 'mid'], 2: ['ส่วนใหญ่', 'good'], 3: ['ทุกข้อ ✦', 'good'] };
+// "คู่ที่เกือบได้" — มุมที่ผู้เล่นมีอยู่บ้าง (ขั้วที่ได้ 1 ใน 3) = มุมที่เข้ากับอีกตัว · ชมว่ามีหลายด้าน ไม่ใช่ "ตอบผิดไปข้อเดียว"
+const NEAR_SIDE = {
+  E:'มุมที่ชอบเข้าหาคนก่อน', I:'มุมที่ชอบมีเวลาเงียบๆ', J:'มุมที่ชอบวางแผนไว้ก่อน',
+  P:'มุมที่ชอบปล่อยไปตามจังหวะ', T:'มุมที่ใช้เหตุผลนำ', F:'มุมที่ใช้ใจนำ'
+};
+
+// Doll line boil — owner-tuned on the wiggle test: intensity 4.5 · detail 0.031 (in the #doll-boil markup) · 7 FPS
+const DOLL_BOIL_FPS = 7, DOLL_BOIL_SEEDS = 6;   // a few seeds on a loop, so it boils in place instead of drifting
+let _dollBoilTimer = null;
+
+function startDollBoil() {
+  clearInterval(_dollBoilTimer);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const noise = document.getElementById('doll-boil-noise');
+  let seed = 0;
+  _dollBoilTimer = setInterval(() => {
+    seed = (seed + 1) % DOLL_BOIL_SEEDS;
+    noise.setAttribute('seed', seed + 1);
+  }, 1000 / DOLL_BOIL_FPS);
+}
+
+// Talk bubble — gacha-lobby style: tap = next line pops in whole, stays by length, fades back to "…"
+const TALK_ORDER = ['poke1', 'chat1', 'chat2', 'poke2', 'mist'];
+const TALK_HOLD_BASE_MS = 1400, TALK_HOLD_PER_CHAR_MS = 70, TALK_FADE_MS = 250;
+
+const CHEVRON_SVG = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+// Thai strings go in after innerHTML so each one passes through thaiBreakable() — <x data-th="key">
+function fillThai(root, texts) {
+  root.querySelectorAll('[data-th]').forEach(el => {
+    const text = texts[el.dataset.th];
+    if (typeof text !== 'string') throw new Error(`[Ryokan] fillThai: no text for "${el.dataset.th}"`);
+    el.append(thaiBreakable(text));
+  });
+}
+
+// Image art, video art, or the kanji while the art is still missing (no emoji on this page)
+function resultArtHTML(image, kanji, name, cls) {
+  if (!image) return `<div class="${cls} result-art-kanji" aria-hidden="true">${kanji}</div>`;
+  if (/\.(png|jpe?g|webp)$/i.test(image)) return `<img class="${cls}" src="${image}" alt="${name}">`;
+  const isMp4 = image.includes('googleusercontent.com') || image.endsWith('.mp4');
+  const sources = isMp4
+    ? `<source src="${image}" type="video/mp4">`
+    : `<source src="${image}" type="video/webm; codecs=vp9"><source src="${image.replace(/\.webm$/i, '.mp4')}" type='video/mp4; codecs="hvc1"'>`;
+  return `<video class="${cls}" autoplay loop muted playsinline>${sources}</video>`;
+}
+
+// One swipe card: face (hook / lead / pairs / invite) + optional folded "more" + bob arrow
+function deckCardHTML(card) {
+  return `
+    <article class="result-card result-card--${card.key}${card.red ? ' result-card--red' : ''}">
+      <h3 class="result-card-head"><span class="result-seal" aria-hidden="true">${card.seal}</span><span data-th="${card.key}-title"></span></h3>
+      ${card.hook  ? `<p class="result-card-hook" data-th="${card.key}-hook"></p>` : ''}
+      ${card.lead  ? `<p class="result-card-lead" data-th="${card.key}-lead"></p>` : ''}
+      ${card.pairs ? `<dl class="result-card-pairs">${card.pairs.map((p, i) => `<div><dt data-th="${card.key}-dt${i}"></dt><dd data-th="${card.key}-dd${i}"></dd></div>`).join('')}</dl>` : ''}
+      ${card.invite ? `<p class="result-card-invite"><b data-th="${card.key}-who"></b> <span data-th="${card.key}-invite"></span></p>` : ''}
+      ${card.more ? `
+      <div class="result-card-more" id="more-${card.key}"><div><div class="result-card-more-in">
+        ${card.more.map((m, i) => `<p data-th="${card.key}-more${i}"></p>`).join('')}
+      </div></div></div>
+      <button class="result-card-toggle" aria-expanded="false" aria-controls="more-${card.key}" aria-label="อ่านต่อ">${CHEVRON_SVG}</button>` : ''}
+    </article>`;
+}
+
+// Cards in story order; card 2 without whyLead shows why on its face (nothing to unfold) · no why / no life = card left out
+function deckCards(r) {
+  const cards = [{ key: 'heart', red: true, seal: '心', title: 'ใจของคุณเป็นแบบไหน?',
+    hook: r.heart.lead, invite: r.heart.invite, who: `${r.name} จะชวนให้คุณลอง…`, more: r.heart.more }];
+  if (r.why) cards.push(r.whyLead
+    ? { key: 'why', seal: '縁', title: 'ทำไมถึงต้องเป็นเขา?', lead: r.whyLead, more: [r.why] }
+    : { key: 'why', seal: '縁', title: 'ทำไมถึงต้องเป็นเขา?', lead: r.why });
+  if (r.life) cards.push({ key: 'life', seal: '共', title: 'ถ้าหากได้ใช้ชีวิตร่วมกัน…', lead: r.life.lead,
+    pairs: [['คุณจะได้', r.life.gain], ['อาจกระทบกัน', r.life.clash]], more: [r.life.more] });
+  return cards;
+}
+
+function deckTexts(cards) {
+  const t = {};
+  for (const c of cards) {
+    t[c.key + '-title'] = c.title;
+    if (c.hook)   t[c.key + '-hook'] = c.hook;
+    if (c.lead)   t[c.key + '-lead'] = c.lead;
+    if (c.invite) { t[c.key + '-who'] = c.who; t[c.key + '-invite'] = c.invite; }
+    (c.pairs || []).forEach(([dt, dd], i) => { t[`${c.key}-dt${i}`] = dt; t[`${c.key}-dd${i}`] = dd; });
+    (c.more  || []).forEach((m, i) => { t[`${c.key}-more${i}`] = m; });
+  }
+  return t;
+}
+
 function renderResult() {
   guardState(2);
-  const r = getResult();
-
-  const houseTints  = { purple:'rgba(107,79,160,0.14)', green:'rgba(45,122,79,0.12)', blue:'rgba(27,79,114,0.12)', yellow:'rgba(181,138,0,0.10)' };
-  const houseLabels = { purple:'Analysts', green:'Diplomats', blue:'Sentinels', yellow:'Explorers' };
-
-  const tint            = houseTints[r.house]  || 'transparent';
-  const houseLabel      = houseLabels[r.house] || r.house;
-  const otherGenderText = state.resultGenderShown === 'male' ? 'Switch to female version' : 'Switch to male version';
-  const flipClass       = state.resultGenderShown === 'female' ? ' is-flipped' : '';
-
-  const hasArt = r.image && r.image.trim() !== '';
-
-  let artHTML;
-  if (!hasArt) {
-    artHTML = `<div class="result-art-emoji" aria-hidden="true">${r.emoji}</div>`;
-  } else if (/\.(png|jpe?g|webp)$/i.test(r.image)) {
-    artHTML = `<img class="result-art-img" src="${r.image}" alt="${r.name}">`;
-  } else {
-    const isMp4Url = r.image.includes('googleusercontent.com') || r.image.endsWith('.mp4');
-    const webmSrc  = r.image;
-    const mp4Src   = isMp4Url ? r.image : r.image.replace(/\.webm$/i, '.mp4');
-    const sources  = isMp4Url
-      ? `<source src="${r.image}" type="video/mp4">`
-      : `<source src="${webmSrc}" type="video/webm; codecs=vp9">
-         <source src="${mp4Src}" type='video/mp4; codecs="hvc1"'>`;
-    artHTML = `<video class="result-art-video" autoplay loop muted playsinline>${sources}</video>`;
-  }
-
   if (!state.dollImage) throw new Error('[Ryokan] renderResult: state.dollImage missing (E7 doll not drawn)');
+  const r = getResult();
+  const cards = deckCards(r);
+  const gender = state.resultGenderShown;
+  const otherGenderText = gender === 'male' ? 'Switch to female version' : 'Switch to male version';
+  const flipClass = gender === 'female' ? ' is-flipped' : '';
+  const near      = r.nearMiss && YOKAI_DATA[r.nearMiss.name];
   const yokaiDoll = YOKAI_DATA[state.winningYokai].dollImage;
-  const dollsHTML = `
-    <figure class="result-doll">
-      <img src="${state.dollImage}" alt="Your teru teru bozu">
-      <figcaption>Yours</figcaption>
-    </figure>
-    ${yokaiDoll ? `
-    <figure class="result-doll">
-      <img src="${yokaiDoll}" alt="${r.name}'s teru teru bozu">
-      <figcaption>${r.name}</figcaption>
-    </figure>` : ''}`;
-
-  const compatHTML = r.compat.map(c => `
-    <div class="compat-row">
-      <div class="compat-header">
-        <span class="compat-label">${c.label}</span>
-        <span class="compat-value">${c.value}%</span>
-      </div>
-      <div class="compat-track">
-        <div class="compat-fill" data-value="${c.value}" style="transform:scaleX(0)"></div>
-      </div>
-    </div>`).join('');
 
   document.getElementById('view-result').innerHTML = `
-    <div class="result-wrap">
-      <div class="result-art-section" style="--house-tint:${tint}">
-        <div class="result-art-bg"></div>
-        ${artHTML}
-      </div>
-      <div class="result-content">
+    <div class="result-wrap" style="--house-tint:${HOUSE_TINTS[r.house]}">
+      <header class="result-hero">
         <button class="gender-flip${flipClass}" onclick="flipGenderCard(this)" aria-label="${otherGenderText}">
           <span class="gender-flip-inner">
             <span class="gender-flip-face gender-flip-face--front">
@@ -1343,40 +1668,58 @@ function renderResult() {
             </span>
           </span>
         </button>
-        <div class="result-identity">
-          <div class="result-mbti-row">
-            <span class="result-house-label">${houseLabel}</span>
-            <span class="result-mbti">${r.mbti}</span>
-          </div>
-          <h2 class="result-name">${r.name}</h2>
-          <p class="result-title">${r.title}</p>
-          <p class="result-tagline">${r.tagline}</p>
+        <p class="result-eyebrow" data-th="eyebrow"></p>
+        <h2 class="result-name">${r.name}</h2>
+        <p class="result-sub">${r.kanji} · <span data-th="title"></span></p>
+        <div class="result-tags"><span class="result-tag" data-th="role"></span><span class="result-tag result-tag--red">${r.mbti}</span></div>
+        <div class="result-stage">
+          ${resultArtHTML(r.image, r.kanji, r.name, 'result-art')}
+          ${r.lines ? `<button class="result-say result-say--idle" aria-live="polite" aria-label="แตะเพื่อฟัง ${r.name} พูด"><span class="result-say-text">…</span></button>` : ''}
         </div>
-        ${r.why ? `
-        <div class="result-section">
-          <p class="result-section-eyebrow">— Why you matched —</p>
-          <p class="result-why">${r.why}</p>
-        </div>` : ''}
-        ${r.memory ? `
-        <div class="result-quote-block">
-          ${[r.memory, ...r.near].map(line => `<p class="result-quote">"${line}"</p>`).join('')}
-        </div>` : ''}
-        <div class="result-section">
-          <p class="result-section-eyebrow">— Teru Teru Bōzu —</p>
-          <div class="result-dolls">${dollsHTML}</div>
+      </header>
+
+      <section class="result-deck" aria-label="ผลของคุณ ปัดดูทีละหัวข้อ">${cards.map(deckCardHTML).join('')}
+      </section>
+      ${cards.length > 1 ? `<nav class="result-deck-dots" aria-label="เลือกหัวข้อ">${cards.map((c, i) =>
+        `<button aria-label="${c.title}" aria-current="${i === 0}"></button>`).join('')}</nav>` : ''}
+
+      <section class="result-pair">
+        <article class="result-tile">
+          <h3 class="result-card-head"><span class="result-seal" aria-hidden="true">似</span><span data-th="alike-title"></span></h3>
+          ${r.alike.map((a, i) => `
+          <div class="result-meter">
+            <span data-th="alike${i}"></span>
+            <span class="result-meter-score result-tone--${ALIKE_LEVELS[a.count][1]}"><span class="result-dots" aria-hidden="true">${[1, 2, 3].map(n => `<i${n <= a.count ? ' class="on"' : ''}></i>`).join('')}</span><b data-th="alike${i}-n"></b></span>
+          </div>`).join('')}
+        </article>
+        <article class="result-tile">
+          <h3 class="result-card-head"><span class="result-seal" aria-hidden="true">相</span><span data-th="compat-title"></span></h3>
+          <p class="result-match-label result-tone--good" data-th="match-good"></p>
+          <div class="result-match-chips">${r.match.good.map((g, i) => `<span class="result-match-chip" data-th="match-good${i}"></span>`).join('')}</div>
+          <p class="result-match-label result-tone--low" data-th="match-adjust-label"></p>
+          <p class="result-match-adjust" data-th="match-adjust"></p>
+        </article>
+      </section>
+
+      <section class="result-keepsakes">
+        <article class="result-tile">
+          <h3 class="result-card-head"><span class="result-seal" aria-hidden="true">岐</span><span data-th="near-title"></span></h3>
+          ${near ? `
+          <div class="result-near-portrait">${resultArtHTML(near[gender].image, near.kanji, near.name, 'result-near-art')}<div class="result-near-mist" aria-hidden="true"></div></div>
+          <p class="result-near-name">${near.name}</p>
+          <p class="result-near-why" data-th="near-why"></p>
+          <p class="result-near-say" data-th="near-say"></p>` : `
+          <p class="result-near-why" data-th="near-none"></p>`}
+        </article>
+        <div class="result-dolls" role="img" aria-label="ตุ๊กตาไล่ฝนของคุณ${yokaiDoll ? ` คู่กับของ ${r.name}` : ''}">
+          ${yokaiDoll ? `<div class="result-doll result-doll--theirs"><img src="${yokaiDoll}" alt=""></div>` : ''}
+          <div class="result-doll result-doll--yours"><img src="${state.dollImage}" alt=""></div>
         </div>
-        <div class="result-section">
-          <p class="result-section-eyebrow">— Compatibility —</p>
-          <div class="result-compat-bars">${compatHTML}</div>
-        </div>
-        <div class="result-actions">
-          <button class="btn-primary" onclick="resetGame()">Play Again &nbsp;↺</button>
-          <button class="omikuji-btn" onclick="openOmikuji()" aria-label="Draw your Omikuji fortune">
-            <div class="omikuji-btn-img" aria-hidden="true">御</div>
-            <span class="omikuji-btn-label">御籤を引く</span>
-            <span class="omikuji-btn-sub">Draw your fortune</span>
-          </button>
-        </div>
+      </section>
+
+      <div class="result-actions">
+        <button class="result-action" onclick="openOmikuji()">御籤 <span data-th="omikuji"></span></button>
+        <button class="result-action" onclick="resetGame()"><span data-th="again"></span> ↺</button>
       </div>
 
       <div id="omikuji-modal" class="omikuji-modal" onclick="closeOmikuji()" role="dialog" aria-modal="true">
@@ -1404,12 +1747,84 @@ function renderResult() {
       </div>
     </div>`;
 
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    document.querySelectorAll('.compat-fill').forEach(fill => {
-      fill.style.transform = `scaleX(${parseInt(fill.dataset.value, 10) / 100})`;
-    });
-    spawnSakuraFall();
-  }));
+  const view = document.getElementById('view-result');
+  const texts = {
+    eyebrow: 'เนื้อคู่ของคุณคือ', title: r.title, role: HOUSE_ROLE[r.house],
+    'alike-title': 'เหมือนกันตรงไหน', 'compat-title': 'ความเข้ากัน', 'match-good': 'เข้ากันดีเรื่อง', 'match-adjust-label': 'ต้องค่อยๆ ปรับ', 'match-adjust': r.match.adjust, 'near-title': 'คู่ที่เกือบได้',
+    'near-none': `ใจคุณชัดเจนมาก มีแค่ ${r.name} คนเดียวที่ใช่`,
+    omikuji: 'เสี่ยงเซียมซี', again: 'เล่นอีกครั้ง',
+    ...deckTexts(cards)
+  };
+  r.alike.forEach((a, i) => { texts['alike' + i] = ALIKE_LABEL[a.key]; texts[`alike${i}-n`] = ALIKE_LEVELS[a.count][0]; });
+  r.match.good.forEach((g, i) => { texts['match-good' + i] = g; });
+  if (near) {
+    texts['near-why'] = `อีกมุมหนึ่งของคุณ ${NEAR_SIDE[r.nearMiss.pole]} ก็เข้ากับ ${near.name} ได้ดีเหมือนกัน`;
+    texts['near-say'] = `"${near.almost}"`;
+  }
+  fillThai(view, texts);
+
+  wireResultDeck(view);
+  startDollBoil();
+  if (r.lines) wireResultTalk(view, r);
+  requestAnimationFrame(() => requestAnimationFrame(spawnSakuraFall));
+}
+
+// Deck: dots follow the snapped card · tap a peeking card = go there · tap the current card = fold/unfold its "more"
+function wireResultDeck(view) {
+  const deck  = view.querySelector('.result-deck');
+  const cards = [...deck.children];
+  const dots  = [...view.querySelectorAll('.result-deck-dots button')];
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const left  = i => cards[i].offsetLeft - cards[0].offsetLeft;
+  const current = () => cards.reduce((best, c, i) =>
+    Math.abs(left(i) - deck.scrollLeft) < Math.abs(left(best) - deck.scrollLeft) ? i : best, 0);
+  const goTo = i => deck.scrollTo({ left: left(i), behavior: still ? 'auto' : 'smooth' });
+  const toggle = card => {
+    const btn = card.querySelector('.result-card-toggle');
+    if (!btn) return;
+    btn.setAttribute('aria-expanded', String(card.classList.toggle('open')));
+  };
+
+  // swiping away folds an open card, so the deck doesn't stay tall behind a short card
+  deck.addEventListener('scroll', () => {
+    const i = current();
+    dots.forEach((d, k) => d.setAttribute('aria-current', String(k === i)));
+    cards.forEach((c, k) => { if (k !== i && c.classList.contains('open')) toggle(c); });
+  }, { passive: true });
+  dots.forEach((d, i) => d.addEventListener('click', () => goTo(i)));
+  cards.forEach((c, i) => c.addEventListener('click', () => (i === current() ? toggle(c) : goTo(i))));
+}
+
+function wireResultTalk(view, r) {
+  const say   = view.querySelector('.result-say');
+  const text  = say.querySelector('.result-say-text');
+  const art   = view.querySelector('.result-art');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let idx = -1, folder = null;
+
+  const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+  const lineAt  = key => (key === 'mist' ? r.lines.mist[r.mist] : r.lines[key]);
+  const backToIdle = () => {
+    say.className = 'result-say result-say--out';
+    setTimeout(() => { say.className = 'result-say result-say--idle'; text.textContent = '…'; }, still ? 0 : TALK_FADE_MS);
+  };
+  const speak = side => {
+    clearTimeout(folder);
+    idx = (idx + 1) % TALK_ORDER.length;
+    const line = lineAt(TALK_ORDER[idx]);
+    text.replaceChildren(thaiBreakable(line));
+    say.className = 'result-say';
+    restart(say, 'result-say--pop');
+    art.style.setProperty('--tilt', side === 'l' ? '-1.5deg' : '1.5deg');
+    restart(art, 'poked');
+    folder = setTimeout(backToIdle, TALK_HOLD_BASE_MS + line.length * TALK_HOLD_PER_CHAR_MS);
+  };
+
+  say.addEventListener('click', () => speak('r'));
+  art.addEventListener('click', ev => {
+    const b = art.getBoundingClientRect();
+    speak(ev.clientX < b.left + b.width / 2 ? 'l' : 'r');
+  });
 }
 
 // ── OMIKUJI ───────────────────────────────────────────────────
@@ -1459,7 +1874,7 @@ function drawOmikuji(status) {
   rank.style.color    = o.color;
   rankEn.textContent  = o.rankEn;
   rankEn.style.color  = o.color;
-  document.getElementById('omikuji-text').textContent = o.text;
+  document.getElementById('omikuji-text').replaceChildren(thaiBreakable(o.text));
   document.getElementById('omikuji-pick').hidden   = true;
   document.getElementById('omikuji-result').hidden = false;
 }
@@ -1468,212 +1883,362 @@ function closeOmikuji() {
   document.getElementById('omikuji-modal').classList.remove('open');
 }
 
+// ── HOUSE HEART — card "ใจของคุณเป็นแบบไหน?" (per house; the invite line is prefixed with the yokai's name) ──
+const HOUSE_HEART = {
+  purple: {
+    lead:   'ใจที่แอบรู้สึกผิด ทุกครั้งที่นึกถึงตัวเองก่อน',
+    invite: 'บอกสิ่งที่ตัวเองอยากได้ออกมาบ้าง โดยไม่ต้องรู้สึกผิด',
+    more:   ['คุณมักเห็นก่อนใครว่าคนรอบตัวขาดอะไร แล้วเติมให้ก่อนเขาจะเอ่ยปาก แต่พอเป็นเรื่องของตัวเอง กลับเก็บไว้ไม่บอกใคร']
+  },
+  green: {
+    lead:   'ใจที่แอบกลัวว่าจะไม่มีใครเข้าใจจริงๆ',
+    invite: 'เล่าเรื่องในใจออกมาสักเรื่อง แล้วปล่อยให้เขาได้ฟัง',
+    more:   ['คุณรับฟังคนอื่นได้ลึกกว่าที่เขาคิด แต่ความรู้สึกของตัวเองมักเก็บไว้ข้างใน เพราะไม่แน่ใจว่าจะมีใครฟังมันจริงๆ']
+  },
+  blue: {
+    lead:   'ใจที่แอบกลัวว่าคนสำคัญจะหายไป',
+    invite: 'ปล่อยใจสบายกับวันนี้ไปก่อน เรื่องของพรุ่งนี้ ค่อยว่ากันพรุ่งนี้',
+    more:   ['คุณเป็นคนที่ใครดีด้วยนิดเดียวก็จำไปนาน แต่ยิ่งผูกพันกับใคร ก็ยิ่งแอบกลัวว่าวันหนึ่งเขาจะหายไป',
+             'บางทีคุณก็เผลอเตรียมใจไว้ล่วงหน้า ทั้งที่ยังไม่มีอะไรเกิดขึ้นเลย ความรู้สึกนี้ไม่ได้แปลว่าคุณคิดมาก มันแค่บอกว่าถ้าคุณรักใคร ก็รักจริง']
+  },
+  yellow: {
+    lead:   'ใจที่แอบกลัวว่าทำแค่นี้ยังไม่พอ',
+    invite: 'พักโดยไม่ต้องรอให้งานเสร็จ แล้วสนุกกับตอนนี้ไปด้วยกัน',
+    more:   ['คุณตั้งใจกับทุกอย่างที่ทำ และมักเห็นจุดที่ยังทำได้ดีกว่านี้ แต่บางครั้งก็ลืมไปว่าตัวเองก็เหนื่อยเป็น']
+  }
+};
+validateHouseHeart();   // fail fast if a house is missing its heart card
+
 // ── YOKAI DATA ────────────────────────────────────────────────
 const YOKAI_DATA = {
 
   // ── Purple · Analysts (NT) ───────────────────────────────────
   Tenjin: {
-    house:'purple', mbti:'INTJ', emoji:'📜', name:'Tenjin', title:'เทพแห่งปัญญา', dollImage:'',
+    house:'purple', mbti:'INTJ', name:'Tenjin', kanji:'天神', title:'เทพแห่งปัญญา', dollImage:'',
+    almost: 'ข้าตอบได้ทุกคำถาม… ยกเว้นว่าทำไมเจ้าไม่มาหาข้า',
     why: 'หลังคืนที่ทั้งเรือนพึ่งคุณ ใจคุณมองหาใครสักคนที่อยู่ข้างแล้วพักได้จริง Tenjin เห็นงานที่รอคุณก่อนคุณรู้ตัว จัดใหม่ทีเดียวให้หายไป แล้วไม่พูดถึงอีก เรื่องที่สำคัญจริงๆ คุณกับเขามักขอคิดให้ตกผลึกก่อนค่อยลงมือ',
-    memory: {
-      e1: 'เอาละ กระดิ่งใบนั้นไม่ต้องหาแล้ว งานในเรือนข้าจัดใหม่หมด คืนนี้เจ้าพักได้',
-      e2: 'ร่มกองนั้นข้าผูกป้ายชื่อครบทุกคันตั้งแต่ก่อนฝนตก เรียงตามห้องด้วย ต่อจากนี้ใครมาก็หยิบเองได้',
-      e3: 'วางโคมดวงนั้นลงเถิด ข้าแขวนโคมรอไว้ทั่วทางเดินแล้ว',
-      e4: 'คนอื่นเรียกเจ้าว่าเจ้าของเรียวกัง ข้าเลือกไว้นานแล้วว่าจะเรียกชื่อจริง',
-      e5: 'ในแผนของข้าไม่มีเรื่องอะไรให้เจ้าต้องดูแล มีแค่ที่ว่างข้างข้า… มาสิ'
+    whyLead: null, life: null,
+    lines: {
+      poke1: 'มีอะไรหรือเปล่า ข้ากำลังคิดเรื่องสำคัญอยู่', chat1: 'ห้องพักเดือนหน้า ข้าจัดไว้หมดแล้ว',
+      chat2: 'ฟืนน่ะ ข้าย้ายมาไว้ข้างครัวแล้ว', poke2: '…จะจิ้มต่อก็ได้ ข้าไม่ว่าอะไร',
+      mist: {
+        yellow: 'ย่ำแอ่งน้ำวันนั้น ไม่มีในแผนข้าเลยสักนิด',
+        purple: 'วันแรกที่เราพบกัน…ข้ากำลังอ่านหนังสือนี่นะ',
+        green:  'เรื่องเล็กๆ ของเจ้า ข้าจดไว้ทุกเรื่อง',
+        blue:   'ต่อไปนี้เจ้าไม่ต้องเก็บถ้วยชาเองแล้วล่ะ'
+      }
     },
-    near: {
-      JP: 'บางทีเจ้าก็ลองอะไรใหม่ๆ ขึ้นมาเฉยๆ แผนของข้าเลยมีเรื่องให้ตื่นเต้นบ้าง ข้าชอบนะ',
-      EI: 'เวลาเจ้าออกไปก่อนข้าอ่านจบ ข้าก็หนีบตำราตามไปตลาด ได้เห็นของจริงที่เคยอ่านแต่ในตำรา'
-    },
-    male:   { image:'', tagline:'The God of Knowledge',   compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] },
-    female: { image:'', tagline:'The Goddess of Knowledge', compat:[{label:'Intellectual Bond',value:97},{label:'Passion',value:58},{label:'Warmth',value:42}] }
+    match: { good: ['คุยกันถูกคอ', 'ความหลงใหล'], adjust: 'เขาห่วงคุณนะ แต่ไม่ค่อยแสดงออกให้เห็น' },
+    male:   { image:'', tagline:'The God of Knowledge' },
+    female: { image:'', tagline:'The Goddess of Knowledge' }
   },
   Yumekui: {
-    house:'purple', mbti:'INTP', emoji:'💤', name:'Yumekui', title:'ปีศาจกินฝัน', dollImage:'',
+    house:'purple', mbti:'INTP', name:'Yumekui', kanji:'夢喰', title:'ปีศาจกินฝัน', dollImage:'assets/ui/doll/yumekui_teru.png',
+    almost: 'หาววว… ข้านอนรอเจ้าในฝันทั้งคืน เจ้าไม่มาเลย',
     why: null,
-    memory: null, near: null,
-    male:   { image:'', tagline:'The Dream Devourer',   compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] },
-    female: { image:'assets/yokai/yumekui_f.png', tagline:'The Dream Devourer', compat:[{label:'Intellectual Bond',value:90},{label:'Mystery',value:85},{label:'Warmth',value:38}] }
+    whyLead: null, life: null, lines: {
+      poke1: 'หาววว… ปลุกข้าทำไมเนี่ย', chat1: 'ฝันของเจ้าเมื่อคืน รสหวานแปลกๆ นะ',
+      chat2: 'ข้าสงสัยมานาน ทำไมคนถึงฝันซ้ำ', poke2: 'หาววว… จิ้มต่อก็ได้ ข้าหลับต่อละ',
+      mist: {
+        yellow: 'ย่ำแอ่งน้ำวันนั้น… นึกว่าฝันไปเอง',
+        purple: 'เช้านั้นข้าอ่านหนังสือ… จริงๆ ก็แอบหลับนะ',
+        green:  'เรื่องเล็กๆ ที่เจ้าเห็น ข้าเห็นในฝันเจ้าก่อนแล้ว',
+        blue:   'ถ้วยชาเช้านั้น… ข้าเก็บทั้งที่ยังง่วงอยู่เลย'
+      }
+    },
+    match: { good: ['คุยกันถูกคอ', 'ความน่าค้นหา'], adjust: 'บางทีเขาจมอยู่ในความคิด จนลืมถามว่าคุณเป็นยังไง' },
+    male:   { image:'', tagline:'The Dream Devourer' },
+    female: { image:'assets/yokai/yumekui_f.png', tagline:'The Dream Devourer' }
   },
   Ryuu: {
-    house:'purple', mbti:'ENTJ', emoji:'🐉', name:'Ryuu', title:'มังกรเทพเจ้า', dollImage:'',
+    house:'purple', mbti:'ENTJ', name:'Ryuu', kanji:'龍', title:'มังกรเทพเจ้า', dollImage:'',
+    almost: 'ที่นั่งข้างข้า ข้าเว้นไว้ให้เจ้า… ใครมาขอข้าก็ไม่ให้',
     why: null,
-    memory: null, near: null,
-    male:   { image:'', tagline:'The Dragon God',   compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] },
-    female: { image:'', tagline:'The Dragon Goddess', compat:[{label:'Ambition',value:95},{label:'Passion',value:76},{label:'Tenderness',value:44}] }
+    whyLead: null, life: null, lines: {
+      poke1: 'กล้าจิ้มมังกรเชียวรึ', chat1: 'เรือนนี้ต้องขยาย ข้าคิดไว้แล้ว',
+      chat2: 'อยู่ข้างข้าไว้ ไม่มีใครกล้ารังแกเจ้า', poke2: 'ก็ได้ เจ้าคนเดียวที่ข้ายอมให้จิ้ม',
+      mist: {
+        yellow: 'ข้าไม่เคยเท้าเปียกมาก่อน จนวันนั้น',
+        purple: 'หนังสือเล่มนั้นข้าอ่านไม่จบ มัวแต่มองเจ้า',
+        green:  'เรื่องเล็กๆ ของเจ้า ข้าไม่เคยมองข้าม',
+        blue:   'มังกรเก็บถ้วยชา… มีเจ้าคนเดียวที่ได้เห็น'
+      }
+    },
+    match: { good: ['ความมุ่งมั่น', 'ความหลงใหล'], adjust: 'เขาพูดตรงไปหน่อย บางคำอาจแรงกว่าที่ตั้งใจ' },
+    male:   { image:'', tagline:'The Dragon God' },
+    female: { image:'', tagline:'The Dragon Goddess' }
   },
   Kitsune: {
-    house:'purple', mbti:'ENTP', emoji:'🦊', name:'Kitsune', title:'จิ้งจอกเก้าหาง', dollImage:'',
+    house:'purple', mbti:'ENTP', name:'Kitsune', kanji:'狐', title:'จิ้งจอกเก้าหาง', dollImage:'assets/ui/doll/kitsune_teru.png',
+    almost: 'ฮิฮิ ไปกับเขาแล้วสินะ… รอบหน้าข้าไม่ยอมหรอก',
     why: 'คนที่ใครๆ ก็พึ่ง มักลืมว่าอยู่กับใครโดยไม่ต้องคอยเอาใจก็ได้ Kitsune ไม่แบกแทนคุณ เขาหยอก เขาถามกลับ จนคุณเห็นเองว่าหลายอย่างที่แบกอยู่วางลงได้ ส่วนใหญ่คุณสองคนชอบคิดไปพูดไป และกล้าลองทางที่ยังไม่รู้ปลาย',
-    memory: {
-      e1: 'ฮิฮิ กระดิ่งน่ะข้าซ่อนเอง ถ้าคืนนี้ไม่มีเสียงเรียก เจ้าจะหลับลงไหมล่ะ',
-      e2: 'ฮิฮิ ร่มกองนั้นมาทายกับข้าไหมว่าคันไหนของใคร ทายผิดก็ไม่มีใครว่าหรอก',
-      e3: 'เอ๊ะ ไฟจิ้งจอกของข้าก็ลอยส่องทั่วทางอยู่แล้ว โคมหนักๆ นั่นเจ้าจะแบกไปถึงไหนล่ะ',
-      e4: 'เสียงนั้นเรียกหาเจ้าของเรียวกัง… ตำแหน่งน่ะข้าไม่สนหรอก ว่าแต่เจ้าตัวจริงชื่ออะไรกันนะ?',
-      e5: 'ใครตั้งกฎว่าอยู่ด้วยกันต้องเอาใจกันล่ะ ขนมของเจ้า ข้าก็หยิบกินเองไปชิ้นหนึ่งแล้ว เจ้ายังไม่ทันเห็นเลยใช่ไหม'
+    whyLead: null, life: null,
+    lines: {
+      poke1: 'จิ้มข้าเหรอ แล้วถ้าข้าจิ้มคืนล่ะ', chat1: 'เต้าหู้ทอดหายไปไหนนะ ไม่ใช่ข้าหรอก',
+      chat2: 'กฎห้ามเล่นในโถง ใครตั้งกันล่ะ', poke2: 'ยอมก็ได้ จิ้มต่อเถอะ ชอบข้าล่ะสิ',
+      mist: {
+        yellow: 'แขกที่ชวนย่ำแอ่งน้ำ จำข้าไม่ได้เหรอ',
+        purple: 'เช้านั้นข้าแกล้งอ่านหนังสือ ดูไม่ออกเหรอ',
+        green:  'จะมีใครเห็นเรื่องของเจ้าอีกล่ะ นอกจากข้า',
+        blue:   'ที่เก็บถ้วยชาเช้านั้น ข้าเองล่ะ นึกไม่ถึงสินะ'
+      }
     },
-    near: {
-      JP: 'ข้าคิดได้เก้าทาง เจ้าชี้ทางเดียวก็จบเรื่อง เข้าคู่กันดีไหมล่ะ',
-      EI: 'เวลาเจ้านั่งดูเงียบๆ ข้าก็ซนได้ทั้งคืน ซนจนเหนื่อยเมื่อไหร่ ก็กลับมานอนข้างเจ้า'
-    },
-    male:   { image:'', tagline:'The Nine-Tailed Fox',   compat:[{label:'Wit & Banter',value:95},{label:'Curiosity',value:86},{label:'Stability',value:34}] },
-    female: { image:'', tagline:'The Nine-Tailed Fox', compat:[{label:'Wit & Banter',value:95},{label:'Curiosity',value:86},{label:'Stability',value:34}] }
+    match: { good: ['แซวกันไปมา', 'ความอยากรู้'], adjust: 'เขาเปลี่ยนใจไว อะไรก็ไม่ค่อยแน่นอน' },
+    male:   { image:'', tagline:'The Nine-Tailed Fox' },
+    female: { image:'', tagline:'The Nine-Tailed Fox' }
   },
 
   // ── Green · Diplomats (NF) ───────────────────────────────────
   Shinigami: {
-    house:'green', mbti:'INFJ', emoji:'💀', name:'Shinigami', title:'ยมทูต', dollImage:'',
+    house:'green', mbti:'INFJ', name:'Shinigami', kanji:'死神', title:'ยมทูต', dollImage:'assets/ui/doll/shinigami_teru.png',
+    almost: 'ด้ายแดงของเจ้า… พาดผ่านมือข้าไปนิดเดียวเอง',
     why: null,
-    memory: null, near: null,
-    male:   { image:'', tagline:'The Soul Guide',   compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] },
-    female: { image:'assets/yokai/shinigami_f.png', tagline:'The Soul Guide', compat:[{label:'Deep Connection',value:96},{label:'Understanding',value:88},{label:'Lightness',value:30}] }
+    whyLead: null, life: null, lines: {
+      poke1: '…อุ่นดีนะ มือของคนเป็น', chat1: 'ดวงวิญญาณคืนนี้ เงียบกว่าทุกที',
+      chat2: 'อย่าเพิ่งไปไหนนะ อยู่ตรงนี้ก่อน', poke2: 'จิ้มเถอะ… ไม่มีใครแตะข้ามานานแล้ว',
+      mist: {
+        yellow: 'น้ำในแอ่งวันนั้น… ข้าไม่เคยรู้ว่ามันอุ่น',
+        purple: 'หนังสือเล่มนั้น ข้าพลิกไม่ไปสักหน้า',
+        green:  'สิ่งที่เจ้าคิดว่าไม่มีใครเห็น… ข้าเห็น',
+        blue:   'ถ้วยชาเช้านั้น ข้าเก็บช้าๆ จะได้อยู่นานขึ้น'
+      }
+    },
+    match: { good: ['ความผูกพันลึกๆ', 'ความเข้าใจกัน'], adjust: 'เขาคิดลึกไปทุกเรื่อง บางทีก็หนักไปหน่อย' },
+    male:   { image:'', tagline:'The Soul Guide' },
+    female: { image:'assets/yokai/shinigami_f.png', tagline:'The Soul Guide' }
   },
   Yukionna: {
-    house:'green', mbti:'INFP', emoji:'❄️', name:'Yukionna', title:'ปีศาจหิมะ', dollImage:'',
+    house:'green', mbti:'INFP', name:'Yukionna', kanji:'雪女', title:'ปีศาจหิมะ', dollImage:'assets/ui/doll/yukionna_teru.png',
+    almost: 'มือข้าเย็นเสมอ… แต่ตอนเจ้าเดินผ่าน มันอุ่นขึ้นนิดหนึ่ง',
     why: 'บางเรื่องในใจคุณอยากให้มีใครเห็น โดยไม่ต้องรื้อออกมาวางให้ดู Yukionna ไม่ซอกแซก เขาเปิดมุมเปราะบางของตัวเองให้คุณเห็นก่อน แล้วค่อยขยับเข้าใกล้เมื่อคุณพร้อม หลายครั้งคุณสองคนชอบคิดอยู่ในใจเงียบๆ ปล่อยให้สิ่งที่ถูกใจค่อยๆ ชัดขึ้นเอง',
-    memory: {
-      e1: 'สมุดเล่มนั้น ข้าไม่ขอเปิดหรอก… ข้าเองก็มีอยู่เล่มหนึ่ง ถ้าเจ้าอยากดู ข้าให้ดูก่อนก็ได้',
-      e2: 'ชาถ้วยนั้นร้อนเกินมือข้าไปหน่อย… ฟู่… ข้าจะค่อยๆ จิบจนหมดเลยนะ',
-      e3: 'ตะเกียงดวงนั้น… ข้าขอนั่งตรงขอบแสงสักมุมได้ไหม ไม่พูดอะไรเลยก็ได้',
-      e4: 'ฟู่… เพลงนั้นข้ารู้จักท่อนต่อนะ ข้าเคยฮัมอยู่คนเดียวเหมือนกัน',
-      e5: 'เรื่องเล็กๆ ที่เจ้านึกว่าเห็นอยู่คนเดียว… ข้าก็เห็นนะ นึกว่ามีข้าคนเดียวเสียอีก'
+    whyLead: null, life: null,
+    lines: {
+      poke1: 'อุ๊ย… มือเจ้าอุ่นจัง', chat1: 'หิมะแรกจะตกเมื่อไหร่นะ…',
+      chat2: 'นึกว่าเจ้าลืมข้าไปแล้ว…', poke2: 'จิ้มอีกก็ได้… ข้าไม่หนีแล้ว',
+      mist: {
+        yellow: 'ยังเขินอยู่เลยที่ชวนเจ้าย่ำแอ่งน้ำวันนั้น…',
+        purple: 'เช้าที่หมอกลง… ข้านั่งอ่านหนังสือข้างเจ้า',
+        green:  'ถ้าเป็นเรื่องของเจ้า… ข้าใส่ใจมันเสมอ',
+        blue:   'ข้าเองที่ช่วยเก็บถ้วยชา… มือสั่นนิดหน่อยด้วย'
+      }
     },
-    near: {
-      JP: 'เจ้าน่ะ ทำอะไรก็ทำจนจบ… ข้าเห็นแล้วก็อยากปั้นตุ๊กตาหิมะให้เสร็จสักตัวบ้าง',
-      EI: 'เวลาเจ้าเดินมาทักก่อน… ข้าถึงได้พูดคำแรกของวัน เสียงแหบหน่อยนะ อย่าหัวเราะล่ะ'
-    },
-    male:   { image:'', tagline:'The Snow Spirit',   compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] },
-    female: { image:'assets/yokai/yukionna_f.png', tagline:'The Snow Spirit', compat:[{label:'Emotional Depth',value:92},{label:'Sensitivity',value:89},{label:'Practicality',value:28}] }
+    match: { good: ['ความลึกซึ้งทางใจ', 'ความละเอียดอ่อน'], adjust: 'เรื่องบ้านๆ อย่างจ่ายตลาดหรือจัดของ เขาไม่ค่อยถนัด' },
+    male:   { image:'', tagline:'The Snow Spirit' },
+    female: { image:'assets/yokai/yukionna_f.png', tagline:'The Snow Spirit' }
   },
   Oni: {
-    house:'green', mbti:'ENFJ', emoji:'👹', name:'Oni', title:'ยักษ์โอนิ', dollImage:'',
+    house:'green', mbti:'ENFJ', name:'Oni', kanji:'鬼', title:'ยักษ์โอนิ', dollImage:'assets/ui/doll/oni_teru.png',
+    almost: 'ข้าต้มชาไว้สองถ้วย… ฮ่าๆ ไม่เป็นไร ดื่มเองก็ได้',
     why: 'ในตัวคุณมีของดีที่ยังไม่มีใครเดินไปถึง Oni ไม่ปล่อยให้มันอยู่ในมุมมืด เขาพามันออกมาให้คนอื่นได้เห็น บอกชัดๆ ว่าเป็นของคุณ แล้วยืนข้างคุณต่อหน้าทุกคน หลายครั้งคุณสองคนพอใจอะไรก็พูดออกมาเลย และอยากพาคนที่มาด้วยไปให้ถึงที่ตั้งใจ',
-    memory: {
-      e1: 'เล่าเรื่องในสมุดเล่มนั้นให้ข้าฟังสักเรื่องสิ ข้าแบกโต๊ะมาให้เจ้าขึ้นยืนเล่าแล้วนะ',
-      e2: 'ฮ่าๆๆ ชาที่เจ้ารินไว้ ข้ายกดื่มเป็นคนแรกแล้ว ใครถามว่าฝีมือใคร ข้าจะชี้มาที่เจ้า',
-      e3: 'เอาตะเกียงดวงนั้นออกมาตั้งกลางโถงสิ แสงสวยขนาดนี้ เก็บไว้ดูคนเดียวเสียดายแย่',
-      e4: 'ฮ่าๆๆ ประตูห้องนั้นข้างัดออกทั้งบานแล้ว ฮัมเพลงนั้นอีกทีสิ ให้ข้าได้จำไว้',
-      e5: 'นกตัวเล็กบนชายคาที่เจ้าแอบมองอยู่ ข้าก็เห็นนะ เดี๋ยวข้าชี้ให้ทั้งเรือนดู แล้วบอกว่าเจ้าเห็นก่อน'
+    whyLead: null, life: null,
+    lines: {
+      poke1: 'ฮ่าๆ จิ้มแรงอีกสิ ข้าไม่สะเทือนหรอก', chat1: 'แขกห้องสามถามถึงเจ้า ไปทักหน่อยสิ',
+      chat2: 'ไปตลาดเช้ากับข้าสิ แล้วข้าจะอวดเจ้าให้ทั่ว', poke2: 'ข้ายอมแล้ว จิ้มได้ตามใจเลย',
+      mist: {
+        yellow: 'วันนั้นที่ย่ำน้ำด้วยกัน เจ้าดูสนุกสุดๆ ไปเลย',
+        purple: 'วันนั้นนั่งอ่านหนังสือ อุตส่าห์กลั้นขำตั้งนาน',
+        green:  'เรื่องเล็กๆ ของเจ้า ข้าอวดไปทั่วแล้ว',
+        blue:   'ถ้วยชาเช้านั้น ข้าเก็บเอง ไม่แตกสักใบ'
+      }
     },
-    near: {
-      JP: 'คนอย่างเจ้า คงลากข้าเข้าวงรำก่อนข้าได้กล่าวเปิดงาน ฮ่าๆๆ ก็ดี สนุกกว่าตั้งเยอะ',
-      EI: 'เวลาเจ้านิ่งคิด ยักษ์เสียงดังอย่างข้าก็ยอมปิดปากรอ คำที่เจ้าพูดออกมาทีหลังน่ะ ดีทุกคำ'
-    },
-    male:   { image:'assets/yokai/oni_m.png', tagline:'The Iron Guardian',   compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] },
-    female: { image:'assets/yokai/oni_f.png', tagline:'The Iron Guardian', compat:[{label:'Protectiveness',value:96},{label:'Warmth',value:90},{label:'Letting Go',value:33}] }
+    match: { good: ['การปกป้อง', 'ความอบอุ่น'], adjust: 'อะไรที่เขาตั้งใจไว้แล้ว ให้ปล่อยวางยากหน่อย' },
+    male:   { image:'assets/yokai/oni_m.png', tagline:'The Iron Guardian' },
+    female: { image:'assets/yokai/oni_f.png', tagline:'The Iron Guardian' }
   },
   Tanuki: {
-    house:'green', mbti:'ENFP', emoji:'🍃', name:'Tanuki', title:'ทานุกิ', dollImage:'',
+    house:'green', mbti:'ENFP', name:'Tanuki', kanji:'狸', title:'ทานุกิ', dollImage:'assets/ui/doll/tanuki_teru.png',
+    almost: 'ข้าแปลงเป็นแขก นั่งข้างเจ้าตั้งนาน… จำไม่ได้เลยเหรอ',
     why: null,
-    memory: null, near: null,
-    male:   { image:'assets/yokai/tanuki_m.png', tagline:'The Shapeshifting Tanuki',   compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] },
-    female: { image:'assets/yokai/RYO_tanukiFall.mp4', tagline:'The Shapeshifting Tanuki', compat:[{label:'Joy & Laughter',value:95},{label:'Spontaneity',value:88},{label:'Focus',value:40}] }
+    whyLead: null, life: null, lines: {
+      poke1: 'ป๊องๆ… จิ้มพุงข้าทำไมเนี่ย', chat1: 'วันนี้ข้าแปลงเป็นกาน้ำชา เจ้าจับไม่ได้หรอก',
+      chat2: 'ไปงานวัดกัน ข้าเลี้ยงเอง… ด้วยใบไม้', poke2: 'จิ้มอีกทีข้าแปลงเป็นเจ้าซะเลย',
+      mist: {
+        yellow: 'ใครชวนย่ำน้ำล่ะ ข้าเองไง ดูไม่ออกเหรอ',
+        purple: 'หนังสือเล่มนั้นข้าถือกลับหัว เจ้าไม่เห็นเลย',
+        green:  'เรื่องเล็กๆ เมื่อคืน ข้าแปลงเป็นโคมแอบดูอยู่',
+        blue:   'ถ้วยชาที่ข้าเก็บ บางใบเป็นใบไม้นะ'
+      }
+    },
+    match: { good: ['เสียงหัวเราะ', 'ทำอะไรตามใจ'], adjust: 'เขาเริ่มเรื่องใหม่บ่อย แต่ไม่ค่อยทำจนจบ' },
+    male:   { image:'assets/yokai/tanuki_m.png', tagline:'The Shapeshifting Tanuki' },
+    female: { image:'assets/yokai/RYO_tanukiFall.mp4', tagline:'The Shapeshifting Tanuki' }
   },
 
   // ── Blue · Sentinels (SJ) ────────────────────────────────────
   Tengu: {
-    house:'blue', mbti:'ISTJ', emoji:'👺', name:'Tengu', title:'เทนกุ', dollImage:'',
+    house:'blue', mbti:'ISTJ', name:'Tengu', kanji:'天狗', title:'เทนกุ', dollImage:'assets/ui/doll/tengu_teru.png',
+    almost: 'ข้าจุดตะเกียงรอที่เดิมทุกคืน… คืนนี้ก็จะจุดอีก',
     why: 'ใจคุณมองหาสิ่งดีๆ ที่พรุ่งนี้ยังอยู่ตรงเดิม Tengu ไม่ใช่คนพูดหวาน เขาทำเรื่องเล็กๆ เรื่องเดิมซ้ำไปเรื่อยๆ จนคุณพึ่งได้ และจำแม่นว่าคุณชอบอะไร หลายครั้งคุณสองคนขอคิดในใจก่อนพูด และอยากเห็นกับตาว่ามั่นคงจริงก่อนจะวางใจ',
-    memory: {
-      e1: 'เครื่องรางนั้นห้อยอยู่ซ้ายมือเจ้าทุกวัน ข้าจำได้ ต่อไปข้าก็ยืนอยู่ซ้ายมือเจ้า ที่เดิม',
-      e2: 'หึ กลอนประตูนั้นข้าตรวจก่อนนอนเสมอ หลับเถอะ',
-      e3: 'ตะเกียงนั้นข้าเติมน้ำมันเอง ตื่นมาตอนไหน เจ้าก็ยังเห็นแสง',
-      e4: 'กล่องดนตรีนั้น ข้าไขลานให้ทุกคืน เวลาเดิม เพลงที่เจ้าชอบจะไม่หยุดกลางท่อน',
-      e5: 'หึ เมื่อวานข้าอยู่ วันนี้ข้าอยู่ พรุ่งนี้ก็เหมือนเดิม'
+    whyLead: null, life: null,
+    lines: {
+      poke1: 'อย่าจิ้ม', chat1: 'เจ้ากินอะไรมารึยัง',
+      chat2: 'ชาของเจ้า ชงไว้ที่เดิมแล้ว', poke2: 'ขนปีกยุ่งหมดแล้ว บอกว่าอย่าจิ้มไงเล่า',
+      mist: {
+        yellow: 'วันนั้นที่แอ่งน้ำน่ะ อย่าไปบอกใครเชียว',
+        purple: 'ตอนอ่านหนังสือมันต้องใช้สมาธินะ',
+        green:  'ไม่ต้องพูดหรอก เรื่องเล็กๆ ข้าเห็นหมด',
+        blue:   'วันนี้ข้าก็เก็บให้อีกแล้วล่ะ ถ้วยชาน่ะ'
+      }
     },
-    near: {
-      TF: 'เจ้าน่ะ เห็นแขกหน้าเศร้าทีไร ก็แอบวางขนมเกินให้ ข้าเห็นนะ ข้าก็วางเกินตามไปชิ้นหนึ่ง',
-      EI: 'เวลาเจ้าคว้ามือข้าวิ่งไปก่อน ข้าผูกเกี๊ยะไม่ทันทุกที หึ ข้างเดียวก็ลงเขาได้'
-    },
-    male:   { image:'assets/yokai/tengu_m.png', tagline:'The Mountain Sentinel',   compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] },
-    female: { image:'assets/yokai/tengu_f.png', tagline:'The Mountain Sentinel', compat:[{label:'Discipline',value:97},{label:'Loyalty',value:90},{label:'Spontaneity',value:24}] }
+    match: { good: ['ความมีวินัย', 'ความซื่อสัตย์'], adjust: 'แผนเปลี่ยนกะทันหัน เขาจะไม่ค่อยชอบ' },
+    male:   { image:'assets/yokai/tengu_m.png', tagline:'The Mountain Sentinel' },
+    female: { image:'assets/yokai/tengu_f.png', tagline:'The Mountain Sentinel' }
   },
   Ningyo: {
-    house:'blue', mbti:'ISFJ', emoji:'🧜', name:'Ningyo', title:'เงือกญี่ปุ่น', dollImage:'',
+    house:'blue', mbti:'ISFJ', name:'Ningyo', kanji:'人魚', title:'เงือกญี่ปุ่น', dollImage:'assets/ui/doll/ningyo_teru.png',
+    almost: 'ข้าร้องเพลงอยู่ริมน้ำทั้งคืน… เจ้าได้ยินบ้างไหม สักท่อนก็ยังดี',
     why: null,
-    memory: null, near: null,
-    male:   { image:'', tagline:'The Eternal Mermaid',   compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] },
-    female: { image:'assets/yokai/ningyo_f.png', tagline:'The Eternal Mermaid', compat:[{label:'Devotion',value:96},{label:'Gentleness',value:90},{label:'Assertiveness',value:30}] }
+    whyLead: null, life: null, lines: {
+      poke1: 'อุ๊ย… เกล็ดข้าลื่นนะ ระวังด้วย', chat1: 'ข้าเก็บเปลือกหอยสวยๆ ไว้ให้เจ้า',
+      chat2: 'เหนื่อยไหม มานั่งพักริมน้ำกับข้าก่อน', poke2: 'จิ้มได้นะ ถ้าเจ้ายิ้มได้ ข้าก็ดีใจ',
+      mist: {
+        yellow: 'แอ่งน้ำวันนั้น… ทำให้ข้าคิดถึงบ้าน',
+        purple: 'ตัวหนังสือบนบกอ่านยากจัง… แต่ข้างเจ้าสบายดี',
+        green:  'เรื่องเล็กๆ ของเจ้า ข้าจำได้ทุกเรื่อง',
+        blue:   'เก็บถ้วยชาด้วยกัน… ข้าอยากทำทุกเช้าเลย'
+      }
+    },
+    match: { good: ['ทุ่มเทให้กัน', 'ความอ่อนโยน'], adjust: 'เขาไม่ค่อยบอกว่าตัวเองต้องการอะไร ต้องคอยถาม' },
+    male:   { image:'', tagline:'The Eternal Mermaid' },
+    female: { image:'assets/yokai/ningyo_f.png', tagline:'The Eternal Mermaid' }
   },
   Jorogumo: {
-    house:'blue', mbti:'ESTJ', emoji:'🕸️', name:'Jorogumo', title:'ปีศาจแมงมุม', dollImage:'',
+    house:'blue', mbti:'ESTJ', name:'Jorogumo', kanji:'女郎蜘蛛', title:'ปีศาจแมงมุม', dollImage:'',
+    almost: 'ข้าทอผ้าผืนใหม่ไว้ให้เจ้าแล้ว… รอเจ้ามาลองอยู่นะ',
     why: null,
-    memory: null, near: null,
-    male:   { image:'', tagline:'The Spider Enchantress',   compat:[{label:'Command',value:94},{label:'Dependability',value:89},{label:'Flexibility',value:30}] },
-    female: { image:'', tagline:'The Spider Enchantress', compat:[{label:'Command',value:94},{label:'Dependability',value:89},{label:'Flexibility',value:30}] }
+    whyLead: null, life: null, lines: {
+      poke1: 'อย่าแตะใย ข้าเพิ่งทอเสร็จ', chat1: 'เอาละ งานวันนี้ข้าแบ่งให้ครบแล้ว',
+      chat2: 'กินข้าวให้ตรงเวลา ข้าจะคอยดู', poke2: 'เอาละ จิ้มได้ แต่ห้ามทำใยข้าพัง',
+      mist: {
+        yellow: 'ย่ำน้ำวันนั้น ข้ายอมให้เท้าเลอะครั้งเดียว',
+        purple: 'อ่านหนังสือเงียบๆ ก็คือการเฝ้าเจ้าแหละ',
+        green:  'เรื่องเล็กแค่ไหน ใยข้าก็สั่นบอกหมด',
+        blue:   'ถ้วยชาต้องเรียงแบบนี้ เห็นไหม'
+      }
+    },
+    match: { good: ['ความเป็นผู้นำ', 'พึ่งพากันได้'], adjust: 'เขาชอบให้ทุกอย่างเป็นไปตามที่วางไว้ ยืดหยุ่นยากหน่อย' },
+    male:   { image:'', tagline:'The Spider Enchantress' },
+    female: { image:'', tagline:'The Spider Enchantress' }
   },
   Inugami: {
-    house:'blue', mbti:'ESFJ', emoji:'🐕', name:'Inugami', title:'เทพสุนัข', dollImage:'',
-    why: 'สิ่งที่ใจคุณอยากรู้ คือมีใครอยู่ตรงนี้จริงๆ ในตอนนี้ Inugami ตอบด้วยการอยู่ให้เห็น ถามถึงข้าวถึงผ้าห่มก่อนเรื่องอื่น แล้วขยับมานั่งชิดโดยไม่รอให้คุณเอ่ยปาก ส่วนใหญ่คุณก็เหมือนเขา ห่วงใครก็ถามออกไปตรงๆ',
-    memory: {
-      e1: 'ฟุดฟิด เครื่องรางนั้นมีกลิ่นเจ้าติดอยู่ ข้าหาเจอแน่ ต่อไปของสำคัญ ข้าจำไว้ให้เอง',
-      e2: 'ลมกระแทกประตูทีไร ข้าก็เห่าใส่มันทีนั้น เห็นไหม มันเงียบไปแล้ว มานั่งพิงข้านะ',
-      e3: 'แสงตะเกียงนั้นน้อยไปหน่อย ข้าเลยเอาขนมาห่มเจ้าเพิ่ม หนาวไหม ขยับเข้ามาอีกนิดสิ',
-      e4: 'ลานใกล้หมดแล้ว มาผลัดกันไขนะ รอบนี้ข้าเอง อุ๊ย ไขแรงไป เพลงวิ่งเร็วเชียว',
-      e5: 'เช้าไหนเจ้าตื่นมา ก็ต้องก้าวข้ามข้าที่นอนขวางประตูอยู่ก่อนนะ หิวหรือยัง ไปกินข้าวต้มอุ่นๆ กัน'
+    house:'blue', mbti:'ESFJ', name:'Inugami', kanji:'犬神', title:'เทพสุนัข', dollImage:'assets/ui/doll/inugami_teru.png',
+    almost: 'ฟุดฟิด… กลิ่นเจ้าข้าจำได้แล้ว ไปที่ไหนข้าก็ตามเจอ',
+    why: 'Inugami อยู่ให้เห็นเลย ถามว่ากินข้าวหรือยัง หนาวไหม ก่อนเรื่องอื่น แล้วขยับมานั่งชิดโดยไม่ต้องรอให้คุณขอ ตัวคุณเองก็คล้ายเขา ห่วงใครก็ถามออกไปตรงๆ',
+    whyLead: 'คนอย่างคุณไม่ได้อยากได้คำสัญญาหรอก แค่อยากเห็นว่ามีใครอยู่ตรงนี้จริงๆ และ Inugami ก็เป็นแบบนั้นพอดี',
+    life: {
+      lead:  'วันไหนกลับมาเหนื่อยๆ จะมีคนถามว่ากินข้าวหรือยัง แล้วยกชาร้อนๆ มาวางให้ก่อนคุณจะทันได้นั่ง',
+      gain:  'คนที่รออยู่เสมอ ไม่ว่าจะกลับมากี่โมง',
+      clash: 'วันที่คุณอยากอยู่คนเดียว แต่เขายังวนอยู่ใกล้ๆ',
+      more:  'ถ้าวันไหนรู้สึกอึดอัด บอกเขาตรงๆ ได้เลยว่าขอเวลาสักพัก เขาไม่ถือหรอก แค่อยากรู้ว่าคุณยังโอเคอยู่ แล้วเขาก็จะไปนั่งรอเงียบๆ ตรงที่คุณมองเห็น'
     },
-    near: {
-      TF: 'ข้ามัวห่วงคนอื่นจนลืมกินทุกที เจ้าก็วางชามตรงหน้า บอกคำเดียวว่ากิน ข้าก็กินเกลี้ยงเลยนะ',
-      EI: 'เวลาเจ้าขอนั่งดูเงียบๆ ข้าก็หมอบลงข้างๆ หางยังกระดิกอยู่เลย แบบนี้ก็อยู่ด้วยกันเหมือนกันนะ'
+    lines: {
+      poke1: 'งายยย หิวแล้วเหรอ?', chat1: 'ข้าเก็บลูกพลับมา กินด้วยกันนะ',
+      chat2: 'คืนนี้หนาว เอาผ้าห่มไปอีกผืนสิ', poke2: 'หางข้ามันกระดิกเองนี่นา ไม่ได้ตั้งใจหรอก',
+      mist: {
+        yellow: 'น่านะ… คราวหน้าไปย่ำน้ำด้วยกันอีกสิ',
+        purple: 'อ้อ วันนั้นข้าทำทีเป็นอ่านหนังสือน่ะ ก็อยากนั่งข้างๆ เจ้านี่นา',
+        green:  'ข้าเห็นเรื่องที่เจ้าทำเสมอนั่นแหละ',
+        blue:   'ถ้วยชาเช้านั้น ข้าช่วยเก็บเองแหละ'
+      }
     },
-    male:   { image:'assets/yokai/inugami_m.png', tagline:'The Spirit Hound',   compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] },
-    female: { image:'assets/yokai/inugami_f.png', tagline:'The Spirit Hound', compat:[{label:'Devotion',value:98},{label:'Warmth',value:92},{label:'Independence',value:28}] }
+    match: { good: ['ทุ่มเทให้กัน', 'ความอบอุ่น'], adjust: 'บางทีเขาก็อยู่ใกล้จนคุณไม่มีมุมส่วนตัว' },
+    male:   { image:'assets/yokai/inugami_m.png', tagline:'The Spirit Hound' },
+    female: { image:'assets/yokai/inugami_f.png', tagline:'The Spirit Hound' }
   },
 
   // ── Yellow · Explorers (SP) ──────────────────────────────────
   Nekomata: {
-    house:'yellow', mbti:'ISTP', emoji:'🐈‍⬛', name:'Nekomata', title:'แมวปีศาจสองหาง', dollImage:'',
+    house:'yellow', mbti:'ISTP', name:'Nekomata', kanji:'猫又', title:'แมวปีศาจสองหาง', dollImage:'assets/ui/doll/nekomata_teru.png',
+    almost: 'หึ ข้ามีเก้าชีวิต… จะรอเจ้าอีกสักชีวิตก็ได้',
     why: 'ใจที่เร่งตัวเองไว้ก่อน ราวเข็มนาฬิกาที่เดินเร็วกว่าเวลาจริง ได้พักเมื่ออยู่กับ Nekomata เขาแก้ให้แค่จุดที่ใช้ไม่ได้จริงๆ แล้วถอยไป ส่วนที่เบี้ยวนิดหน่อยก็ปล่อยไว้ ให้คุณได้วางมือบ้าง หลายครั้งคุณสองคนชอบนั่งคิดเงียบๆ ว่าอะไรทำให้ของสักชิ้นใช้ได้จริง',
-    memory: {
-      e1: 'หาววว นาฬิกานั่นเร็วไปห้านาที ข้าเขี่ยเข็มกลับให้แล้ว งีบต่อได้',
-      e2: 'รองเท้าพวกนั้น ข้าเขี่ยแค่คู่ที่ขวางทางออก ที่เหลือช่างมัน แค่นี้ก็พอ',
-      e3: 'โคมนั่น ข้าคาบเดินนำเอง คนเขามัวมองแมวคาบโคม ไม่มีใครมองเจ้าหรอก',
-      e4: 'หาววว กระดาษที่ขยำทิ้ง ข้าคลี่ออกมาแผ่นหนึ่ง แผ่นนี้ใช้ได้',
-      e5: 'ของที่ไม่เป๊ะ ไม่ต้องขอโทษใคร ใช้ได้ก็พอ เบาะเย็บเบี้ยวๆ ข้าก็ขดหลับได้สบาย'
+    whyLead: null, life: null,
+    lines: {
+      poke1: 'เฮ้อ อย่าปลุกจะได้ไหม กำลังจะหลับพอดี', chat1: 'บานเลื่อนห้องสองฝืด ซ่อมแล้ว',
+      chat2: 'แดดตรงระเบียงกำลังดีเลย', poke2: 'ก็ได้… เกาคางแทนจิ้มก็แล้วกัน',
+      mist: {
+        yellow: 'ย่ำน้ำจนเท้าเปียกจนได้ แต่ก็… สนุกดี',
+        purple: 'เช้านั้นข้านั่งอ่านหนังสือ หลับไปครึ่งเล่ม',
+        green:  'เรื่องเมื่อคืนนั้น ข้าเองก็เห็นเหมือนเจ้า',
+        blue:   'ถ้วยชาใบที่บิ่น ข้าแยกเก็บไว้แล้ว'
+      }
     },
-    near: {
-      TF: 'เรื่องทำให้ใครยิ้ม ข้าทำไม่เป็น เจ้าทำไปเลย ข้าชอบนั่งดู',
-      EI: 'เวลาเจ้าดึงข้าเข้าไปด้วย แมวที่ชอบนอนในเงาอย่างข้า ก็ได้ออกไปนอนตากแดดบ้าง'
-    },
-    male:   { image:'assets/yokai/nekomata_m.png', tagline:'The Twin-Tailed Cat Demon',   compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] },
-    female: { image:'assets/yokai/nekomata_f.png', tagline:'The Twin-Tailed Cat Demon', compat:[{label:'Mystery',value:88},{label:'Thrill',value:82},{label:'Predictability',value:20}] }
+    match: { good: ['ความน่าค้นหา', 'ความตื่นเต้น'], adjust: 'เขาเดาใจยาก ไม่ค่อยบอกล่วงหน้า' },
+    male:   { image:'assets/yokai/nekomata_m.png', tagline:'The Twin-Tailed Cat Demon' },
+    female: { image:'assets/yokai/nekomata_f.png', tagline:'The Twin-Tailed Cat Demon' }
   },
   Hebi: {
-    house:'yellow', mbti:'ISFP', emoji:'🐍', name:'Hebi', title:'ปีศาจงูขาว', dollImage:'',
+    house:'yellow', mbti:'ISFP', name:'Hebi', kanji:'蛇', title:'ปีศาจงูขาว', dollImage:'assets/ui/doll/hebi_teru.png',
+    almost: 'งูขาวนำโชคมาให้คนที่มันชอบ… เจ้ารู้ตัวไหมว่าโชคดีขึ้น',
     why: null,
-    memory: null, near: null,
-    male:   { image:'assets/yokai/hebi_m.png', tagline:'The White Serpent',   compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] },
-    female: { image:'', tagline:'The White Serpent', compat:[{label:'Sensory Bond',value:87},{label:'Gentleness',value:83},{label:'Verbal Expression',value:38}] }
+    whyLead: null, life: null, lines: {
+      poke1: 'ฟู่… ตกใจหมดเลย', chat1: 'ดอกไม้ริมสระบานแล้ว ไปดูกันไหม',
+      chat2: 'แดดตรงนี้อุ่นดี มานอนผึ่งด้วยกันสิ', poke2: 'ฟู่… จิ้มเบาๆ นะ ข้าขี้จั๊กจี้',
+      mist: {
+        yellow: 'ย่ำน้ำวันนั้น… ข้าชอบเสียงมันจัง',
+        purple: 'ข้าวาดรูปเจ้าไว้ในหนังสือเล่มนั้นนะ',
+        green:  'สิ่งเล็กๆ ที่เจ้าเห็น ข้าก็ชอบมันเหมือนกัน',
+        blue:   'ถ้วยชาลายดอกใบนั้น ข้าเลือกเก็บให้ก่อน'
+      }
+    },
+    match: { good: ['ใช้สัมผัสสื่อใจ', 'ความอ่อนโยน'], adjust: 'เขารู้สึกเยอะ แต่ไม่ค่อยพูดออกมา' },
+    male:   { image:'assets/yokai/hebi_m.png', tagline:'The White Serpent' },
+    female: { image:'', tagline:'The White Serpent' }
   },
   Raijin: {
-    house:'yellow', mbti:'ESTP', emoji:'⚡', name:'Raijin', title:'เทพสายฟ้า', dollImage:'',
+    house:'yellow', mbti:'ESTP', name:'Raijin', kanji:'雷神', title:'เทพสายฟ้า', dollImage:'',
+    almost: 'ข้าไม่เคยแพ้ใคร… นี่ครั้งแรกเลยนะ',
     why: null,
-    memory: null, near: null,
-    male:   { image:'assets/yokai/raijin_m.png', tagline:'The God of Thunder',   compat:[{label:'Electric Energy',value:95},{label:'Thrill',value:88},{label:'Patience',value:24}] },
-    female: { image:'', tagline:'The Goddess of Thunder', compat:[{label:'Electric Energy',value:95},{label:'Thrill',value:88},{label:'Patience',value:24}] }
+    whyLead: null, life: null, lines: {
+      poke1: 'ครืนนน… จิ้มข้าระวังโดนไฟดูดนะ', chat1: 'ข้าแข่งตีกลองกับฟูจินชนะอีกแล้ว',
+      chat2: 'อยู่เฉยๆ ไม่เป็น ไปหาอะไรทำกัน', poke2: 'จิ้มมาเลย ข้าไม่กลัวหรอก ครืนนน',
+      mist: {
+        yellow: 'ข้าเองแหละที่ชวน ย่ำแรงจนน้ำกระเด็นเลย',
+        purple: 'นั่งนิ่งๆ อ่านหนังสือ… ทรมานข้าแทบแย่',
+        green:  'ข้าดูเหมือนไม่สังเกต แต่ข้าเห็นนะ',
+        blue:   'ถ้วยชาเช้านั้น ข้าเก็บเร็วสุดในเรือนเลย'
+      }
+    },
+    match: { good: ['พลังล้นเหลือ', 'ความตื่นเต้น'], adjust: 'เขาใจร้อน รออะไรนานๆ ไม่ค่อยได้' },
+    male:   { image:'assets/yokai/raijin_m.png', tagline:'The God of Thunder' },
+    female: { image:'', tagline:'The Goddess of Thunder' }
   },
   Fuujin: {
-    house:'yellow', mbti:'ESFP', emoji:'🌪️', name:'Fuujin', title:'เทพวายุ', dollImage:'',
+    house:'yellow', mbti:'ESFP', name:'Fuujin', kanji:'風神', title:'เทพวายุ', dollImage:'',
+    almost: 'ลมที่พัดผมเจ้าเมื่อกี้ ข้าเอง! …แต่เจ้าไม่หันมาเลย',
     why: 'สำหรับใจที่พักไม่ลงจนกว่าทุกอย่างจะเรียบร้อย Fuujin ชวนคุณออกไปวิ่ง โยนของ นอนดูเมฆ จนลืมนับว่าอะไรยังไม่เป๊ะ หลายครั้งคุณสองคนดีใจก็ออกท่าออกทาง แล้วชวนคนรอบข้างมาร่วมวงด้วย',
-    memory: {
-      e1: 'ห้านาทีที่ได้คืนมา เอามานอนนับเมฆกับข้า!',
-      e2: 'รองเท้าเกลื่อนขนาดนี้ มาแข่งโยนเข้าชั้นกันดีกว่า ใครเข้าก่อนชนะ!',
-      e3: 'ฟิ้ววว สายตาพวกนั้นโดนลมข้าจนหลับตาปี๋หมดแล้ว เจ้าพักก่อนเลย!',
-      e4: 'กระดาษพวกนั้นขยำเป็นลูกกลมๆ แล้วโยนมา ข้าเปิดถุงลมรอแล้ว ฟิ้ววว ขึ้นฟ้า!',
-      e5: 'ไม่ต้องรอให้งานเสร็จหรอก หัวเราะตอนนี้เลยก็ได้ มากับข้า!'
+    whyLead: null, life: null,
+    lines: {
+      poke1: 'โอ๊ะ! จั๊กจี้นะ', chat1: 'ลมเย็นมาแล้ว ออกไปวิ่งเล่นกัน',
+      chat2: 'ดูสิ เมฆก้อนนั้นเหมือนซาลาเปาเลย', poke2: 'พอๆ ยอมแล้ว จั๊กจี้จะแย่',
+      mist: {
+        yellow: 'ข้าเองที่ชวนย่ำแอ่งน้ำ ไปอีกกันเถอะ',
+        purple: 'เช้านั้นข้านั่งอ่านหนังสือนิ่งๆ ได้ด้วยนะ',
+        green:  'ที่ทักเรื่องเมื่อคืน ข้าเอง ข้าก็เห็นนะ',
+        blue:   'ถ้วยชาเช้านั้นข้าเก็บเอง ไวสุดๆ เลย!'
+      }
     },
-    near: {
-      TF: 'เจ้าน่ะ ต้องรู้ก่อนว่าว่าวลอยได้เพราะอะไร แล้วผูกสายจนแน่น ว่าวแบบนั้น ข้าพัดแรงแค่ไหนก็ไม่หลุด!',
-      EI: 'เวลาเจ้าหยุดดูทางก่อนก้าว ข้าก็หยุดพัดด้วย ใบไม้ค่อยๆ ร่วงลงมา ข้าชอบดูตอนนั้นที่สุด!'
-    },
-    male:   { image:'', tagline:'The Wind God',   compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] },
-    female: { image:'assets/yokai/fuujin_f.png', tagline:'The Wind Goddess', compat:[{label:'Euphoria',value:95},{label:'Freedom',value:90},{label:'Routine',value:18}] }
+    match: { good: ['ความสุขล้นๆ', 'ความเป็นอิสระ'], adjust: 'ให้ทำอะไรซ้ำทุกวัน เขาจะเบื่อเร็ว' },
+    male:   { image:'', tagline:'The Wind God' },
+    female: { image:'assets/yokai/fuujin_f.png', tagline:'The Wind Goddess' }
   }
 
 };
 
-validateYokaiData();   // fail fast if memory/near break DATA_SCHEMA §3
+validateYokaiData();   // fail fast if result-page content breaks DATA_SCHEMA §3
+
+// ── DEV SHORTCUT (temporary — remove before production) ──────
+// Answers every question at random through the real scoring functions, then opens the result
+function devRandomResult() {
+  const any = list => list[Math.floor(Math.random() * list.length)];
+  state = createInitialState();
+  setPlayerGender(any(['male', 'female', 'nonbinary']));
+  for (const q of QUESTIONS.house) pickHouseAnswer(any(q.choices).house);
+  calcHouse();
+  for (const q of QUESTIONS.yokai) pickYokaiAnswer(q, any(getStage2Set(q).choices));
+  calcYokai();
+  state.dollImage = 'assets/ui/doll/teru_body.png';   // stands in for the drawn doll
+  fadeToView('result');
+}
 
 // ── BGM STUB — filled in Step 8 ──────────────────────────────
 document.getElementById('btn-bgm').addEventListener('click', () => {

@@ -173,7 +173,11 @@ function validateNarration(where, pages) {
 }
 
 function validateQuestions() {
-  const { house, yokai, outro } = QUESTIONS;
+  const { house, yokai, outro, chapters } = QUESTIONS;
+  for (const key of ['house', 'yokai']) {
+    const c = chapters && chapters[key];
+    if (!c || !c.number || !c.title) throw new Error(`[Ryokan] QUESTIONS.chapters.${key} needs number and title`);
+  }
   [...house, ...yokai].forEach(q => validateNarration(q.id + '.lead', q.lead));
   validateNarration('outro', outro);
   validateNarration('bento.afterArrange', yokai[0].afterArrange);
@@ -182,6 +186,7 @@ function validateQuestions() {
   if (!outro.length)      throw new Error('[Ryokan] QUESTIONS.outro is empty');
 
   for (const q of house) {
+    if (q.doors !== undefined && q.doors !== true) throw new Error(`[Ryokan] ${q.id}: doors must be true or absent`);
     const houses = q.choices.map(c => c.house).sort().join(',');
     if (houses !== 'blue,green,purple,yellow') {
       throw new Error(`[Ryokan] ${q.id}: choices must cover all 4 houses once`);
@@ -204,22 +209,47 @@ function validateQuestions() {
   });
 }
 
-// why / memory / near ต่อ Yokai: null = ยังไม่เขียน · ถ้ามี object ต้องครบทุก key (DATA_SCHEMA §3)
+// เนื้อหาหน้า result ต่อ Yokai: null = ยังไม่เขียน · ถ้ามี object ต้องครบทุก key (DATA_SCHEMA §3)
+const isText = v => typeof v === 'string' && v !== '';
+const hasTexts = (obj, keys) => !!obj && keys.every(k => isText(obj[k]));
+
 function validateYokaiData() {
   for (const [name, y] of Object.entries(YOKAI_DATA)) {
-    if (y.why !== null && (typeof y.why !== 'string' || !y.why)) {
-      throw new Error(`[Ryokan] YOKAI_DATA.${name}.why must be text (or null)`);
+    const fail = msg => { throw new Error(`[Ryokan] YOKAI_DATA.${name}.${msg}`); };
+    if (!isText(y.kanji)) fail('kanji must be text');
+    if (!y.match || !Array.isArray(y.match.good) || y.match.good.length !== 2 || !y.match.good.every(isText) || !isText(y.match.adjust)) {
+      fail('match needs good: [2 labels] + adjust sentence');
     }
-    if (y.memory !== null) {
-      const ok = y.memory && ['e1', 'e2', 'e3', 'e4', 'e5'].every(k => typeof y.memory[k] === 'string' && y.memory[k]);
-      if (!ok) throw new Error(`[Ryokan] YOKAI_DATA.${name}.memory needs e1–e5 (or null)`);
+    if (!isText(y.almost)) fail('almost must be text (line on the "คู่ที่เกือบได้" card)');
+    validateAlikeFns(name, y.mbti);
+    if (y.why !== null && !isText(y.why)) fail('why must be text (or null)');
+    if (y.whyLead !== null && (!isText(y.whyLead) || y.why === null)) fail('whyLead must be text and needs why (or null)');
+    if (y.life !== null && !hasTexts(y.life, ['lead', 'gain', 'clash', 'more'])) fail('life needs lead/gain/clash/more (or null)');
+    if (y.lines !== null) {
+      const ok = hasTexts(y.lines, ['poke1', 'chat1', 'chat2', 'poke2']) && hasTexts(y.lines.mist, Object.keys(HOUSE_POOLS));
+      if (!ok) fail('lines needs poke1/chat1/chat2/poke2 + mist for all 4 houses (or null)');
     }
-    if (y.near !== null) {
-      const ok = y.near && ['EI', HOUSE_AXIS[y.house]].every(k => typeof y.near[k] === 'string' && y.near[k]);
-      if (!ok) throw new Error(`[Ryokan] YOKAI_DATA.${name}.near needs EI + ${HOUSE_AXIS[y.house]} (or null)`);
-    }
-    if ((y.memory === null) !== (y.near === null)) {
-      throw new Error(`[Ryokan] YOKAI_DATA.${name}: memory and near must both be written or both null`);
+  }
+}
+
+// การ์ด "เหมือนกันตรงไหน" นับได้ก็ต่อเมื่อทุกข้อที่ Yokai ตัวนี้เจอ มีช้อยขั้วเดียวกับมันที่เป็น function ของมันพอดี 1 ตัว
+function validateAlikeFns(name, mbti) {
+  const house = Object.keys(HOUSE_POOLS).find(h => HOUSE_POOLS[h].includes(name));
+  QUESTIONS.yokai.forEach(q => {
+    const axis = q.axis || HOUSE_AXIS[house];
+    const choices = q.axis ? q.choices : q.sets[axis].choices;
+    const fn = yokaiFn(mbti, axis);
+    const hits = choices.filter(c => c.pole === yokaiLetter(mbti, axis) && c.fn === fn).length;
+    if (hits !== 1) throw new Error(`[Ryokan] ${q.id} ${axis}: ${name} (${mbti}) needs exactly one '${yokaiLetter(mbti, axis)}' choice with fn ${fn}`);
+  });
+}
+
+// การ์ด "ใจของคุณเป็นแบบไหน?" — ระดับบ้าน ต้องครบทั้ง 4 บ้าน
+function validateHouseHeart() {
+  for (const house of Object.keys(HOUSE_POOLS)) {
+    const h = HOUSE_HEART[house];
+    if (!hasTexts(h, ['lead', 'invite']) || !Array.isArray(h.more) || !h.more.length || !h.more.every(isText)) {
+      throw new Error(`[Ryokan] HOUSE_HEART.${house} needs lead, invite and more[1+]`);
     }
   }
 }
@@ -230,17 +260,21 @@ function getResult() {
   const yokai  = YOKAI_DATA[state.winningYokai];
   const gender = state.resultGenderShown;
   return {
-    name:    yokai.name,
-    emoji:   yokai.emoji,
-    mbti:    yokai.mbti,
-    house:   yokai.house,
-    title:   yokai.title,
-    image:   yokai[gender].image,
-    tagline: yokai[gender].tagline,
-    why:     yokai.why,                              // null = ยังไม่เขียน
-    compat:  yokai[gender].compat,
-    memory:  yokai.memory ? pickMemoryLine() : '',   // ชั้น A
-    near:    yokai.near   ? pickNearLines()  : []    // ชั้น B (0–2 บรรทัด)
+    name:     yokai.name,
+    kanji:    yokai.kanji,
+    mbti:     yokai.mbti,
+    house:    yokai.house,
+    title:    yokai.title,
+    image:    yokai[gender].image,
+    match:    yokai.match,                            // ความเข้ากัน: good = 2 เรื่องที่เข้ากันดี · adjust = ประโยคเรื่องที่ต้องค่อยๆ ปรับ
+    heart:    HOUSE_HEART[yokai.house],
+    why:      yokai.why,                              // null = ยังไม่เขียน
+    whyLead:  yokai.whyLead,
+    life:     yokai.life,
+    lines:    yokai.lines,
+    mist:     state.houseAnswers[4],                  // บ้านของช้อย E5 → ประโยคพิเศษของบับเบิ้ล
+    alike:    getAlike(yokai.mbti),
+    nearMiss: getNearMiss(yokai.mbti)
   };
 }
 
@@ -253,20 +287,40 @@ function yokaiLetter(mbti, axis) {
   return [...mbti].find(ch => axis.includes(ch));
 }
 
-// ชั้น A — ข้อแรกที่ผู้เล่นเลือกบ้านนี้เป็นบ้านหลัก · แต่ละข้อมีช้อยของแต่ละบ้านพอดี 1 ตัว
-// ไม่เคยเลือกเลย = ชนะไม่ได้ทางคณิตศาสตร์ → state เสีย
-function pickMemoryLine() {
-  const i = state.houseAnswers.indexOf(state.winningHouse);
-  if (i === -1) throw new Error('[Ryokan] pickMemoryLine: winningHouse never chosen as primary');
-  return YOKAI_DATA[state.winningYokai].memory['e' + (i + 1)];
+// แต่ละขั้วมีช้อย 2 ตัวคนละ function — ตัวที่ตรงกับ Yokai หาได้จาก MBTI (ไม่ต้องเก็บใน YOKAI_DATA)
+// JP: function ที่หันออกนอกของขั้วนั้น (J → Te/Fe · P → Ne/Se) · TF: J ใช้ Te/Fe, P ใช้ Ti/Fi
+// EI: dominant — E+J = Je · E+P = Pe · I+J = Pi · I+P = Ji
+function yokaiFn(mbti, axis) {
+  const has = ch => mbti.includes(ch);
+  if (axis === 'JP') return has('J') ? (has('T') ? 'Te' : 'Fe') : (has('N') ? 'Ne' : 'Se');
+  if (axis === 'TF') return (has('T') ? 'T' : 'F') + (has('J') ? 'e' : 'i');
+  if (axis === 'EI') return has('E') ? (has('J') ? 'Je' : 'Pe') : (has('J') ? 'Pi' : 'Ji');
+  throw new Error(`[Ryokan] yokaiFn: unknown axis ${axis}`);
 }
 
-// ชั้น B — แกนที่ชนะ 2-1 (ผู้เล่นมีอีกขั้วอยู่บ้าง) · ลำดับ: แกนที่ 2 ของบ้าน แล้ว E/I
-function pickNearLines() {
-  const yokai = YOKAI_DATA[state.winningYokai];
-  return [HOUSE_AXIS[state.winningHouse], 'EI']
-    .filter(axis => countPole(axis, yokaiLetter(yokai.mbti, axis)) === 2)
-    .map(axis => yokai.near[axis]);
+// "เหมือนกันตรงไหน" — 2 แกนที่วัดใน Stage 2: ผู้เล่นเลือกช้อยที่คิดแบบเดียวกับ Yokai กี่ใน 3 ข้อ
+// function ตรงกัน 0 ข้อ → โชว์ขั้วแทน (เสียงข้างมาก = ตรงกับ Yokai ≥2 ข้อเสมอ) · ทุกแถวจึงเป็นสิ่งที่เหมือนกันจริง count 1–3
+// ไม่มีผลกับการเลือก Yokai
+function getAlike(mbti) {
+  return ['EI', HOUSE_AXIS[state.winningHouse]].map(axis => {
+    const fn = yokaiFn(mbti, axis);
+    const count = state.stage2Answers.filter(a => a.axis === axis && a.fn === fn).length;
+    if (count) return { key: fn, count };
+    const pole = yokaiLetter(mbti, axis);
+    return { key: pole, count: countPole(axis, pole) };
+  });
+}
+
+// "คู่ที่เกือบได้" — แกนที่ชนะ 2-1: อีกข้อเดียวเอนไปขั้วตรงข้าม ก็ได้อีกตัวในบ้านเดียวกัน
+// ลำดับ: แกนที่ 2 ของบ้าน แล้ว E/I · ชนะขาด 3-0 ทั้งสองแกน = null (ไม่มีใครเฉียด)
+function getNearMiss(mbti) {
+  const axis = [HOUSE_AXIS[state.winningHouse], 'EI'].find(a => countPole(a, yokaiLetter(mbti, a)) === 2);
+  if (!axis) return null;
+  const won  = yokaiLetter(mbti, axis);
+  const pole = axis.replace(won, '');
+  const name = state.yokaiPool.find(n => YOKAI_DATA[n].mbti === mbti.replace(won, pole));
+  if (!name) throw new Error(`[Ryokan] getNearMiss: no ${mbti.replace(won, pole)} in ${state.winningHouse}`);
+  return { name, pole };
 }
 
 function toggleResultGender() {
@@ -299,6 +353,5 @@ function debugScores() {
   console.log('Winning House:',  state.winningHouse);
   console.log('Stage 2:',        state.stage2Answers);
   console.log('Winning Yokai:',  state.winningYokai);
-  console.log('Gender shown:',   state.resultGenderShown);
-  console.groupEnd();
+  console.log('Gender shown:',   state.resultGenderShown);  console.groupEnd();
 }

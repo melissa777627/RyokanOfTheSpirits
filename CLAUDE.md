@@ -93,6 +93,8 @@ After any task that changes design or structure, update immediately:
 Kaisei Decol       → display, Yokai names, hero title, event headers  (Google Fonts)
 M PLUS Rounded 1c  → body, buttons, choice text, UI labels            (Google Fonts)
 Noto Serif JP      → kanji labels, eyebrow/scene text, watermarks     (Google Fonts)
+Noto Serif Thai    → ตัวไทยของ display + kanji (fallback ในตัวแปร)    (Google Fonts)
+Sarabun            → ตัวไทยของ body (fallback ในตัวแปร)               (Google Fonts)
 ```
 
 ### Core Design Rules
@@ -130,10 +132,10 @@ view-landing  →  view-gender  →  view-quiz (Stage 1 · E1–E5)
 | `view-landing` | Landing Page | Art fade hero + paper stamp button + lorebook grid |
 | `view-gender` | Event 0 · Gender | Mirror + 3 gender card buttons |
 | `view-quiz` | Quiz (Stage 1 & 2 shared) | Progress bar + scene label + story box + 4 choices |
-| `view-bento` | Bento Mini-Game | Intro (บทเชื่อมฟ้าสาง) → pop-up Q → drag & drop food → Continue → บทพูดของแขก |
-| `view-doll` | E7 Teru Teru Bozu | Intro card → วาดหน้าตุ๊กตาไล่ฝน (สีฟิกซ์ + วงล้อสี, 3 ความหนา, undo/clear) → Done reveal — cosmetic, ไม่มีผลคะแนน |
+| `view-bento` | Bento Mini-Game | (ก่อนเข้า view: narration บทเชื่อมฟ้าสาง → ฉากเบนโตะหน้าแยก) → Intro card → pop-up Q (prompt อย่างเดียว) → drag & drop food → Continue → บทพูดของแขก |
+| `view-doll` | E7 Teru Teru Bozu | Intro card → วาดหน้า (ซูมหัว · สีฟิกซ์ + วงล้อสี, 3 ความหนา, undo/clear) → Next → แต่งตัว (แท็บ Ribbon/Hat/Flower/Charm + ชั้นวางแบบ Bento, undo) → Done reveal — cosmetic, ไม่มีผลคะแนน |
 | `view-loading` | Loading Screen | Kanji cycle + spirit orb (3–4 sec auto-advance) |
-| `view-result` | Result Page | Yokai + MBTI + why match + compat bars + gender toggle + Omikuji |
+| `view-result` | Result Page | Hero (Yokai + บับเบิ้ลแตะคุย) + การ์ดปัด 心/縁/共 (กางอ่านต่อ) + เหมือนกัน/ความเข้ากัน + คู่ที่เกือบได้ + ตุ๊กตา + gender toggle + Omikuji |
 
 ---
 
@@ -156,11 +158,14 @@ Pseudocode เต็ม → `DATA_SCHEMA.md` Section 5
 - `calcHouse()` เรียกทันทีหลังตอบ E5
 
 ### E7 · วาดหน้าตุ๊กตาไล่ฝน (view-doll)
+- ฉาก E7 ("คืนหนึ่งฝนตกไม่ยอมหยุด…") เล่นเป็น narration ก่อนทั้งสองชุด · หน้าคำถามโชว์แค่ prompt
 - J/P (purple/green): ถาม E7 ก่อน → วาด · T/F (blue/yellow): วาดก่อน → ถาม (คำถาม T/F คือ "ตุ๊กตาเสร็จแล้ว แขวนตรงไหน")
 - ลำดับกำหนดใน `questions.js` → `yokai[2].doll = { JP: 'after', TF: 'before' }`
 - รูปที่วาดเก็บใน `state.dollImage` → หน้า result โชว์คู่กับตุ๊กตาประจำ Yokai (`YOKAI_DATA[x].dollImage`)
 
 ### Bento Intermission
+- ฉากเบนโตะ ("เช้าวันแรกที่เขาพักต่อ…") เล่นเป็น narration หน้าแยก ต่อจาก lead และก่อนการ์ด "Time to prepare some bento." · pop-up โชว์แค่ prompt
+- กฎเดียวกับ E7: ข้อที่มีมินิเกม เล่นฉากเป็น narration ก่อนการ์ดเสมอ
 - pop-up คำถามขึ้น **ก่อน** ลากอาหาร · คำตอบ = Q แรกของ Stage 2
 - ลากอาหารลงกล่องอิสระ ไม่มีผลคะแนน → Continue → บทพูดของแขก → E6
 
@@ -280,6 +285,7 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 | `DATA_SCHEMA.md` | ✅ | State object, YOKAI_DATA structure, scoring pseudocode |
 | `scoring-engine.js` | ✅ | Pure scoring functions (no UI) |
 | `questions.js` | ✅ | 11 ข้อ FINAL (ไทย) + บทเชื่อมฉาก ตาม DATA_SCHEMA §4 |
+| `thai-break.js` | ✅ | ตัดบรรทัดภาษาไทย (pure) — รายการคำห้ามแยก/ห้ามขึ้นต้น/ห้ามจบบรรทัด · ข้อความไทยทุกจุดต้องผ่าน `thaiBreakable()` |
 | `README.md` | ✅ | Asset naming guide + folder structure |
 | `.claude/agents/spirit-psychologist.md` | ✅ | Subagent: MBTI/psychometrics — เขียน/ตรวจ/จำลองคำถาม + เนื้อหาผลลัพธ์ (read-only, เสนอร่างเท่านั้น) |
 | `.claude/agents/ryokan-storyteller.md` | ✅ | Subagent: นักเขียนนิยายไทย — ขัดเกลาฉาก/ช้อย/บทพูดให้สละสลวย พีเรียดเบาๆ อ่านง่าย โดยไม่เปลี่ยนสิ่งที่คำถามวัด (read-only, เสนอร่างเท่านั้น) |
@@ -311,14 +317,21 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 - [ ] Result page + gender toggle + Omikuji modal
 - [ ] Loading animation
 - [ ] BGM/SFX audio manager (stub ก่อน)
+- [ ] ⚠ ลบปุ่มชั่วคราว "ดูหน้าผลลัพธ์ · สุ่ม" (`devRandomResult()` + `.dev-shortcut`) ก่อน production
 - [ ] Share to Story (html2canvas)
 - [x] เขียน `questions.js` ใหม่ตาม DATA_SCHEMA §4 (ข้อความภาษาไทย 11 ข้อ + lead/afterArrange/outro)
 - [ ] แปลคำถามเป็น EN (ทีหลัง)
 - [x] UI: pop-up Bento ก่อนลากอาหาร, หน้าบรรยาย lead/outro (ดีไซน์ชั่วคราว), progress 11 ขั้น
-- [ ] วาดหน้าตุ๊กตาไล่ฝน E7 (view-doll) + โชว์คู่บนหน้า result
-- [ ] รูปตุ๊กตาไล่ฝนประจำ Yokai 16 ตัว (`YOKAI_DATA[x].dollImage`)
+- [x] วาดหน้าตุ๊กตาไล่ฝน E7 (view-doll) — 2 ขั้น: วาดหน้า (ซูมหัว) → แต่งตัว (ของแต่ง 4 หมวด, undo)
+- [ ] รูปของแต่งตุ๊กตาจริง (ตอนนี้ emoji placeholder) — `assets/ui/doll/acc_{section}_{n}.png`
+- [x] ชั้นวาง Bento: แถบเลื่อน + ลูกกลิ้งเมาส์เลื่อนข้าง (PC) + ปุ่ม Undo
+- [x] E4 ห้องต้องห้าม: ช้อยซ่อนหลังประตูบานเลื่อน (Split Reveal) · ภาพประตู CSS ชั่วคราว
+- [ ] รูปประตูบานเลื่อนจริง (E4)
+- [ ] รูปตุ๊กตาไล่ฝนประจำ Yokai (`assets/ui/doll/{name}_teru.png`) — มีแล้ว 11 · ยังขาด Tenjin Ryuu Jorogumo Raijin Fuujin
 - [x] BG เมฆ `assets/ui/quiz/cloud_bg.png` ทุกอีเวนต์คำถาม (E3 เลิกใช้ภาพโคมไฟ เหลือแค่ glass)
 - [ ] การ์ดช้อยยังไม่มีรูป
-- [x] บทพูดหน้า result ชั้น A (ความทรงจำ) + B (แกนเฉียด) — 8 ตัวแรก: Tenjin Kitsune Yukionna Oni Tengu Inugami Nekomata Fuujin · narration หลัง loading + กล่องโควท
-- [ ] บทพูด A+B อีก 8 ตัว: Yumekui Ryuu Shinigami Tanuki Ningyo Jorogumo Hebi Raijin (ตอนนี้ `memory: null`)
-- [x] `why` (ใช้ร่วมสองเพศ) 8 ตัวเดียวกับบทพูด A+B · อีก 8 ตัว `why: null`
+- [x] หน้า result ใหม่ (2026-10-27): บับเบิ้ลแตะคุย + การ์ดปัด 3 ใบ + คู่ที่เกือบได้บอกเหตุผล + ตุ๊กตาแปะ · เลิกบทพูดหลัง loading (memory/near)
+- [x] บับเบิ้ล `lines` 8 ตัว: Tenjin Kitsune Yukionna Oni Tengu Inugami Nekomata Fuujin · อีก 8 ตัว `lines: null`
+- [ ] การ์ด 縁 `whyLead` + การ์ด 共 `life` — มีแค่ Inugami · อีก 7 ตัวที่มี `why` โชว์ why ที่หน้าการ์ดไปก่อน
+- [ ] การ์ด 心 `HOUSE_HEART` ม่วง/เขียว/เหลือง เขียนใหม่ให้โทนเดียวกับน้ำเงิน (ตอนนี้ใช้ร่างเดิม)
+- [ ] `why` อีก 8 ตัว (ตอนนี้ `why: null`)

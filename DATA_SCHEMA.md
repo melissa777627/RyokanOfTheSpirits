@@ -32,7 +32,7 @@ let state = {
   stage:         1,        // 1 = house sorting, 2 = yokai selection
   currentQ:      0,        // index ภายใน stage ปัจจุบัน (0-based) · stage 2 index 0 = Bento
   bentoSelected: [],       // food ที่ลากลงกล่อง — cosmetic only
-  dollImage:     ''        // PNG dataURL (ตัวตุ๊กตา + หน้าที่วาด) จาก view-doll ใน E7 — cosmetic only
+  dollImage:     ''        // PNG dataURL (ตัวตุ๊กตา + หน้าที่วาด + ของแต่ง) จาก view-doll ใน E7 — cosmetic only
 };
 ```
 
@@ -65,33 +65,36 @@ const YOKAI_DATA = {
   Tenjin: {
     house:   'purple',
     mbti:    'INTJ',          // calcYokai() จับคู่ด้วย field นี้ — ห้ามซ้ำในบ้านเดียวกัน
-    emoji:   '📜',
     name:    'Tenjin',
+    kanji:   '天神',          // บรรทัดใต้ชื่อ (kanji · title) + แทนรูปตอนยังไม่มีอาร์ต (หน้า result ไม่ใช้ emoji)
     title:   'เทพแห่งปัญญา',
+    almost:  '…',             // คำพูดบนการ์ด "คู่ที่เกือบได้" ตอนตัวนี้เป็นคนที่เฉียด (ข้า/เจ้า) — แนว: ให้ผู้เล่นเสียดาย/สงสัยว่าใคร/อยากเล่นอีกรอบ — ภูตเตรียม/รอ/เกือบได้เจอ แต่ผู้เล่นไม่ทันรู้ (ไม่ตัดพ้อแรง) · บังคับทุกตัว
     dollImage: '',            // ตุ๊กตาไล่ฝนประจำตัว (ทั้งสองเพศใช้รูปเดียว) — ว่าง = ยังไม่มีรูป, หน้า result โชว์เฉพาะตุ๊กตาผู้เล่น
 
-    why: '...',               // "Why you matched" — ผู้บรรยายพูดกับผู้เล่น (คุณ) ใช้ร่วมทั้งสองเพศ · null = ยังไม่เขียน → ซ่อนหัวข้อนี้
-                              // ห้ามอ้างช้อยข้อเดียวเป็นข้อเท็จจริง (ไม่มีช้อยไหนที่ทุกคนในบ้านเลือกแน่) · ความคล้ายต้องไม่เด็ดขาด (บท near อาจโชว์อีกด้าน)
-
-    // คำพูดเฉพาะผู้เล่น — ใช้ร่วมทั้งสองเพศ (ข้า/เจ้า ไม่บอกเพศ) · ดู Section 9
-    // null = ยังไม่เขียน (ทยอยทำ) → หน้า result ไม่แสดงส่วนนี้ · ถ้ามี object ต้องครบทุก key ไม่งั้น throw
-    memory: {                 // ชั้น A "ความทรงจำคืนพายุ" — 1 บรรทัดต่อข้อ = ช้อยของบ้านนี้ในข้อนั้น
-      e1: '"…"', e2: '"…"', e3: '"…"', e4: '"…"',
-      e5: '"…"'               // พูดถึงความต้องการเท่านั้น ห้ามอ้างสิ่งที่แขกในหมอกทำ
+    // เนื้อหาหน้า result — ผู้บรรยายพูดกับผู้เล่น (คุณ) ใช้ร่วมทั้งสองเพศ · null = ยังไม่เขียน (ทยอยทำ)
+    // ถ้ามี object ต้องครบทุก key ไม่งั้น throw (validateYokaiData) · ดู Section 9
+    why:     '...',           // การ์ด 縁 "ทำไมถึงต้องเป็นเขา?" — มี whyLead: why = ส่วนกางอ่านต่อ · ไม่มี whyLead: why อยู่หน้าการ์ดเลย
+                              // null = ไม่มีการ์ดใบนี้ · ห้ามอ้างช้อยข้อเดียวเป็นข้อเท็จจริง (ไม่มีช้อยไหนที่ทุกคนในบ้านเลือกแน่)
+    whyLead: '...',           // หน้าการ์ด 縁 — ประโยคเล่าเต็มๆ ไม่ใช่วลีสั้น · ห้ามซ้ำกับ why (why คือการขยายความ) · ต้องมี why
+    life: {                   // การ์ด 共 "ถ้าหากได้ใช้ชีวิตร่วมกัน…" · null = ไม่มีการ์ดใบนี้
+      lead:  '...',           // หน้าการ์ด — ภาพชีวิตประจำวัน 1 ประโยค
+      gain:  '...',           // แถว "คุณจะได้"
+      clash: '...',           // แถว "อาจกระทบกัน"
+      more:  '...'            // ส่วนกาง — รับมือกับจุดกระทบยังไง (ห้ามซ้ำหน้าการ์ด)
     },
-    near: {                   // ชั้น B "แกนเฉียด" — แสดงเมื่อแกนนั้นชนะ 2-1 · key = 'EI' + HOUSE_AXIS ของบ้าน
-      EI: '"…"',              // ผู้เล่นมีขั้วตรงข้ามกับตัวอักษรของ Yokai อยู่บ้าง → Yokai มองว่าเติมเต็ม
-      JP: '"…"'               // บ้าน blue/yellow ใช้ TF แทน
+    lines: {                  // บับเบิ้ลแตะคุยข้างหัว (ข้า/เจ้า) — แตะวน poke1 → chat1 → chat2 → poke2 → mist → วนใหม่
+      poke1: '…', chat1: '…', chat2: '…', poke2: '…',
+      mist: { yellow: '…', purple: '…', green: '…', blue: '…' }   // key = บ้านของช้อย E5 ที่ผู้เล่นตอบ (houseAnswers[4])
+    },                        // null = ไม่มีบับเบิ้ล
+
+    match: {                  // การ์ด 相 "ความเข้ากัน" (ใช้ร่วมสองเพศ) — บังคับทุกตัว
+      good:   ['คุยกันถูกคอ', 'ความหลงใหล'],          // "เข้ากันดีเรื่อง" — 2 ป้ายสั้น
+      adjust: 'เขาห่วงคุณนะ แต่ไม่ค่อยแสดงออกให้เห็น'  // "ต้องค่อยๆ ปรับ" — ประโยคเต็มที่บอกว่าเขาเป็นยังไง (ไม่ตำหนิผู้เล่น)
     },
 
     male: {
-      image:       'assets/yokai/tenjin_m.png',   // รองรับ .gif / .webm / .mp4
-      tagline:     'The God of Knowledge',
-      compat: [
-        { label: 'Intellectual Bond', value: 97 },
-        { label: 'Passion',           value: 58 },
-        { label: 'Warmth',            value: 42 }
-      ]
+      image:       'assets/yokai/tenjin_m.png',   // รองรับ .gif / .webm / .mp4 · ว่าง = โชว์ kanji แทน
+      tagline:     'The God of Knowledge'
     },
 
     female: { /* โครงเดียวกัน */ }
@@ -145,6 +148,7 @@ const QUESTIONS = {
       ]
     },
     // e2 … e5 — ทุกข้อมีครบ 4 บ้าน บ้านละ 1 ช้อย
+    // e4 มี doors: true — ช้อยซ่อนหลังประตูบานเลื่อน (UI เท่านั้น ไม่มีผลคะแนน)
   ],
 
   // ── Stage 2 · Bento + E6–E10 · ทุกบ้านใช้ stem เดียวกัน ──
@@ -201,6 +205,7 @@ const QUESTIONS = {
 - Stage 2 ชุดใดก็ตาม (`sets.JP`, `sets.TF`, หรือ E/I): ช้อย 4 ตัว แต่ละขั้ว 2 ตัว
 - `yokai[0..2]` ต้องมี `sets.JP` และ `sets.TF` · `yokai[3..5]` ต้องมี `axis: 'EI'`
 - ถ้ามี `doll`: ต้องมีทั้ง `JP` และ `TF` ค่าเป็น `'before'` | `'after'`
+- ถ้ามี `doors` (house question): ต้องเป็น `true` เท่านั้น
 - ข้อความในเกมเป็น**ภาษาไทย** ตามต้นฉบับใน memory ของเจ้าของ (`project_questions_draft.md`) — คัดลอกลง `questions.js` ตรงตัว
 - ลำดับช้อยในไฟล์ไม่มีผล: UI สุ่มลำดับทุกครั้ง (`shuffled()`)
 
@@ -313,19 +318,20 @@ function calcYokai() {
 ```
 ตอบสุ่มแล้วแต่ละตัวในบ้านออก 25% พอดี
 
-ขั้วที่ชนะ = ตัวอักษรของ Yokai โดยตรง → ถ้าแกนชนะ 2-1 เสียงข้างน้อยคือขั้วตรงข้ามกับ Yokai เสมอ (ใช้กับ `near` ใน Section 3/9)
+ขั้วที่ชนะ = ตัวอักษรของ Yokai โดยตรง → ถ้าแกนชนะ 2-1 เสียงข้างน้อยคือขั้วตรงข้ามกับ Yokai เสมอ (ใช้กับ getNearMiss() ใน Section 9)
 
 ### Function ของผู้เล่น (เก็บไว้ใช้หน้า result — ไม่มีผลกับคะแนน)
-`state.stage2Answers[].fn` = Te/Ti/Fe/Fi/Ne/Se (แกนที่ 2) และ Pe/Pi/Je/Ji (E/I) — สูตรใช้กับ compat bars / ประโยคเฉพาะตัว จะกำหนดตอนทำหน้า result
+`state.stage2Answers[].fn` = Te/Ti/Fe/Fi/Ne/Se (แกนที่ 2) และ Pe/Pi/Je/Ji (E/I) — ใช้ที่การ์ด "เหมือนกันตรงไหน" เท่านั้น ไม่มีผลกับการเลือก Yokai · `yokaiFn(mbti, axis)` หา function ของ Yokai จาก MBTI: JP → J: Te/Fe · P: Ne/Se · TF → J: Te/Fe · P: Ti/Fi · EI (dominant) → EJ Je · EP Pe · IJ Pi · IP Ji · `validateAlikeFns()` (ใน validateYokaiData) บังคับว่าทุกข้อที่ Yokai เจอ มีช้อยขั้วของมันที่เป็น function ของมันพอดี 1 ตัว
 
 ---
 
 ## 6. Flow ของ Bento
 
 ```
-ตอบ E5 → calcHouse() → loadStage2() → showView('bento')
-  → intro: lead ของ yokai[0] (บทเชื่อมฟ้าสาง)
-  → pop-up คำถาม Bento ขึ้น "ก่อน" ลากอาหาร   (ชุด JP/TF ตามบ้าน)
+ตอบ E5 → calcHouse() → loadStage2() → CHAPTER 02
+  → narration: lead ของ yokai[0] (บทเชื่อมฟ้าสาง) → yokai[0].text เป็นหน้าแยกอีกหน้า ("เช้าวันแรกที่เขาพักต่อ…")
+  → showView('bento') → การ์ด "Time to prepare some bento."
+  → pop-up คำถาม Bento ขึ้น "ก่อน" ลากอาหาร — แสดงเฉพาะ prompt (ชุด JP/TF ตามบ้าน)
   → เลือกช้อย → pickYokaiAnswer → currentQ = 1
   → ลากอาหารลงกล่อง (cosmetic) → Continue
   → แสดง afterArrange ("นานแค่ไหนแล้วนะ…")
@@ -334,9 +340,11 @@ function calcYokai() {
 
 ### E7 · ตุ๊กตาไล่ฝน (view-doll)
 ```
-JP (purple/green):  lead → E7 scene + prompt → ตอบ → view-doll (intro card → วาด → Done reveal) → E8
-TF (blue/yellow):   lead → view-doll (intro card → story box = E7 scene → วาด → Done reveal) → E7 แสดงเฉพาะ prompt → ตอบ → E8
-เสร็จแล้ว → state.dollImage = PNG dataURL (ตัวตุ๊กตา + หน้า)
+ทั้งสองชุด: lead → narration E7 scene (q.text) ก่อน — หน้าคำถาม E7 แสดงเฉพาะ prompt
+JP (purple/green):  lead → E7 scene → E7 prompt → ตอบ → view-doll → E8
+TF (blue/yellow):   lead → E7 scene → view-doll → E7 prompt → ตอบ → E8
+view-doll = intro card → วาดหน้า (ซูมหัว) → Next → แต่งตัว (ลากของแต่ง) → Done reveal
+เสร็จแล้ว → state.dollImage = PNG dataURL (ตัวตุ๊กตา + หน้า + ของแต่ง)
 ```
 
 ---
@@ -348,6 +356,7 @@ TF (blue/yellow):   lead → view-doll (intro card → story box = E7 scene → 
 | `q.lead` | แสดงก่อนฉากของข้อนั้น (เช่น บทเชื่อม E1→E2 อยู่ที่ `house[1].lead`) · array — 1 string = 1 หน้า · `\n` แบ่งบรรทัด = ขึ้นทีละแตะ · บรรทัดขึ้นต้นด้วย `"` = บทพูด · หน้าเขียนเป็น array ได้ (1 รายการ = 1 บรรทัด) และบรรทัดเป็น `{ reply: ['…', '…'] }` = ผู้เล่นเลือกประโยคตอบ (cosmetic, ไม่ใส่ `"` — ระบบครอบให้ตอนเลือก) หรือ `{ slow: ['วลี', 'วลี'], breath? }` = บรรทัดสะเทือนใจ ค่อยๆ โผล่ทีละวลีเองไม่ต้องแตะ (`breath` = แยกบรรทัดต่อวลี · `auto: true` = จบแล้วไหลไปบรรทัดถัดไปเอง) หรือ `{ say: '…', auto: true }` = ขึ้นบรรทัดถัดไปเองไม่ต้องแตะ (บรรทัดที่ผู้เล่นเลือกก็ไหลต่อเองเสมอ) · ตรวจโดย `validateNarration()` |
 | `yokai[0].afterArrange` | หลังกด Continue ใน Bento · รูปแบบเดียวกับ `lead` · ตรวจโดย `validateNarration()` |
 | `QUESTIONS.outro` | หลังตอบ E10 ก่อน Loading (บทเชื่อม E10→ปิด + ข้อความปิด) |
+| `QUESTIONS.chapters` | `{ house: { number, title }, yokai: { number, title } }` — ตัวคั่นบทก่อน E1 (`house`) และหลังตอบ E5 ก่อน `yokai[0].lead` (`yokai`) · ตรวจใน `validateQuestions()` · แสดงด้วย `showChapter()` |
 
 แสดงด้วย `showNarration(pages, onDone)` ใน index.html — สเปก UI ดู `DESIGN_SYSTEM.md` "Narration Overlay"
 
@@ -369,42 +378,35 @@ function getResult() {
   const yokai  = YOKAI_DATA[state.winningYokai];
   const gender = state.resultGenderShown;   // 'male' | 'female'
   return {
-    name:    yokai.name,
-    emoji:   yokai.emoji,
-    mbti:    yokai.mbti,
-    house:   yokai.house,
-    title:   yokai.title,
-    image:   yokai[gender].image,
-    tagline: yokai[gender].tagline,
-    why:     yokai.why,
-    compat:  yokai[gender].compat,
-    memory:  yokai.memory ? pickMemoryLine() : '',   // ชั้น A
-    near:    yokai.near   ? pickNearLines()  : []    // ชั้น B (0–2 บรรทัด)
+    name:     yokai.name,
+    kanji:    yokai.kanji,
+    mbti:     yokai.mbti,
+    house:    yokai.house,
+    title:    yokai.title,
+    image:    yokai[gender].image,
+    match:    yokai.match,
+    heart:    HOUSE_HEART[yokai.house],   // การ์ด 心 — ระดับบ้าน
+    why:      yokai.why,
+    whyLead:  yokai.whyLead,
+    life:     yokai.life,
+    lines:    yokai.lines,
+    mist:     state.houseAnswers[4],      // บ้านของช้อย E5 → lines.mist[...]
+    alike:    getAlike(yokai.mbti),       // [{ key, count }] ×2 — EI แล้วแกนที่ 2 · key = function ของ Yokai (count 1–3) หรือขั้ว เมื่อ function ตรงกัน 0 ข้อ (count ≥2)
+    nearMiss: getNearMiss(yokai.mbti)     // { name, pole } | null
   };
 }
 
-// ชั้น A — ข้อแรกที่ผู้เล่นเลือกบ้านนี้เป็นบ้านหลัก ("สิ่งที่เจ้ารู้สึกก่อนทันระวัง")
-// แต่ละข้อมีช้อยของแต่ละบ้านพอดี 1 ตัว → houseAnswers[i] บอกได้เลยว่าเลือกช้อยไหน
-// ไม่เคยเลือกเลย = ชนะไม่ได้ทางคณิตศาสตร์ → throw
-// ⚠ จำลองครบ 1024 แบบคำตอบ: บ้านที่ชนะถูกเลือกเป็นบ้านหลักใน E1–E4 เสมอ → e5 ไม่เคยถูกเลือก (e1 48% · e2 29% · e3 16% · e4 7%)
-function pickMemoryLine() {
-  const i = state.houseAnswers.indexOf(state.winningHouse);
-  if (i === -1) throw new Error('[Ryokan] pickMemoryLine: winningHouse never chosen as primary');
-  return YOKAI_DATA[state.winningYokai].memory['e' + (i + 1)];
-}
+// "เหมือนกันตรงไหน" — 2 แกนที่วัดใน Stage 2: ขั้วที่ชนะ = ตัวอักษรของ Yokai → นับว่าได้กี่ใน 3 (3 = ทุกข้อ · 2 = ส่วนใหญ่)
+function getAlike(mbti) { /* ['EI', HOUSE_AXIS[house]].map(axis => ({ key: yokaiFn(mbti, axis), count: คำตอบแกนนั้นที่ fn ตรงกัน }) — 0 → ({ key: pole, count: countPole(axis, pole) })) */ }
 
-// ชั้น B — แกนที่ชนะ 2-1 (ผู้เล่นมีอีกขั้วอยู่บ้าง) · ลำดับ: แกนที่ 2 ของบ้าน แล้ว E/I
-function pickNearLines() {
-  const yokai = YOKAI_DATA[state.winningYokai];
-  return [HOUSE_AXIS[state.winningHouse], 'EI']
-    .filter(axis => countPole(axis, yokaiLetter(yokai.mbti, axis)) === 2)
-    .map(axis => yokai.near[axis]);
-}
+// "คู่ที่เกือบได้" — แกนที่ชนะ 2-1 พลิกตัวอักษรนั้น → อีกตัวในบ้านเดียวกัน · pole = ขั้วที่ขาดไปอีกข้อเดียว
+// ลำดับ: แกนที่ 2 ของบ้าน แล้ว E/I · ชนะ 3-0 ทั้งสองแกน = null → การ์ดบอกว่า "ใจคุณชัดทุกข้อ"
+function getNearMiss(mbti) { /* หาไม่เจอในบ้าน = throw */ }
 
-// ข้อความใน memory/near เก็บแบบไม่มี " — UI ครอบเป็นบทพูดเอง
-// ใช้ 2 ที่: (1) showResultSpeech() — narration หลัง loading ก่อนเข้า result · A = { slow } แล้ว B ไหลต่อเอง ({ auto }) บรรทัดสุดท้ายรอแตะ
-//          (2) กล่องโควทบนหน้า result — A + B ชุดเดียวกัน (ไว้แคปแชร์)
-// memory: null → ข้าม narration และไม่แสดงกล่องโควท · ตรวจโดย validateYokaiData() ตอนโหลดหน้า
+// HOUSE_HEART (index.html) — การ์ด 心 "ใจของคุณเป็นแบบไหน?" ต่อบ้าน:
+//   { lead: หน้าการ์ด, invite: ต่อท้าย "{Yokai} จะชวนให้คุณลอง…", more: [ย่อหน้าส่วนกาง 1+] }
+//   ครบ 4 บ้าน ตรวจโดย validateHouseHeart() ตอนโหลดหน้า
+// (บทพูดหลัง loading แบบเก่า memory/near เลิกใช้ 2026-10-27 — loading ไป result ตรง · ข้อความเดิมอยู่ใน git e9e0a96)
 
 function toggleResultGender() {
   state.resultGenderShown =
@@ -425,4 +427,4 @@ function toggleResultGender() {
 | เข้า view Stage 2 โดยไม่มี `winningHouse` | `guardState()` throw (Rule 5 — ไม่ reset เงียบ) |
 | playerGender = nonbinary | targetGender = 'any' → random ที่ result แต่ toggle ได้ |
 | refresh กลางคัน | state อยู่ใน memory เท่านั้น → หน้าโหลดใหม่เริ่มที่ landing เอง |
-| asset โหลดไม่ได้ | แสดง emoji ใน styled circle |
+| ยังไม่มีอาร์ต Yokai | หน้า result โชว์ kanji (`YOKAI_DATA[x].kanji`) แทนรูป |

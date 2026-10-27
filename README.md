@@ -63,7 +63,9 @@ assets/
 | `quiz/cloud_bg.png` | พื้นหลังเมฆญี่ปุ่น + ลาย asanoha — view-quiz และ view-result |
 | `fx/rain_ripples_glow.webp` | วงคลื่นฝน (animated WebP พื้นใส 1280×720, 48 เฟรม 4s loop, 3.9MB) — reveal หลังวาดตุ๊กตา E7 · เส้นขาว ใช้บนพื้นมืดเท่านั้น · จากชุด effect ของเจ้าของ (มีสิทธิ์ใช้) |
 | `quiz/cloud_bg.png` | พื้นหลังทุกอีเวนต์คำถาม E1–E10 (`#view-quiz`) · 750×1334 เมฆญี่ปุ่นบนลาย asanoha โทนครีม |
+| `doll/{name}_teru.png` | ตุ๊กตาไล่ฝนประจำ Yokai (ใช้ทั้งสองเพศ) · 1000×1000 พื้นใส · name ตัวเล็ก · มีแล้ว 11: hebi inugami kitsune nekomata ningyo oni shinigami tanuki tengu yukionna yumekui · ยังขาด: tenjin ryuu jorogumo raijin fuujin → `YOKAI_DATA[x].dollImage` |
 | `doll/teru_body.png` | ตุ๊กตาไล่ฝน (หน้าว่าง) สำหรับ view-doll · 1000×1000 พื้นใส · หน้า = วงกลม center (482,386) r≈168 — ระบายได้เฉพาะพิกเซลสีหน้า |
+| `doll/acc_{section}_{n}.png` | ⬜ ของแต่งตุ๊กตา (หน้าแต่งตัว E7) — section = `ribbon` \| `hat` \| `flower` \| `charm` · PNG พื้นใส สี่เหลี่ยมจัตุรัส ~320×320 ครอปชิดตัวของ · ตอนนี้ใช้ emoji แทน (`DOLL_ACCESSORIES` ใน index.html) — ได้รูปแล้วต้องเปลี่ยนทั้งการ์ดบนชั้นวางและ `drawDollAccessories()` เป็น drawImage |
 | `seigaiha.svg` | Seigaiha (鱗) scale pattern — overlay opacity 0.18 |
 | `ornament_divider.svg` | Gold line + ✦ + line divider |
 | `logo.png` | App logo (ถ้ามี) |

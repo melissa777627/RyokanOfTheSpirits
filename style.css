@@ -22,11 +22,13 @@
   --ink-brown:         #6B4A35;   /* narration text — softer than --on-surface */
   --rain-dusk:         #5B6B7A;   /* rainy-night blue-grey (E7 doll scene) */
   --rain-dusk-deep:    #3B4856;
+  --accent-orange:     #D2691E;   /* selected state: quiz/bento choices, gender cards */
   --shadow-ambient:    0 8px 32px rgba(26,18,10,0.06);
   --shadow-float:      0 8px 40px rgba(26,18,10,0.10);
-  --font-display:      'Kaisei Decol', Georgia, serif;
-  --font-body:         'M PLUS Rounded 1c', Arial, sans-serif;
-  --font-kanji:        'Noto Serif JP', serif;
+  /* Thai fallbacks after each Latin/JP font — the browser uses them only for Thai glyphs */
+  --font-display:      'Kaisei Decol', 'Noto Serif Thai', Georgia, serif;
+  --font-body:         'M PLUS Rounded 1c', 'Sarabun', Arial, sans-serif;
+  --font-kanji:        'Noto Serif JP', 'Noto Serif Thai', serif;
   --max-w:             480px;
 }
 
@@ -42,6 +44,8 @@ html, body {
   font-weight: 500;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  /* no text-wrap: pretty — Safari 26 re-balances every line with it, leaving Thai boxes a third empty */
+  touch-action: manipulation;   /* no double-tap zoom (iOS) — rapid taps on Undo / Next stay taps; pinch still works */
 }
 
 button { font-family: var(--font-body); cursor: pointer; border: none; background: none; }
@@ -526,6 +530,113 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   pointer-events: all;
 }
 
+/* ── Chapter intro — number → rule → title, then fade ──────────
+   Timeline (of --chapter-ms = 2800ms): label 0.30–0.80s · rule 0.62–1.12s ·
+   title 0.95–1.55s · hold · fade 2.30–2.60s. Base styles = final frame (reduced motion). */
+.chapter-intro {
+  position: fixed;
+  inset: 0;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  z-index: 940;   /* under .narration (950) so the next narration fades in over it */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--on-surface);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease 0.45s;   /* closing waits out narration's 0.45s fade-in */
+  cursor: pointer;
+}
+.chapter-intro.open {
+  opacity: 1;
+  pointer-events: all;
+  transition-delay: 0s;
+}
+.chapter-intro-content { text-align: center; }
+.chapter-label {
+  font-family: var(--font-kanji);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  color: color-mix(in srgb, var(--bg) 60%, transparent);
+  margin: 0 0 14px;
+}
+.chapter-number { color: var(--primary-container); font-weight: 700; }
+.chapter-rule {
+  position: relative;
+  width: 144px;
+  height: 10px;
+  margin: 0 auto;
+}
+.chapter-rule-line {
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 1.5px;
+  margin-top: -0.75px;
+  border-radius: 1px;
+  background: var(--primary);
+}
+.chapter-rule-gem {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 5px; height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 1px;
+  background: var(--primary);
+  transform: translateX(var(--gem-x)) rotate(45deg);
+}
+.chapter-rule-gem--left  { --gem-x: -78px; }
+.chapter-rule-gem--right { --gem-x: 78px; }
+.chapter-title-mask {
+  overflow: hidden;
+  padding: 8px 24px;   /* title starts 100% + 8px down = just below this box */
+  margin-top: 6px;
+}
+.chapter-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--bg);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.chapter-intro.playing .chapter-intro-content { animation: chapterFade      var(--chapter-ms) linear both; }
+.chapter-intro.playing .chapter-label         { animation: chapterLabelIn   var(--chapter-ms) linear both; }
+.chapter-intro.playing .chapter-rule-line     { animation: chapterRuleGrow  var(--chapter-ms) linear both; }
+.chapter-intro.playing .chapter-rule-gem      { animation: chapterGemSlide  var(--chapter-ms) linear both; }
+.chapter-intro.playing .chapter-title         { animation: chapterTitleRise var(--chapter-ms) linear both; }
+
+@keyframes chapterLabelIn {   /* 0.30–0.80s · easeOutCubic */
+  0%, 10.7% { opacity: 0; transform: translateY(6px); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+  28.6%, 100% { opacity: 1; transform: none; }
+}
+@keyframes chapterRuleGrow {  /* 0.62–1.12s · easeInOutCubic */
+  0%, 22.1% { transform: scaleX(0); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  40%, 100% { transform: scaleX(1); }
+}
+@keyframes chapterGemSlide {  /* rides the rule's ends */
+  0%, 22.1% { opacity: 0; transform: translateX(0) rotate(45deg); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  40%, 100% { opacity: 1; transform: translateX(var(--gem-x)) rotate(45deg); }
+}
+@keyframes chapterTitleRise { /* 0.95–1.55s · easeOutExpo, revealed from under the rule */
+  0%, 33.9% { transform: translateY(calc(100% + 8px)); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  55.4%, 100% { transform: none; }
+}
+@keyframes chapterFade {      /* 2.30–2.60s · easeInCubic */
+  0%, 82.1% { opacity: 1; animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  92.9%, 100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chapter-intro.playing .chapter-intro-content,
+  .chapter-intro.playing .chapter-label,
+  .chapter-intro.playing .chapter-rule-line,
+  .chapter-intro.playing .chapter-rule-gem,
+  .chapter-intro.playing .chapter-title { animation: none; }
+}
+
 /* ── Tori-red sudare blinds — result gender swap ───────────── */
 #blinds-curtain {
   position: fixed;
@@ -764,9 +875,9 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 
 /* Selected state */
 .gender-card.selected {
-  box-shadow: 0 0 0 2px var(--primary), var(--shadow-float);
+  box-shadow: 0 0 0 2px var(--accent-orange), var(--shadow-float);
 }
-.gender-card.selected .gc-symbol { opacity: 1; color: var(--primary); }
+.gender-card.selected .gc-symbol { opacity: 1; color: var(--accent-orange); }
 .gender-card.selected .gc-kanji  { opacity: 0.18; }
 
 /* Bottom panel — pushed to foot of screen, fader behind it, starts hidden */
@@ -817,7 +928,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 .gender-img-btn:active img { transform: scale(0.96); }
 .gender-img-btn.selected   { box-shadow: none !important; }
 .gender-img-btn.selected img {
-  filter: drop-shadow(0 0 14px var(--primary)) drop-shadow(0 4px 12px rgba(26,18,10,0.18));
+  filter: drop-shadow(0 0 14px var(--accent-orange)) drop-shadow(0 4px 12px rgba(26,18,10,0.18));
   transform: translateY(-4px) scale(1.03);
 }
 
@@ -1016,21 +1127,110 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 }
 
 .choice-btn:not(:disabled):hover { transform: translateY(-4px) scale(1.02); }
-/* hover border/shadow must not cover the red selected ring */
+/* hover border/shadow must not cover the orange selected ring */
 .choice-btn:not(:disabled):not(.selected):hover {
   box-shadow: 0 12px 32px rgba(26,18,10,0.10);
   border-color: rgba(26,18,10,0.22);
 }
 .choice-btn:not(:disabled):active { transform: scale(0.97); }
 
-/* Selected oracle card — red border only, no fill */
+/* Selected oracle card — orange border only, no fill */
 .choice-btn.selected,
 #view-quiz.quiz-glass-scene .choice-btn.selected {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 1.5px var(--primary);
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 0 1.5px var(--accent-orange);
 }
 .choice-btn:disabled { cursor: not-allowed; opacity: 0.45; }
 .choice-btn.selected:disabled { opacity: 1; }
+
+/* E4 sliding doors (q.doors) — Split Reveal: two fusuma panels part from the card's centre
+   (X ∓105%, 720ms easeInOutCubic) · CSS placeholder art: washi panel + shoji lattice + round pull */
+.choice-btn { position: relative; }
+.choice-doors {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.choice-door {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  background:
+    repeating-linear-gradient(to right, transparent 0 calc(33.3% - 1px), color-mix(in srgb, var(--on-surface) 14%, transparent) calc(33.3% - 1px) 33.3%),
+    repeating-linear-gradient(to bottom, transparent 0 23px, color-mix(in srgb, var(--on-surface) 14%, transparent) 23px 24px),
+    var(--surface-low);
+}
+/* Each panel has its own wooden frame (kamachi) — the two meet as a thicker centre stile; the frame
+   slides away with the panel. Outer corners follow the card's 18px radius */
+.choice-door--l {
+  left: 0;
+  border-radius: 18px 0 0 18px;
+  box-shadow: inset 0 0 0 4px var(--ink-brown), inset -7px 0 8px color-mix(in srgb, var(--on-surface) 14%, transparent);
+}
+.choice-door--r {
+  right: 0;
+  border-radius: 0 18px 18px 0;
+  box-shadow: inset 0 0 0 4px var(--ink-brown), inset 7px 0 8px color-mix(in srgb, var(--on-surface) 14%, transparent);
+}
+/* hikite — the round finger pull near the seam */
+.choice-door::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--on-surface) 30%, transparent) 40%, color-mix(in srgb, var(--on-surface) 12%, transparent) 70%);
+}
+.choice-door--l::after { right: 10px; }
+.choice-door--r::after { left: 10px; }
+/* Opening is an animation, not a transition — it replaces the entry nudge below cleanly, and its
+   animationend (doorOpenL) is what marks the card .doors-ready (index.html buildChoiceDoors) */
+.choice-btn.doors-open .choice-door--l { animation: doorOpenL 720ms cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+.choice-btn.doors-open .choice-door--r { animation: doorOpenR 720ms cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+@keyframes doorOpenL { to { transform: translateX(-105%); } }
+@keyframes doorOpenR { to { transform: translateX(105%); } }
+/* Once, just after the cards land (quiz-vn-enter choices end ~2.2s): each closed door parts a crack
+   and shuts, card by card, so players see they slide */
+.choice-btn:not(.doors-open) .choice-door--l { animation: doorNudgeL 0.9s ease-in-out 2.3s; }
+.choice-btn:not(.doors-open) .choice-door--r { animation: doorNudgeR 0.9s ease-in-out 2.3s; }
+.choice-btn:nth-child(2):not(.doors-open) .choice-door { animation-delay: 2.45s; }
+.choice-btn:nth-child(3):not(.doors-open) .choice-door { animation-delay: 2.6s; }
+.choice-btn:nth-child(4):not(.doors-open) .choice-door { animation-delay: 2.75s; }
+@keyframes doorNudgeL { 0%, 100% { transform: translateX(0); } 45% { transform: translateX(-10%); } }
+@keyframes doorNudgeR { 0%, 100% { transform: translateX(0); } 45% { transform: translateX(10%); } }
+
+/* Doors question: no picture area — the choice text sits in the middle of the card */
+.quiz-choices--doors .choice-btn {
+  min-height: 150px;
+  justify-content: center;
+}
+.quiz-choices--doors .choice-text {
+  padding: 16px 14px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+/* Hint sits on a frosted pill so it reads over the cloud backdrop; arrives with the choices */
+.bento-instruction.quiz-doors-hint {
+  display: table;
+  margin: 16px auto 0;
+  padding: 6px 16px;
+  border-radius: 3rem;
+  background: color-mix(in srgb, var(--surface-lowest) 88%, transparent);
+  box-shadow: var(--shadow-ambient);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--on-surface);
+  opacity: 1;
+}
+#view-quiz.quiz-vn-enter .quiz-doors-hint {
+  animation: quizVnFade 0.55s ease both;
+  animation-delay: 1.65s;
+}
 
 /* Image area — top half of card */
 .choice-img {
@@ -1133,6 +1333,43 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   background: color-mix(in srgb, var(--bg) 14%, transparent);
 }
 .scene-intro.hidden { opacity: 0; pointer-events: none; }
+
+/* Ripple Reveal — tap the card: a ring spreads from the finger, an echo ring follows 110ms later
+   (scale .2 → 2.2, 950ms easeOutCubic), the white flash starts under them (SCENE_RIPPLE_LEAD_MS) */
+/* Looks like water, not a line: a ring-shaped lens blurs what's behind it, with a pale crest inside
+   and a faint trough outside — no border · the trough is deeper on the pale card so it still shows */
+.tap-ripple {
+  --ring: radial-gradient(circle closest-side, transparent 52%, var(--on-surface) 64%, var(--on-surface) 76%, transparent 92%);
+  --trough: 20%;
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  margin: -80px 0 0 -80px;
+  border-radius: 50%;
+  background: radial-gradient(circle closest-side,
+    transparent 54%,
+    color-mix(in srgb, var(--bg) 70%, transparent) 63%,
+    transparent 72%,
+    color-mix(in srgb, var(--on-surface) var(--trough), transparent) 80%,
+    transparent 90%);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  mask: var(--ring);
+  -webkit-mask: var(--ring);
+  filter: blur(1px);
+  pointer-events: none;
+  animation: tapRipple 950ms cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+.tap-ripple--echo { animation-delay: 110ms; animation-name: tapRippleEcho; }
+.scene-intro--rain .tap-ripple { --trough: 10%; }
+@keyframes tapRipple {
+  from { transform: scale(0.2); opacity: 1; }
+  to   { transform: scale(2.2); opacity: 0; }
+}
+@keyframes tapRippleEcho {
+  from { transform: scale(0.2); opacity: 0.6; }
+  to   { transform: scale(2.2); opacity: 0; }
+}
 .scene-intro-title {
   font-family: var(--font-display);
   font-size: 2rem;
@@ -1184,8 +1421,12 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   max-width: 360px;
   padding: 22px 26px;
 }
-.narration-line { margin: 0 0 12px; color: var(--ink-brown); }
+.narration-line { margin: 0 0 12px; color: var(--ink-brown); white-space: pre-line; }   /* '\n' inside a line = line break, same tap */
 .narration-line:last-child { margin-bottom: 0; }
+/* Thai line-break unit (thaiBreakable) — never wraps inside; phrases wrap only at <wbr> / spaces */
+.th-unit { white-space: nowrap; }
+/* Not-yet-typed part of a line — keeps its space so the line never shifts while typing */
+.narration-unrevealed { visibility: hidden; }
 /* Dialogue — set apart and fades in slowly */
 .narration-line--speech {
   margin: 18px 0;
@@ -1262,6 +1503,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;   /* lets the drop zone shrink so Continue always stays on screen */
   overflow: visible;
 }
 .bento-main.hidden { display: none; }
@@ -1280,16 +1522,24 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   opacity: 0.55;
 }
 
-/* Food palette — 3 columns × 4 rows, scrollable */
-.bento-palette {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+/* Item shelf (Bento food, Doll accessories) — one row, swipe / scrollbar / mouse wheel scrolls sideways
+   (the next item peeks in as a hint), drag up to place — index.html "ITEM SHELF" */
+.item-shelf {
+  display: flex;
   gap: 10px;
+  flex-shrink: 0;
   padding: 0 20px 12px;
-  max-height: 340px;
-  overflow-y: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  scroll-padding: 0 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) var(--surface-low);
   -webkit-overflow-scrolling: touch;
 }
+.item-shelf::-webkit-scrollbar { height: 6px; }
+.item-shelf::-webkit-scrollbar-track { background: var(--surface-low); border-radius: 3rem; margin: 0 20px; }
+.item-shelf::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3rem; }
 
 .bento-scene-kana {
   font-family: var(--font-kanji);
@@ -1387,21 +1637,25 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   margin: 12px 0 8px;
 }
 
-.food-item {
+.shelf-item {
+  flex: 0 0 84px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   cursor: grab;
-  touch-action: none;
+  touch-action: pan-x;   /* sideways = scroll the shelf, any other move = drag (index.html ITEM SHELF) */
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  scroll-snap-align: start;
   transition: opacity 0.22s, transform 0.18s;
 }
-.food-item:active { transform: scale(0.9); cursor: grabbing; }
-.food-item.food-ghost { opacity: 0.18; pointer-events: none; }
-.food-item.placed    { opacity: 0.16; cursor: default; pointer-events: none; }
+.shelf-item:active { transform: scale(0.9); cursor: grabbing; }
+/* dimmed while its copy is being dragged — must stay hit-testable or the pointer capture can drop */
+.shelf-item.shelf-item--lifted { opacity: 0.18; }
 
-.food-img {
+.shelf-item-img {
   width: 100%;
   aspect-ratio: 1;
   border-radius: 10px;
@@ -1412,7 +1666,15 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   outline: 1.5px dashed var(--outline-variant);
   box-shadow: var(--shadow-ambient);
 }
-.food-label {
+/* Placeholder item (emoji glyph) until its art lands */
+.shelf-item-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.6rem;
+  line-height: 1;
+}
+.shelf-item-label {
   font-family: var(--font-kanji);
   font-size: 0.42rem;
   letter-spacing: 0.1em;
@@ -1421,10 +1683,14 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 }
 
 /* Drag ghost following pointer */
-.food-drag-ghost {
+.shelf-drag-ghost {
   position: fixed;
   z-index: 9998;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -1521,8 +1787,8 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   box-shadow: 0 10px 28px rgba(26,18,10,0.10);
 }
 .bento-choice-btn.selected {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 1.5px var(--primary);
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 0 1.5px var(--accent-orange);
 }
 .bento-choice-img {
   width: 100%;
@@ -1545,7 +1811,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   line-height: 1.35;
   transition: color 0.18s;
 }
-.bento-choice-btn.selected .bento-choice-text { color: var(--primary); }
+.bento-choice-btn.selected .bento-choice-text { color: var(--accent-orange); }
 
 /* Next button */
 .bento-next-wrap {
@@ -1553,6 +1819,25 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   justify-content: flex-end;
   padding: 14px 20px 36px;
 }
+/* Undo on the left, next step on the right (Bento arrange, Doll dress) */
+.bento-next-wrap--split {
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Small ghost tool button — Undo / Clear (Bento, Doll) */
+.tool-btn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 3rem;
+  background: transparent;
+  border: 1px solid var(--outline-variant);
+  color: var(--secondary);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  transition: opacity 0.2s;
+}
+.tool-btn:disabled { opacity: 0.35; }
 
 
 /* ════════════════════════════════════════
@@ -1631,6 +1916,20 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 }
 
 
+/* DEV (temporary): landing shortcut to a random result — remove with devRandomResult() */
+.dev-shortcut {
+  display: block;
+  margin: 14px auto 0;
+  padding: 8px 18px;
+  border-radius: 3rem;
+  background: none;
+  box-shadow: 0 0 0 1px var(--outline-variant);
+  color: var(--secondary);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
 /* ════════════════════════════════════════
    10. VIEW: RESULT
 ════════════════════════════════════════ */
@@ -1644,121 +1943,137 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 }
 
 
-/* Art section */
-.result-art-section {
-  position: relative;
-  width: 100%;
-  height: 60dvh;
-  min-height: 280px;
-  overflow: hidden;
-}
-/* House tint behind the yokai, fading to plain --bg at the bottom so it meets the clouds' blend */
-.result-art-bg {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom, var(--house-tint, transparent) 55%, transparent 100%);
-}
-.result-art-video,
-.result-art-img {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  height: 100%;
-  object-fit: contain;
-  object-position: center bottom;
-}
-.result-art-emoji {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 9rem;
-  line-height: 1;
-  animation: kanjiBreath 5s ease-in-out infinite;
-}
-
-/* Content */
-.result-content {
-  padding: 0 24px 48px;
-  position: relative;
-  z-index: 1;
-  /* no negative margin: content must never cover the yokai art */
-  /* Same cloud backdrop as the question events — starts below the yokai art, never over it */
+/* Page — one cloud backdrop for the whole result; the house tint sits behind the hero only */
+.result-wrap {
+  padding-bottom: 40px;
   background: url('assets/ui/quiz/cloud_bg.png') center top / 100% auto repeat-y;
 }
-/* Soft blend from the plain art area into the clouds */
-.result-content::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 180px;
-  background: linear-gradient(to bottom, var(--bg), transparent);
-  pointer-events: none;
-  z-index: -1;
-}
 
-/* Identity */
-.result-identity {
+/* Hero — name, kanji · title, tags, then the yokai with its talk bubble */
+.result-hero {
+  position: relative;
+  padding: 18px 16px 0;
   text-align: center;
-  margin-bottom: 36px;
+  background: linear-gradient(to bottom, var(--house-tint, transparent), var(--bg) 70%, transparent);
 }
-.result-mbti-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.result-house-label {
+.result-eyebrow {
   font-family: var(--font-kanji);
-  font-size: 0.58rem;
-  letter-spacing: 0.2em;
-  color: var(--on-surface);
-  opacity: 0.4;
-  text-transform: uppercase;
-}
-.result-mbti {
-  font-family: var(--font-kanji);
-  font-size: 0.7rem;
-  letter-spacing: 0.22em;
-  color: var(--primary);
-  background: rgba(176,43,43,0.08);
-  padding: 3px 10px;
-  border-radius: 2rem;
-  border: 1px solid rgba(176,43,43,0.18);
+  font-size: 0.75rem;
+  letter-spacing: 0.32em;
+  color: var(--ink-brown);
+  margin: 0;
 }
 .result-name {
   font-family: var(--font-display);
-  font-size: 2.6rem;
+  font-size: 2.5rem;
+  line-height: 1.05;
   color: var(--on-surface);
-  line-height: 1.1;
-  margin: 0 0 6px;
+  margin: 2px 0;
 }
-.result-title {
+.result-sub {
   font-family: var(--font-kanji);
   font-size: 0.82rem;
-  letter-spacing: 0.12em;
-  color: var(--on-surface);
-  opacity: 0.5;
-  margin: 0 0 6px;
-}
-.result-tagline {
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  color: var(--on-surface);
-  opacity: 0.6;
-  font-style: italic;
+  letter-spacing: 0.14em;
+  color: var(--ink-brown);
   margin: 0;
 }
+.result-tags {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.result-tag {
+  font-family: var(--font-kanji);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  padding: 3px 10px;
+  border-radius: 2rem;
+  background: var(--bg);
+  color: var(--on-surface);
+  box-shadow: 0 0 0 1px var(--outline-variant);
+}
+.result-tag--red { color: var(--primary); }
+
+/* Stage — art is tappable (soft bounce); the bubble anchors beside the head — one spot for every yokai */
+.result-stage { position: relative; }
+.result-art {
+  display: block;
+  width: 100%;
+  height: 300px;
+  margin-top: 4px;
+  object-fit: contain;
+  object-position: center bottom;
+  transform-origin: center bottom;
+  cursor: pointer;
+}
+.result-art.poked { animation: resultPoke 0.4s ease-out; }
+@keyframes resultPoke {
+  0%   { transform: scale(1, 1); }
+  35%  { transform: scale(1.015, 0.985) translateY(1px) rotate(var(--tilt, 0deg)); }
+  70%  { transform: scale(0.995, 1.01) translateY(-3px); }
+  100% { transform: none; }
+}
+/* Kanji stands in until the yokai's art exists (no emoji on this page) */
+.result-art-kanji {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-kanji);
+  font-size: 5rem;
+  color: var(--ink-brown);
+  opacity: 0.6;
+}
+
+/* Talk bubble — mostly clear so the character shows through; the cream letter glow carries readability */
+.result-say {
+  position: absolute;
+  z-index: 2;
+  left: 64%;
+  bottom: 84%;
+  width: max-content;
+  max-width: calc(97% - 64%);
+  padding: 8px 13px;
+  text-align: left;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--bg) 32%, transparent);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  border: 1.5px solid color-mix(in srgb, var(--accent-orange) 85%, var(--bg));
+  border-radius: 1.1rem 1.1rem 1.1rem 0.3rem;   /* the near-sharp corner points at the head */
+  transform-origin: 0 100%;
+  /* soft cream halo outside the orange border = depth without a hard ring */
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--bg) 55%, transparent),
+              0 0 12px 3px color-mix(in srgb, var(--bg) 45%, transparent),
+              var(--shadow-ambient);
+}
+.result-say:focus-visible { outline: 2px solid var(--secondary); outline-offset: 4px; }
+.result-say-text {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--ink-brown);
+  text-shadow: 0 0 2px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg);
+}
+.result-say--idle { padding: 4px 12px 8px; animation: resultBob 2.4s ease-in-out infinite; }
+.result-say--idle .result-say-text {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1;
+  letter-spacing: 0.1em;
+}
+@keyframes resultBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.result-say--pop { animation: resultSayPop 0.18s ease-out both; }
+@keyframes resultSayPop { from { opacity: 0; transform: scale(0.9) translateY(4px); } }
+.result-say--out { animation: resultSayOut 0.25s ease-in both; }
+@keyframes resultSayOut { to { opacity: 0; transform: translateY(-4px); } }
 
 /* Gender flip card — face shows the gender currently shown; .is-flipped = female shown */
 .gender-flip {
   position: absolute;
-  top: 0;
-  right: 20px;
+  top: 14px;
+  right: 16px;
   z-index: 2;
   width: 64px;
   height: 84px;
@@ -1817,140 +2132,351 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   margin-top: 3px;
 }
 
-/* Sections */
-.result-section { margin-bottom: 26px; }
-.result-section-eyebrow {
-  font-family: var(--font-kanji);
-  font-size: 0.58rem;
-  letter-spacing: 0.28em;
-  color: var(--on-surface);
-  opacity: 0.36;
-  text-align: center;
-  margin: 0 0 12px;
-}
-.result-why {
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  line-height: 1.85;
-  color: var(--on-surface);
-  background: var(--surface-low);
-  padding: 18px 20px;
-  border-radius: 1.5rem;
-  margin: 0;
-}
-
-/* Quote */
-.result-quote-block {
-  background: linear-gradient(135deg, var(--primary) 0%, #8B1F1F 100%);
-  border-radius: 1.5rem;
-  padding: 22px 24px;
-  margin-bottom: 26px;
-  box-shadow: 0 8px 32px rgba(176,43,43,0.22);
-}
-.result-quote {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  line-height: 1.65;
-  color: rgba(255,255,255,0.92);
-  text-align: center;
-  margin: 0;
-  font-style: italic;
-}
-.result-quote + .result-quote { margin-top: 14px; }
-
-/* Compat bars */
-.result-compat-bars {
+/* Card heading — kanji seal + question (shared by deck cards and tiles) */
+.result-card-head {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.compat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 6px;
-}
-.compat-label {
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 10px;
   font-family: var(--font-body);
-  font-size: 0.82rem;
-  color: var(--on-surface);
-  opacity: 0.72;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: inherit;
 }
-.compat-value {
+.result-seal {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--primary);
+  color: var(--bg);
   font-family: var(--font-kanji);
   font-size: 0.72rem;
-  color: var(--primary);
-  opacity: 0.75;
 }
-.compat-track {
+
+/* Swipe deck — native scroll-snap; the next card peeks in so people know it moves */
+/* cards share one height so a short card has no gap under it; the arrow sits at the bottom */
+.result-deck {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 16px;
+  padding: 8px 16px 4px;
+  scrollbar-width: none;
+}
+.result-deck::-webkit-scrollbar { display: none; }
+.result-card {
+  flex: 0 0 86%;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 16px 12px;
+  border-radius: 1.4rem;
+  background: var(--bg);
+  color: var(--on-surface);
+  box-shadow: var(--shadow-ambient);
+  cursor: pointer;
+}
+.result-card:only-child { flex-basis: 100%; }
+.result-card--red {
+  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 78%, var(--on-surface)));
+  color: var(--bg);
+}
+.result-card--red .result-seal { background: var(--bg); color: var(--primary); }
+.result-card-hook {
+  font-family: var(--font-display);
+  font-size: 1.32rem;
+  line-height: 1.45;
+  color: var(--primary);
+  margin: 0;
+}
+.result-card--red .result-card-hook { color: var(--bg); }
+/* deck headings sit a step above the body text (tiles keep the smaller head — narrow columns) */
+.result-card .result-card-head { font-size: 1rem; }
+/* a told-to-you sentence on the face */
+.result-card-lead {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  line-height: 1.75;
+  margin: 0;
+}
+/* card 縁 reads as prose — Thai body face (Sarabun) instead of the display face */
+.result-card--why .result-card-lead { font-family: 'Sarabun', var(--font-body); }
+/* "what you get / where you may clash" — labelled rows in one soft box */
+.result-card-pairs {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 1rem;
+  background: var(--surface-low);
+}
+.result-card-pairs dt {
+  font-family: var(--font-kanji);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+}
+.result-card-pairs dd {
+  margin: 1px 0 0;
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+.result-card-invite {
+  margin: 10px 0 0;
+  padding: 9px 12px;
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--bg) 14%, transparent);
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+.result-card-invite b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  color: var(--surface-lowest);
+}
+/* "more" unfolds inside the card (grid 0fr → 1fr), text fades in after */
+.result-card-more {
+  display: grid;
+  margin-bottom: 10px;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.result-card-more > div { overflow: hidden; }
+.result-card.open .result-card-more { grid-template-rows: 1fr; }
+.result-card-more-in {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 1rem;
+  background: var(--surface-low);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.25s, transform 0.3s;
+}
+.result-card.open .result-card-more-in { opacity: 1; transform: none; transition-delay: 0.12s; }
+.result-card--red .result-card-more-in { background: color-mix(in srgb, var(--bg) 12%, transparent); }
+.result-card-more-in p {
+  margin: 0 0 8px;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  line-height: 1.75;
+}
+.result-card-more-in p:last-child { margin: 0; }
+/* unfold arrow — bottom centre, bobs like the talk bubble's "…" until opened */
+.result-card-toggle {
+  align-self: center;
+  margin-top: auto;
+  width: 32px;
+  height: 32px;
+  margin-bottom: -2px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-low);
+  color: var(--primary);
+  cursor: pointer;
+  animation: resultBob 2.4s ease-in-out infinite;
+}
+.result-card--red .result-card-toggle { background: color-mix(in srgb, var(--bg) 16%, transparent); color: var(--bg); }
+.result-card.open .result-card-toggle { animation: none; }
+.result-card-toggle svg { width: 14px; height: 14px; transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+.result-card-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.result-card-toggle:focus-visible,
+.result-deck-dots button:focus-visible { outline: 2px solid var(--secondary); outline-offset: 3px; border-radius: 1rem; }
+
+.result-deck-dots { display: flex; justify-content: center; gap: 2px; margin-top: 4px; }
+.result-deck-dots button { width: 28px; height: 24px; display: grid; place-items: center; background: none; cursor: pointer; }
+.result-deck-dots button::before {
+  content: '';
+  width: 7px;
   height: 7px;
   border-radius: 4px;
-  background: var(--surface-lowest);
+  background: var(--outline-variant);
+  transition: width 0.2s, background 0.2s;
+}
+.result-deck-dots button[aria-current="true"]::before { width: 18px; background: var(--primary); }
+
+/* Short tiles — two columns, no swipe */
+.result-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 16px 0;
+}
+.result-tile {
+  min-width: 0;
+  padding: 14px 15px;
+  border-radius: 1.4rem;
+  background: var(--bg);
+  box-shadow: var(--shadow-ambient);
+}
+.result-meter {
+  display: grid;
+  gap: 3px;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+}
+.result-meter + .result-meter { margin-top: 9px; }
+.result-meter-score { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 2px 6px; }   /* a long word drops under the dots on narrow phones */
+/* word + lit dots take the tone colour set on .result-meter-score */
+.result-meter-score b { white-space: nowrap; }
+.result-dots { display: flex; gap: 4px; }
+.result-dots i { width: 16px; height: 6px; border-radius: 3px; background: var(--surface-lowest); }
+.result-dots i.on { background: currentColor; }
+/* ความเข้ากัน — "เข้ากันดีเรื่อง" (green label) + cream chips · "ต้องค่อยๆ ปรับ" (red label) + one plain sentence */
+.result-match-label {
+  margin: 0 0 4px;
+  font-family: var(--font-kanji);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+}
+.result-match-label + .result-match-chips + .result-match-label { margin-top: 10px; }
+.result-match-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.result-match-chip {
+  padding: 2px 8px;
+  border-radius: 1rem;
+  background: var(--surface-low);   /* cream washi tag with a ghost frame — matches the app, not a coloured pill */
+  box-shadow: inset 0 0 0 1px var(--outline-variant);
+  color: var(--ink-brown);
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+.result-match-adjust {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+.result-tone--good { color: var(--ink-green); }
+.result-tone--mid  { color: var(--ink-gold); }
+.result-tone--low  { color: var(--primary); }
+
+/* Near-miss tile + the two dolls pinned beside it, staggered — not a matching box */
+.result-keepsakes {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 6px;
+  align-items: start;
+  margin: 14px 16px 0;
+}
+/* close-up on the face — every chibi sheet is square with the head round (50%, 37%); thin mist drifts across */
+.result-near-portrait {
+  position: relative;
+  aspect-ratio: 1.4;
+  margin-bottom: 8px;
   overflow: hidden;
+  border-radius: 1rem;
+  background: var(--surface-low);
 }
-.compat-fill {
-  height: 100%;
-  border-radius: 4px;
-  background: linear-gradient(90deg, var(--primary), var(--primary-container));
-  transform-origin: left center;
-  transition: transform 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+.result-near-art {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -37%);
+  object-fit: contain;
+  filter: saturate(0.7) blur(0.6px);   /* seen through the mist — must not outshine the real match */
 }
+.result-near-art.result-art-kanji { inset: 0; width: auto; transform: none; font-size: 1.6rem; opacity: 1; filter: none; }
+.result-near-mist { position: absolute; inset: 0; pointer-events: none; }
+.result-near-mist::before,
+.result-near-mist::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -40%;
+  width: 180%;
+  filter: blur(8px);
+  animation: nearMistDrift 16s ease-in-out infinite alternate;
+}
+/* a veil over the whole face (still readable) + thick drifting banks at the edges and bottom */
+.result-near-mist {
+  background:
+    linear-gradient(to top, color-mix(in srgb, var(--bg) 75%, transparent), transparent 55%),
+    color-mix(in srgb, var(--bg) 30%, transparent);
+}
+.result-near-mist::before {
+  background:
+    radial-gradient(ellipse 30% 36% at 14% 74%, var(--bg), transparent 70%),
+    radial-gradient(ellipse 30% 24% at 48% 30%, color-mix(in srgb, var(--bg) 70%, transparent), transparent 70%),
+    radial-gradient(ellipse 32% 34% at 86% 66%, var(--bg), transparent 70%);
+}
+.result-near-mist::after {
+  background:
+    radial-gradient(ellipse 34% 26% at 32% 94%, var(--bg), transparent 70%),
+    radial-gradient(ellipse 26% 28% at 66% 50%, color-mix(in srgb, var(--bg) 60%, transparent), transparent 70%),
+    radial-gradient(ellipse 30% 26% at 96% 90%, var(--bg), transparent 70%);
+  animation-duration: 21s;
+  animation-direction: alternate-reverse;
+}
+@keyframes nearMistDrift { from { transform: translateX(-12%); } to { transform: translateX(12%); } }
+.result-near-name { font-family: var(--font-display); font-size: 1.15rem; margin: 0; }
+.result-near-why {
+  margin: 2px 0 0;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+/* what that yokai says — a small aside, its own voice */
+.result-near-say {
+  margin: 8px 0 0;
+  padding: 7px 10px;
+  border-radius: 0.9rem;
+  background: var(--surface-low);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--ink-brown);
+}
+/* the two teru teru bozu stand together, staggered, no paper box · both "line boil" through #doll-boil */
+.result-dolls { position: relative; align-self: stretch; min-height: 190px; }   /* full height of the near-miss tile → dolls stand at its bottom */
+.result-doll {
+  position: absolute;
+  margin: 0;
+  filter: url(#doll-boil) drop-shadow(0 6px 8px rgba(26,18,10,0.12));
+}
+.result-doll img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; }
+.result-doll--theirs { width: 142px; right: -14px; bottom: 0; transform: rotate(4deg); }
+.result-doll--yours  { width: 136px; left: -12px; bottom: 18px; transform: rotate(-4deg); z-index: 1; }
+.result-doll--yours:only-child { left: 50%; margin-left: -68px; }
+@media (prefers-reduced-motion: reduce) { .result-doll { filter: drop-shadow(0 6px 8px rgba(26,18,10,0.12)); } }
 
 /* Actions */
 .result-actions {
-  margin-top: 36px;
-  text-align: center;
-  padding-bottom: 56px;
-}
-
-/* Omikuji button — image placeholder + label */
-.omikuji-btn {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  margin: 28px auto 0;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 0;
+  gap: 10px;
+  margin: 22px 16px 0;
+  padding-bottom: 16px;
 }
-.omikuji-btn-img {
-  width: 88px;
-  height: 88px;
-  border-radius: 16px;
-  background: var(--surface-lowest);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  outline: 1.5px dashed var(--outline-variant);
-  box-shadow: var(--shadow-ambient);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-kanji);
-  font-size: 2.2rem;
-  color: var(--on-surface);
-  opacity: 0.22;
-  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.22s;
-}
-.omikuji-btn:hover .omikuji-btn-img {
-  transform: scale(1.07) rotate(-3deg);
-  opacity: 0.36;
-}
-.omikuji-btn-label {
-  font-family: var(--font-kanji);
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
-  color: var(--on-surface);
-  opacity: 0.55;
-}
-.omikuji-btn-sub {
+.result-action {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 3rem;
+  background: var(--bg);
+  color: var(--secondary);
   font-family: var(--font-body);
-  font-size: 0.68rem;
-  color: var(--on-surface);
-  opacity: 0.32;
-  margin-top: -4px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  box-shadow: 0 0 0 1px var(--outline-variant);
+  cursor: pointer;
+}
+.result-action:focus-visible { outline: 2px solid var(--secondary); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .result-near-mist::before, .result-near-mist::after { animation: none; }
+  .result-art.poked, .result-say--idle, .result-say--pop, .result-say--out, .result-card-toggle { animation: none; }
+  .result-card-more, .result-card-more-in, .result-card-toggle svg { transition: none; }
+  .sakura-fall { display: none; }
 }
 
 /* Omikuji modal overlay */
@@ -2099,13 +2625,10 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 #view-doll .event-badge,
 #view-doll .bento-instruction { color: var(--bg); }
 #view-doll .bento-instruction { opacity: 0.7; }
-.doll-story-box p {
-  font-size: 0.85rem;
-  line-height: 1.8;
-  text-align: left;
-  opacity: 0.82;
-  white-space: pre-line;
-}
+/* Two steps — face (zoomed on the head) → dress (#view-doll.doll-dress) */
+#view-doll:not(.doll-dress) .doll-dress-only,
+#view-doll.doll-dress .doll-face-only { display: none; }
+
 .doll-stage {
   position: relative;
   width: min(72vw, 300px);
@@ -2123,6 +2646,65 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 .doll-canvas {
   touch-action: none;
   cursor: crosshair;
+}
+#view-doll.doll-dress .doll-canvas { pointer-events: none; }
+
+/* Zoom window + accessory drop zone — container for cqw, so placed glyphs scale with the doll */
+.doll-frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  container-type: size;
+}
+/* Face step: scale 2 centred on the head (DOLL_FACE cx 482, cy 386 → origin 2·c − 500) */
+.doll-figure {
+  transform-origin: 46.4% 27.2%;
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#view-doll:not(.doll-dress) .doll-figure { transform: scale(2); }
+
+.doll-placed-items {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* size in cqw = share of the doll width — drawDollAccessories() reads it back for the export */
+.doll-placed-item {
+  position: absolute;
+  font-size: 16cqw;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  animation: foodLand 0.38s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+/* Accessory section tabs (Ribbon · Hat · …) above the shelf */
+.doll-tabs {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 20px 12px;
+}
+.doll-tab {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 3rem;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--bg) 35%, transparent);
+  color: var(--bg);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+}
+.doll-tab.selected {
+  background: var(--surface-lowest);
+  border-color: transparent;
+  color: var(--on-surface);
+}
+/* Undo sits on the night background in the dress step */
+#view-doll .bento-next-wrap .tool-btn {
+  color: var(--bg);
+  border-color: color-mix(in srgb, var(--bg) 35%, transparent);
 }
 
 /* Drawing content wrapper (hidden until the intro card is dismissed) */
@@ -2143,11 +2725,11 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 #view-doll.doll-reveal { background-color: var(--rain-dusk-deep); }
 
 /* Glow eases in after Done — starts from a zero-strength glow so it interpolates (no pop) */
-.doll-figure {
+.doll-frame {
   filter: drop-shadow(0 0 22px color-mix(in srgb, var(--bg) 0%, transparent));
   transition: filter 2s ease 1.2s;
 }
-#view-doll.doll-reveal .doll-figure {
+#view-doll.doll-reveal .doll-frame {
   filter: drop-shadow(0 0 22px color-mix(in srgb, var(--bg) 35%, transparent));
 }
 
@@ -2156,7 +2738,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   position: absolute;
   left: 50%;
   top: 28%;
-  width: 190%;
+  width: 150%;
   transform: translateX(-44%);   /* source ripples lean left — nudge right */
   pointer-events: none;
   opacity: 0;
@@ -2223,16 +2805,6 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   background: var(--on-surface);
 }
 .doll-size.selected { box-shadow: 0 0 0 2px var(--on-surface); }
-.doll-tool-btn {
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 3rem;
-  background: transparent;
-  border: 1px solid var(--outline-variant);
-  color: var(--secondary);
-  font-family: var(--font-body);
-  font-size: 0.78rem;
-}
 
 /* Color wheel — glass bottom panel */
 .doll-wheel-panel {
@@ -2270,30 +2842,4 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   height: 44px;
   border-radius: 50%;
   box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--outline-variant);
-}
-
-/* Result — player's doll paired with the yokai's doll */
-.result-dolls {
-  display: flex;
-  justify-content: center;
-  gap: 18px;
-}
-.result-doll {
-  margin: 0;
-  width: 132px;
-  text-align: center;
-}
-.result-doll img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1;
-  background: var(--surface-low);
-  border-radius: 1.5rem;
-}
-.result-doll figcaption {
-  margin-top: 6px;
-  font-family: var(--font-kanji);
-  font-size: 0.65rem;
-  letter-spacing: 0.2em;
-  opacity: 0.6;
 }

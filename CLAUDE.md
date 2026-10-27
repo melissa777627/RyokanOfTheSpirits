@@ -332,5 +332,4 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 - [ ] การ์ดช้อยยังไม่มีรูป
 - [x] หน้า result ใหม่ (2026-10-27): บับเบิ้ลแตะคุย + การ์ดปัด 3 ใบ + คู่ที่เกือบได้บอกเหตุผล + ตุ๊กตาแปะ · เลิกบทพูดหลัง loading (memory/near)
 - [x] บับเบิ้ล `lines` ครบ 16 ตัว (8 ตัวหลัง Yumekui Ryuu Shinigami Tanuki Ningyo Jorogumo Hebi Raijin อนุมัติ 2026-10-27)
-- [x] การ์ด 縁 `why`/`whyLead` + 共 `life` 12 ตัว (บ้านน้ำเงิน ม่วง เขียว) · การ์ด 心 `HOUSE_HEART` น้ำเงิน/ม่วง/เขียว
-- [ ] บ้านเหลือง: การ์ด 縁/共 Nekomata Hebi Raijin Fuujin + การ์ด 心 เหลือง (ตอนนี้ใช้ร่างเดิม)
+- [x] การ์ด 縁 `why`/`whyLead` + 共 `life` ครบ 16 ตัว · การ์ด 心 `HOUSE_HEART` ครบ 4 บ้าน (2026-10-27)

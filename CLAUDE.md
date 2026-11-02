@@ -111,7 +111,7 @@ Sarabun            → ตัวไทยของ body (fallback ในตั�
 - **Primary CTA:** gradient `--primary` → `--primary-container`, `border-radius: 3rem` (pill), scale 1.02 on hover
 - **Secondary:** ghost border, `--secondary` text, `border-radius: 3rem`
 - **Choice:** `--surface-lowest` bg, ghost border, left-aligned, `border-radius: 1.5rem`
-- **FAB:** `--primary` circle, 44–48px (Omikuji, BGM)
+- **FAB:** `--primary` circle, 44–48px (BGM) · เซียมซีเป็นกล่องในหน้า result ไม่ใช่ FAB
 
 ---
 
@@ -135,7 +135,7 @@ view-landing  →  view-gender  →  view-quiz (Stage 1 · E1–E5)
 | `view-bento` | Bento Mini-Game | (ก่อนเข้า view: narration บทเชื่อมฟ้าสาง → ฉากเบนโตะหน้าแยก) → Intro card → pop-up Q (prompt อย่างเดียว) → drag & drop food → Continue → บทพูดของแขก |
 | `view-doll` | E7 Teru Teru Bozu | Intro card → วาดหน้า (ซูมหัว · สีฟิกซ์ + วงล้อสี, 3 ความหนา, undo/clear) → Next → แต่งตัว (แท็บ Ribbon/Hat/Flower/Charm + ชั้นวางแบบ Bento, undo) → Done reveal — cosmetic, ไม่มีผลคะแนน |
 | `view-loading` | Loading Screen | Kanji cycle + spirit orb (3–4 sec auto-advance) |
-| `view-result` | Result Page | Hero (Yokai + บับเบิ้ลแตะคุย) + การ์ดปัด 心/縁/共 (กางอ่านต่อ) + เหมือนกัน/ความเข้ากัน + คู่ที่เกือบได้ + ตุ๊กตา + gender toggle + Omikuji |
+| `view-result` | Result Page | Hero (Yokai ทักเอง + บับเบิ้ลแตะคุย + สวิตช์เพศซ้ายล่าง) + ป้ายไม้ 3 หัวข้อ + การ์ดวาชิ 心/縁/共 (หน้าการ์ดใจความเดียว · อ่านต่อ) + เหมือนกัน/ความเข้ากัน + คู่ที่เกือบได้ (กระจกฝ้าให้ถู) + ตุ๊กตา + กล่องเซียมซี (ใบพลิก) + ซองแชร์ + เล่นอีกครั้ง (แตะ 2 ที) |
 
 ---
 
@@ -207,7 +207,9 @@ let state = {
   stage:         1,        // 1 = house sorting, 2 = yokai selection
   currentQ:      0,
   bentoSelected: [],
-  dollImage:     ''        // PNG dataURL ตุ๊กตาที่ผู้เล่นวาด (E7) — cosmetic
+  dollImage:     '',       // PNG dataURL ตุ๊กตาที่ผู้เล่นวาด (E7) — cosmetic
+  resultGreeted: false,    // หน้า result: ภูตทักไปแล้ว (สลับเพศไม่ทักซ้ำ)
+  nearCleared:   false     // หน้า result: กระจกฝ้าเช็ดแล้ว (สลับเพศยังใส)
 };
 ```
 
@@ -314,7 +316,8 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 - [ ] Wire scoring-engine.js เข้า UI
 - [ ] Bento drag & drop
 - [x] เขียน `scoring-engine.js` ใหม่ตาม DATA_SCHEMA §5 + `validateQuestions()` + `guardState()` แบบ throw
-- [ ] Result page + gender toggle + Omikuji modal
+- [x] Result page ย้ายจาก lab V30 เข้าตัวจริง (2026-11-03): ป้ายไม้วอลนัท · การ์ดวาชิ · ภูตทัก · กระจกฝ้า · กล่องเซียมซี + ใบพลิก (คำทำนายไทย) · ซองแชร์ · สวิตช์เพศ · เล่นอีกครั้งแตะ 2 ที
+- [ ] ลบโฟลเดอร์ `lab/` (ตัวทดลองหน้า result) เมื่อเจ้าของไม่ใช้แล้ว — ไม่ได้อยู่ใน git
 - [ ] Loading animation
 - [ ] BGM/SFX audio manager (stub ก่อน)
 - [ ] ⚠ ลบปุ่มชั่วคราว "ดูหน้าผลลัพธ์ · สุ่ม" (`devRandomResult()` + `.dev-shortcut`) ก่อน production

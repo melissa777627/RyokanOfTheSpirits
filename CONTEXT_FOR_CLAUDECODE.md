@@ -151,7 +151,7 @@ Full guide → `assets/README.md`.
 | `validateAlikeFns(name, mbti)` | Fail fast: every Stage 2 question the yokai can meet has exactly one choice on its pole with its function |
 | `getNearMiss(mbti)` | "คู่ที่เกือบได้": first axis won 2-1 (house axis, then EI) → `{ name, pole }` of the yokai one answer away; `null` when both axes won 3-0 |
 | `validateYokaiData()` / `validateHouseHeart()` | Check result-page content at load (DATA_SCHEMA §3/§9); throw on a half-written object |
-| `toggleResultGender()` | Flips resultGenderShown, calls renderResult() — called by `flipGenderCard()` after the flip animation ends |
+| `toggleResultGender()` | Flips resultGenderShown, calls renderResult() — called through `blindsThrough()` by the result page's gender switch |
 | `resetGame()` | Resets state, returns to landing |
 | `guardState(requiredStage)` | Throws if state is invalid for the view (Rule 5 — no silent reset) |
 | `debugScores()` | Console logs all scores (remove before production) |
@@ -168,10 +168,15 @@ Full guide → `assets/README.md`.
 | `confirmAnswer()` | Records answer; after E5 → `calcHouse()` + bento; after E10 → outro → `calcYokai()` + loading |
 | `journeyStep()` | Progress step 1–11 |
 | `buildChoiceDoors(btn)` / `updateQuizNext(wrap)` | `q.doors` (E4): two fusuma panels over each choice card — first tap opens, tap after `.doors-ready` selects; Next needs a choice and every door open |
-| `renderResult()` | Builds view-result: hero (name, kanji · title, role + MBTI tags, art or kanji, talk bubble) → swipe deck (心 heart · 縁 why · 共 life) → tiles (似 alike · 相 match: good chips + adjust sentence) → near-miss tile + pinned dolls → actions; Thai text filled via `fillThai()` |
-| `deckCards(r)` / `deckCardHTML(card)` / `deckTexts(cards)` | Deck card list in story order (no `why` / no `life` = card left out; `why` without `whyLead` = on the face, nothing to unfold) → markup → its Thai strings |
-| `wireResultDeck(view)` | Dots follow the snapped card; tap a peeking card = scroll to it; tap the current card = fold/unfold its "more"; swiping away folds an open card |
-| `wireResultTalk(view, r)` | Talk bubble: each tap = next of `TALK_ORDER` (poke1 → chat1 → chat2 → poke2 → mist[E5 house]) + soft bounce on the art; fades back to "…" after 1400ms + 70ms/char |
+| `renderResult()` | Clears the old page's timers, then builds view-result: hero (name, kanji · title, role + MBTI words, art or kanji, talk bubble, gender switch) → wooden topic tags + deck of washi cards (心 heart · 縁 why · 共 life) → tiles (似 alike · 相 match) → near-miss banner (fogged glass) + dolls with the omikuji box → share envelope + play again → omikuji slip modal; Thai text via `fillThai()`; then wires each part |
+| `deckCards(r)` / `deckCardHTML(card, i, cards)` / `deckTexts(cards)` | Deck card list in story order (no `why` / no `life` = card left out; `why` without `whyLead` = on the face, nothing to unfold) → markup (face = key line only; pairs / reading / invite fold behind "อ่านต่อ"; foot = toggle + "ถัดไป ›") → its Thai strings (+ `TAB_LABEL`) |
+| `wireResultDeck(view)` | Tags follow the snapped card (tap a tag = go there; a change runs the breeze); deck height follows the card on screen; tap the current card = fold/unfold; "ถัดไป ›" = next card; swiping away folds an open card; first view: a small sideways nudge |
+| `wireResultGender(view)` | Gender switch: the knob slides across, then `blindsThrough(toggleResultGender)` after 380ms |
+| `wireNearFog(view)` | Near-miss fogged glass (canvas): finger wipes, half cleared → lifts and sets `state.nearCleared`; swipe-hand demo when first in view; Enter/Space lifts it; already cleared = no glass |
+| `wireOmikuji(view)` | Omikuji box shakes → slip modal (asks single/taken, then lift + flip to a fortune from `OMIKUJI`); Esc / ✕ / outside tap closes, focus returns to the box |
+| `wireResultShare(view, r)` / `showToast(msg)` | Share: `navigator.share` (title, line, link); without it the line + link go to the clipboard with a toast |
+| `wireResultAgain(view)` | Play again: first tap arms ("แตะอีกครั้ง ผลนี้จะหายไป" 3 s), second tap = `resetGame()` |
+| `wireResultTalk(view, r)` / `fitBubble(say, text)` | Talk bubble: greets once (`lines.greet`, `state.resultGreeted`); each tap = next of `TALK_ORDER` (poke1 → chat1 → chat2 → poke2 → mist[E5 house]) + soft bounce on the art; the line stays up with ▼ after it; left alone 15 s while on screen → a chat line by itself; `fitBubble` sets the box to the widest wrapped line |
 | `startDollBoil()` | Doll line boil on the result page: swaps the `#doll-boil` turbulence seed at 7 FPS (6-seed loop); off under reduced motion |
 | `fillThai(root, texts)` | Fills every `[data-th=key]` with `thaiBreakable(texts[key])`; throws on a missing key |
 | `resultArtHTML(image, kanji, name, cls)` | img / video / kanji placeholder (hero art and near-miss art) |
@@ -186,7 +191,6 @@ Full guide → `assets/README.md`.
 | `setDollStep('face' \| 'dress')` / `showDollDress()` / `showDollTab(i)` | Doll steps: face (zoomed head, draw) → Next → dress (accessory tabs from `DOLL_ACCESSORIES`, shelf `#doll-shelf`) |
 | `resetSceneIntro` / `showSceneIntro` / `dismissSceneIntro(introId, mainId, e, onRevealed)` → `spawnRipple()` → `flashOutSceneIntro()` | Shared intro card (Bento + Doll) — tap ripple from the finger, white flash after 380ms, then main content + `onRevealed` (Bento: `showBentoQuestion`); ignores taps while `.dismissing` |
 | `fadeThrough(fn)` | Black curtain down → run fn → curtain up |
-| `flipGenderCard(card)` | Result page: starts the flip-card rotation and `blindsThrough(toggleResultGender)` together (card re-renders already turned via `.is-flipped`) |
 | `blindsThrough(fn)` | Red sudare blinds close → run fn → hold 150ms → open (like `fadeThrough`) |
 | `initDollCanvas()` | Builds the face mask from `teru_body.png`, wires pointer drawing, palette, sizes, undo/clear, color wheel, accessory tabs |
 
@@ -203,5 +207,5 @@ Full guide → `assets/README.md`.
 | 4 | Quiz view + question loader | ⬜ |
 | 5 | Bento mini-game | ⬜ |
 | 6 | Loading screen | ⬜ |
-| 7 | Result page | ⬜ |
+| 7 | Result page | ✅ (2026-11-03 จาก lab V30) · เหลือ Share to Story |
 | 8 | BGM stub + polish | ⬜ |

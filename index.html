@@ -1530,15 +1530,6 @@ function blindsThrough(fn) {
   }, { once: true });
 }
 
-// Flip and close the blinds together (CSS delays the blinds 0.25s) — swap lands after the flip ends;
-// renderResult() rebuilds the card already turned to match resultGenderShown
-function flipGenderCard(card) {
-  if (card.classList.contains('is-flipping')) return;
-  card.classList.add('is-flipping');
-  card.classList.toggle('is-flipped');
-  blindsThrough(toggleResultGender);
-}
-
 const HOUSE_TINTS = { purple:'rgba(107,79,160,0.14)', green:'rgba(45,122,79,0.12)', blue:'rgba(27,79,114,0.12)', yellow:'rgba(181,138,0,0.10)' };
 const HOUSE_ROLE  = { purple:'นักคิด', green:'นักอุดมคติ', blue:'ผู้พิทักษ์', yellow:'นักศิลป์' };
 
@@ -1572,11 +1563,31 @@ function startDollBoil() {
   }, 1000 / DOLL_BOIL_FPS);
 }
 
-// Talk bubble — gacha-lobby style: tap = next line pops in whole, stays by length, fades back to "…"
+// Talk bubble — the yokai greets once, then each tap pops the next line; the last line stays up with ▼ after it
 const TALK_ORDER = ['poke1', 'chat1', 'chat2', 'poke2', 'mist'];
-const TALK_HOLD_BASE_MS = 1400, TALK_HOLD_PER_CHAR_MS = 70, TALK_FADE_MS = 250;
+const TALK_AMBIENT = ['chat1', 'chat2'];   // said by itself when left alone — poke lines react to a touch nobody made
+const TALK_HOLD_BASE_MS = 1400, TALK_HOLD_PER_CHAR_MS = 70;
+const TALK_GREET_MS = 900, TALK_CARET_MS = 450, TALK_AMBIENT_MS = 15000;
+const AGAIN_ARM_MS = 3000, GENDER_SLIDE_MS = 380, KUJI_SHAKE_MS = 900, TOAST_MS = 2200;
 
 const CHEVRON_SVG = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const SHARE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9h-1a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-8a2 2 0 0 0 -2 -2h-1"/><path d="M12 14v-11"/><path d="M9 6l3 -3l3 3"/></svg>';
+const SAKURA_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true">${[0, 72, 144, 216, 288].map(r =>
+  `<path transform="rotate(${r} 12 12)" d="M12 12 C 8.6 8.6, 8.8 4.2, 10.9 2.6 L12 4.1 L13.1 2.6 C 15.2 4.2, 15.4 8.6, 12 12 Z"/>`).join('')}<circle cx="12" cy="12" r="2.2" class="result-share-seal-core"/></svg>`;
+// the owner's swipe-gesture hand (Tabler "gesture swipe") — stroke takes the CSS colour
+const SWIPE_HAND_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13v-8.5a1.5 1.5 0 0 1 3 0v7.5"/><path d="M11 11.5v-2a1.5 1.5 0 0 1 3 0v2.5"/><path d="M14 10.5a1.5 1.5 0 0 1 3 0v1.5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7l-.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/><path class="result-fog-arc" d="M2.541 5.594a13.487 13.487 0 0 1 2.46 -1.427"/><path class="result-fog-arc" d="M14 3.458c1.32 .354 2.558 .902 3.685 1.612"/></svg>';
+
+const TAB_LABEL = { heart: 'ใจของคุณ', why: 'ทำไมเป็นเขา', life: 'ถ้าอยู่ด้วยกัน' };
+const GENDER_TH = { male: 'ชาย', female: 'หญิง' };
+
+// Timers of the result page on screen — a gender swap re-renders it, so the old page's timers are cleared first
+// (the talk keeps its own list: a tap restarts the talk without stopping the fog demo or the deck nudge)
+let _resultTimers = [], _talkTimers = [];
+const resultLater = (fn, ms) => { _resultTimers.push(setTimeout(fn, ms)); };
+const talkLater   = (fn, ms) => { const t = setTimeout(fn, ms); _talkTimers.push(t); return t; };
+const clearTimers = list => { list.forEach(clearTimeout); list.length = 0; };
+const restartClass = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+const prefersStill = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Thai strings go in after innerHTML so each one passes through thaiBreakable() — <x data-th="key">
 function fillThai(root, texts) {
@@ -1598,26 +1609,34 @@ function resultArtHTML(image, kanji, name, cls) {
   return `<video class="${cls}" autoplay loop muted playsinline>${sources}</video>`;
 }
 
-// One swipe card: face (hook / lead / pairs / invite) + optional folded "more" + bob arrow
-function deckCardHTML(card) {
+// One washi card: the face keeps only its key line (hook / lead); pairs, reading and invite fold behind "อ่านต่อ"
+// The foot holds "อ่านต่อ" and the link to the next card — the last card points back to the first
+function deckCardHTML(card, i, cards) {
+  if ((card.pairs || card.invite) && !card.more) throw new Error(`[Ryokan] deckCardHTML: card "${card.key}" has pairs/invite but nothing to fold them into`);
+  const to = (i + 1) % cards.length;
   return `
-    <article class="result-card result-card--${card.key}${card.red ? ' result-card--red' : ''}">
+    <article class="result-card" id="card-${card.key}" role="tabpanel" data-kanji="${card.seal}">
       <h3 class="result-card-head"><span class="result-seal" aria-hidden="true">${card.seal}</span><span data-th="${card.key}-title"></span></h3>
-      ${card.hook  ? `<p class="result-card-hook" data-th="${card.key}-hook"></p>` : ''}
-      ${card.lead  ? `<p class="result-card-lead" data-th="${card.key}-lead"></p>` : ''}
-      ${card.pairs ? `<dl class="result-card-pairs">${card.pairs.map((p, i) => `<div><dt data-th="${card.key}-dt${i}"></dt><dd data-th="${card.key}-dd${i}"></dd></div>`).join('')}</dl>` : ''}
-      ${card.invite ? `<p class="result-card-invite"><b data-th="${card.key}-who"></b> <span data-th="${card.key}-invite"></span></p>` : ''}
+      ${card.hook ? `<p class="result-card-hook" data-th="${card.key}-hook"></p>` : ''}
+      ${card.lead ? `<p class="result-card-lead" data-th="${card.key}-lead"></p>` : ''}
       ${card.more ? `
       <div class="result-card-more" id="more-${card.key}"><div><div class="result-card-more-in">
-        ${card.more.map((m, i) => `<p data-th="${card.key}-more${i}"></p>`).join('')}
-      </div></div></div>
-      <button class="result-card-toggle" aria-expanded="false" aria-controls="more-${card.key}" aria-label="อ่านต่อ">${CHEVRON_SVG}</button>` : ''}
+        ${card.pairs ? `<dl class="result-card-pairs">${card.pairs.map((p, k) => `<div><dt data-th="${card.key}-dt${k}"></dt><dd data-th="${card.key}-dd${k}"></dd></div>`).join('')}</dl>` : ''}
+        ${card.more.map((m, k) => `<p data-th="${card.key}-more${k}"></p>`).join('')}
+        ${card.invite ? `<p class="result-card-invite"><b data-th="${card.key}-who"></b> <span data-th="${card.key}-invite"></span></p>` : ''}
+      </div></div></div>` : ''}
+      <div class="result-card-foot">
+        ${card.more ? `<button class="result-card-toggle" aria-expanded="false" aria-controls="more-${card.key}"><span class="result-card-toggle-open" data-th="more-open"></span><span class="result-card-toggle-close" data-th="more-close"></span>${CHEVRON_SVG}</button>` : ''}
+        ${cards.length > 1 ? `<button class="result-card-next" data-to="${to}">${to === 0
+          ? '‹ <span data-th="next-back"></span>'
+          : `<span data-th="next"></span> <span class="result-card-next-seal" aria-hidden="true">${cards[to].seal}</span> <span data-th="${cards[to].key}-tab"></span> ›`}</button>` : ''}
+      </div>
     </article>`;
 }
 
 // Cards in story order; card 2 without whyLead shows why on its face (nothing to unfold) · no why / no life = card left out
 function deckCards(r) {
-  const cards = [{ key: 'heart', red: true, seal: '心', title: 'ใจของคุณเป็นแบบไหน?',
+  const cards = [{ key: 'heart', seal: '心', title: 'ใจของคุณเป็นแบบไหน?',
     hook: r.heart.lead, invite: r.heart.invite, who: `${r.name} จะชวนให้คุณลอง…`, more: r.heart.more }];
   if (r.why) cards.push(r.whyLead
     ? { key: 'why', seal: '縁', title: 'ทำไมถึงต้องเป็นเขา?', lead: r.whyLead, more: [r.why] }
@@ -1628,9 +1647,10 @@ function deckCards(r) {
 }
 
 function deckTexts(cards) {
-  const t = {};
+  const t = { 'more-open': 'อ่านต่อ', 'more-close': 'ย่อ', next: 'ถัดไป', 'next-back': 'กลับไปอ่านใบแรก' };
   for (const c of cards) {
     t[c.key + '-title'] = c.title;
+    t[c.key + '-tab']   = TAB_LABEL[c.key];
     if (c.hook)   t[c.key + '-hook'] = c.hook;
     if (c.lead)   t[c.key + '-lead'] = c.lead;
     if (c.invite) { t[c.key + '-who'] = c.who; t[c.key + '-invite'] = c.invite; }
@@ -1643,45 +1663,36 @@ function deckTexts(cards) {
 function renderResult() {
   guardState(2);
   if (!state.dollImage) throw new Error('[Ryokan] renderResult: state.dollImage missing (E7 doll not drawn)');
+  clearTimers(_resultTimers);
+  clearTimers(_talkTimers);
   const r = getResult();
   const cards = deckCards(r);
   const gender = state.resultGenderShown;
-  const otherGenderText = gender === 'male' ? 'Switch to female version' : 'Switch to male version';
-  const flipClass = gender === 'female' ? ' is-flipped' : '';
+  const other  = gender === 'male' ? 'female' : 'male';
   const near      = r.nearMiss && YOKAI_DATA[r.nearMiss.name];
   const yokaiDoll = YOKAI_DATA[state.winningYokai].dollImage;
 
   document.getElementById('view-result').innerHTML = `
     <div class="result-wrap" style="--house-tint:${HOUSE_TINTS[r.house]}">
       <header class="result-hero">
-        <button class="gender-flip${flipClass}" onclick="flipGenderCard(this)" aria-label="${otherGenderText}">
-          <span class="gender-flip-inner">
-            <span class="gender-flip-face gender-flip-face--front">
-              <span class="gender-flip-symbol">♂</span>
-              <span class="gender-flip-label">Male</span>
-              <span class="gender-flip-hint">Tap to switch</span>
-            </span>
-            <span class="gender-flip-face gender-flip-face--back">
-              <span class="gender-flip-symbol">♀</span>
-              <span class="gender-flip-label">Female</span>
-              <span class="gender-flip-hint">Tap to switch</span>
-            </span>
-          </span>
-        </button>
         <p class="result-eyebrow" data-th="eyebrow"></p>
         <h2 class="result-name">${r.name}</h2>
         <p class="result-sub">${r.kanji} · <span data-th="title"></span></p>
         <div class="result-tags"><span class="result-tag" data-th="role"></span><span class="result-tag result-tag--red">${r.mbti}</span></div>
         <div class="result-stage">
           ${resultArtHTML(r.image, r.kanji, r.name, 'result-art')}
-          ${r.lines ? `<button class="result-say result-say--idle" aria-live="polite" aria-label="แตะเพื่อฟัง ${r.name} พูด"><span class="result-say-text">…</span></button>` : ''}
+          ${r.lines ? `<button class="result-say result-say--idle" aria-live="polite" aria-label="แตะเพื่อฟัง ${r.name} พูด"><span class="result-say-text"><span class="result-say-caret" aria-hidden="true">▼</span></span></button>` : ''}
+          <button class="result-gender" data-on="${gender}" aria-label="สลับเป็นเวอร์ชัน${GENDER_TH[other]}">
+            <span class="result-gender-sym" data-g="male" aria-hidden="true">♂</span><span class="result-gender-sym" data-g="female" aria-hidden="true">♀</span><span class="result-gender-knob" aria-hidden="true"></span>
+          </button>
         </div>
       </header>
 
+      ${cards.length > 1 ? `<div class="result-tabs" role="tablist" aria-label="หัวข้อผลของคุณ">${cards.map((c, i) => `
+        <button class="result-tab" role="tab" aria-controls="card-${c.key}" aria-selected="${i === 0}" style="--i:${i}"><span class="result-tab-cord" aria-hidden="true"></span><span class="result-tab-seal" aria-hidden="true">${c.seal}</span><span data-th="${c.key}-tab"></span></button>`).join('')}
+      </div>` : ''}
       <section class="result-deck" aria-label="ผลของคุณ ปัดดูทีละหัวข้อ">${cards.map(deckCardHTML).join('')}
       </section>
-      ${cards.length > 1 ? `<nav class="result-deck-dots" aria-label="เลือกหัวข้อ">${cards.map((c, i) =>
-        `<button aria-label="${c.title}" aria-current="${i === 0}"></button>`).join('')}</nav>` : ''}
 
       <section class="result-pair">
         <article class="result-tile">
@@ -1702,47 +1713,54 @@ function renderResult() {
       </section>
 
       <section class="result-keepsakes">
-        <article class="result-tile">
+        <article class="result-tile${near ? ' result-near' : ''}">
           <h3 class="result-card-head"><span class="result-seal" aria-hidden="true">岐</span><span data-th="near-title"></span></h3>
           ${near ? `
-          <div class="result-near-portrait">${resultArtHTML(near[gender].image, near.kanji, near.name, 'result-near-art')}<div class="result-near-mist" aria-hidden="true"></div></div>
+          <div class="result-near-portrait">${resultArtHTML(near[gender].image, near.kanji, near.name, 'result-near-art')}</div>
           <p class="result-near-name">${near.name}</p>
           <p class="result-near-why" data-th="near-why"></p>
           <p class="result-near-say" data-th="near-say"></p>` : `
           <p class="result-near-why" data-th="near-none"></p>`}
         </article>
-        <div class="result-dolls" role="img" aria-label="ตุ๊กตาไล่ฝนของคุณ${yokaiDoll ? ` คู่กับของ ${r.name}` : ''}">
-          ${yokaiDoll ? `<div class="result-doll result-doll--theirs"><img src="${yokaiDoll}" alt=""></div>` : ''}
-          <div class="result-doll result-doll--yours"><img src="${state.dollImage}" alt=""></div>
+        <div class="result-dolls-row">
+          <div class="result-dolls" role="img" aria-label="ตุ๊กตาไล่ฝนของคุณ${yokaiDoll ? ` คู่กับของ ${r.name}` : ''}">
+            ${yokaiDoll ? `<div class="result-doll result-doll--theirs"><img src="${yokaiDoll}" alt=""></div>` : ''}
+            <div class="result-doll result-doll--yours"><img src="${state.dollImage}" alt=""></div>
+          </div>
+          <button class="result-kuji-box" aria-haspopup="dialog" aria-controls="kuji-modal">
+            <span class="result-kuji-stick" aria-hidden="true"></span><span class="result-kuji-can" aria-hidden="true"><span>御籤</span></span><span class="result-kuji-cap" data-th="omikuji"></span>
+          </button>
         </div>
       </section>
 
       <div class="result-actions">
-        <button class="result-action" onclick="openOmikuji()">御籤 <span data-th="omikuji"></span></button>
-        <button class="result-action" onclick="resetGame()"><span data-th="again"></span> ↺</button>
+        <button class="result-share">
+          <span class="result-share-flap" aria-hidden="true"></span><span class="result-share-seal" aria-hidden="true">${SAKURA_SVG}</span><span class="result-share-stamp" aria-hidden="true">${r.kanji}</span><span class="result-share-heart" aria-hidden="true">♥</span>${SHARE_SVG}<span data-th="share"></span>
+        </button>
+        <button class="result-again"><span data-th="again"></span><span class="result-again-arrow" aria-hidden="true">↺</span></button>
       </div>
 
-      <div id="omikuji-modal" class="omikuji-modal" onclick="closeOmikuji()" role="dialog" aria-modal="true">
-        <div class="omikuji-card" onclick="event.stopPropagation()">
-          <button class="omikuji-close" onclick="closeOmikuji()" aria-label="Close">✕</button>
-
-          <div id="omikuji-pick">
-            <p class="omikuji-eyebrow">お御籤 · Omikuji</p>
-            <div class="omikuji-ornament" aria-hidden="true">✦</div>
-            <p class="omikuji-pick-question">Are you currently in love?</p>
-            <button class="omikuji-pick-btn" onclick="drawOmikuji('taken')">💑 &nbsp;I have someone</button>
-            <button class="omikuji-pick-btn" onclick="drawOmikuji('single')">🌸 &nbsp;I am on my own</button>
+      <div id="kuji-modal" class="kuji-modal" role="dialog" aria-modal="true" aria-labelledby="kuji-q">
+        <div class="kuji-stage">
+          <div class="kuji-shadow" aria-hidden="true"></div>
+          <div class="kuji-slip">
+            <div class="kuji-face kuji-front">
+              <span class="kuji-band" aria-hidden="true">御神籤 <small></small></span>
+              <p class="kuji-eyebrow">お御籤</p>
+              <p class="kuji-q" id="kuji-q" data-th="kuji-q"></p>
+              <button class="kuji-pick" data-status="single" data-th="kuji-single"></button>
+              <button class="kuji-pick" data-status="taken" data-th="kuji-taken"></button>
+            </div>
+            <div class="kuji-face kuji-back" aria-live="polite">
+              <span class="kuji-band" aria-hidden="true">恋愛運</span>
+              <p class="kuji-rank"></p>
+              <p class="kuji-rank-th"></p>
+              <span class="kuji-rule" aria-hidden="true"></span>
+              <p class="kuji-text"></p>
+            </div>
           </div>
-
-          <div id="omikuji-result" hidden>
-            <p class="omikuji-eyebrow">お御籤 · Omikuji</p>
-            <div class="omikuji-ornament" aria-hidden="true">✦</div>
-            <p class="omikuji-rank" id="omikuji-rank"></p>
-            <p class="omikuji-rank-en" id="omikuji-rank-en"></p>
-            <div class="omikuji-slip-divider" aria-hidden="true"></div>
-            <p class="omikuji-fortune-text" id="omikuji-text"></p>
-            <p class="omikuji-footer">— Tie it to the pine —<br>let the wind carry what you cannot hold —</p>
-          </div>
+          <p class="kuji-label" data-th="kuji-label"></p>
+          <button class="kuji-close" aria-label="ปิด">✕</button>
         </div>
       </div>
     </div>`;
@@ -1752,7 +1770,9 @@ function renderResult() {
     eyebrow: 'เนื้อคู่ของคุณคือ', title: r.title, role: HOUSE_ROLE[r.house],
     'alike-title': 'เหมือนกันตรงไหน', 'compat-title': 'ความเข้ากัน', 'match-good': 'เข้ากันดีเรื่อง', 'match-adjust-label': 'ต้องค่อยๆ ปรับ', 'match-adjust': r.match.adjust, 'near-title': 'คู่ที่เกือบได้',
     'near-none': `ใจคุณชัดเจนมาก มีแค่ ${r.name} คนเดียวที่ใช่`,
-    omikuji: 'เสี่ยงเซียมซี', again: 'เล่นอีกครั้ง',
+    omikuji: 'เขย่าเซียมซี', share: 'แชร์ผลให้เพื่อน', again: 'เล่นอีกครั้ง',
+    'kuji-q': 'ตอนนี้คุณโสดอยู่ไหม', 'kuji-single': 'โสดอยู่', 'kuji-taken': 'มีคนข้างกายแล้ว',
+    'kuji-label': 'ผูกไว้กับกิ่งสน ให้ลมพาสิ่งที่ถือไว้ไม่ได้ไป',
     ...deckTexts(cards)
   };
   r.alike.forEach((a, i) => { texts['alike' + i] = ALIKE_LABEL[a.key]; texts[`alike${i}-n`] = ALIKE_LEVELS[a.count][0]; });
@@ -1764,17 +1784,24 @@ function renderResult() {
   fillThai(view, texts);
 
   wireResultDeck(view);
+  wireResultGender(view);
+  if (near) wireNearFog(view);
+  wireOmikuji(view);
+  wireResultShare(view, r);
+  wireResultAgain(view);
   startDollBoil();
   if (r.lines) wireResultTalk(view, r);
   requestAnimationFrame(() => requestAnimationFrame(spawnSakuraFall));
 }
 
-// Deck: dots follow the snapped card · tap a peeking card = go there · tap the current card = fold/unfold its "more"
+// Deck: wooden tags over one card at a time · the deck is as tall as the card on screen · swiping moves the tag too
+// tap the current card = fold/unfold its "more" · "ถัดไป ›" goes to the next card · first view: a small sideways nudge
 function wireResultDeck(view) {
   const deck  = view.querySelector('.result-deck');
   const cards = [...deck.children];
-  const dots  = [...view.querySelectorAll('.result-deck-dots button')];
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const tabRow = view.querySelector('.result-tabs');
+  const tabs  = tabRow ? [...tabRow.children] : [];
+  const still = prefersStill();
   const left  = i => cards[i].offsetLeft - cards[0].offsetLeft;
   const current = () => cards.reduce((best, c, i) =>
     Math.abs(left(i) - deck.scrollLeft) < Math.abs(left(best) - deck.scrollLeft) ? i : best, 0);
@@ -1784,103 +1811,376 @@ function wireResultDeck(view) {
     if (!btn) return;
     btn.setAttribute('aria-expanded', String(card.classList.toggle('open')));
   };
+  const padY = () => { const cs = getComputedStyle(deck); return parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom); };
+  const fit  = () => { deck.style.height = (cards[current()].offsetHeight + padY()) + 'px'; };
+  let shown = 0;
 
-  // swiping away folds an open card, so the deck doesn't stay tall behind a short card
-  deck.addEventListener('scroll', () => {
+  // swiping away folds an open card · when the tag changes, a breeze runs through the row once
+  const sync = () => {
     const i = current();
-    dots.forEach((d, k) => d.setAttribute('aria-current', String(k === i)));
+    tabs.forEach((t, k) => t.setAttribute('aria-selected', String(k === i)));
     cards.forEach((c, k) => { if (k !== i && c.classList.contains('open')) toggle(c); });
-  }, { passive: true });
-  dots.forEach((d, i) => d.addEventListener('click', () => goTo(i)));
-  cards.forEach((c, i) => c.addEventListener('click', () => (i === current() ? toggle(c) : goTo(i))));
+    fit();
+    if (i === shown) return;
+    shown = i;
+    if (tabRow) restartClass(tabRow, 'moved');
+  };
+  deck.addEventListener('scroll', sync, { passive: true });
+  const ro = new ResizeObserver(fit);
+  cards.forEach(c => ro.observe(c));
+  tabs.forEach((t, i) => t.addEventListener('click', () => goTo(i)));
+  cards.forEach((c, i) => c.addEventListener('click', ev => {
+    const next = ev.target.closest('.result-card-next');
+    if (next) { goTo(Number(next.dataset.to)); return; }
+    if (i === current()) toggle(c); else goTo(i);
+  }));
+  fit();
+
+  if (still || cards.length < 2) return;
+  const io = new IntersectionObserver(entries => {
+    if (!entries[0].isIntersecting) return;
+    io.disconnect();
+    resultLater(() => {
+      deck.style.scrollSnapType = 'none';
+      deck.scrollTo({ left: 64, behavior: 'smooth' });
+      resultLater(() => {
+        deck.scrollTo({ left: 0, behavior: 'smooth' });
+        resultLater(() => { deck.style.scrollSnapType = ''; }, 500);
+      }, 550);
+    }, 600);
+  }, { threshold: 0.6 });
+  io.observe(deck);
 }
 
-function wireResultTalk(view, r) {
-  const say   = view.querySelector('.result-say');
-  const text  = say.querySelector('.result-say-text');
-  const art   = view.querySelector('.result-art');
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let idx = -1, folder = null;
-
-  const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
-  const lineAt  = key => (key === 'mist' ? r.lines.mist[r.mist] : r.lines[key]);
-  const backToIdle = () => {
-    say.className = 'result-say result-say--out';
-    setTimeout(() => { say.className = 'result-say result-say--idle'; text.textContent = '…'; }, still ? 0 : TALK_FADE_MS);
-  };
-  const speak = side => {
-    clearTimeout(folder);
-    idx = (idx + 1) % TALK_ORDER.length;
-    const line = lineAt(TALK_ORDER[idx]);
-    text.replaceChildren(thaiBreakable(line));
-    say.className = 'result-say';
-    restart(say, 'result-say--pop');
-    art.style.setProperty('--tilt', side === 'l' ? '-1.5deg' : '1.5deg');
-    restart(art, 'poked');
-    folder = setTimeout(backToIdle, TALK_HOLD_BASE_MS + line.length * TALK_HOLD_PER_CHAR_MS);
-  };
-
-  say.addEventListener('click', () => speak('r'));
-  art.addEventListener('click', ev => {
-    const b = art.getBoundingClientRect();
-    speak(ev.clientX < b.left + b.width / 2 ? 'l' : 'r');
+// Gender switch at the yokai's bottom-left — the knob slides to the other side, then the blinds swap the version
+function wireResultGender(view) {
+  const sw = view.querySelector('.result-gender');
+  sw.addEventListener('click', () => {
+    if (sw.classList.contains('going')) return;
+    sw.classList.add('going');
+    sw.dataset.on = sw.dataset.on === 'male' ? 'female' : 'male';
+    resultLater(() => blindsThrough(toggleResultGender), GENDER_SLIDE_MS);
   });
 }
 
-// ── OMIKUJI ───────────────────────────────────────────────────
-const OMIKUJI_LIST = {
+// Talk: greets by itself once per result · tap = next line · the line stays up with ▼ after it ·
+// left alone 15 s while the yokai is on screen → it says a chat line by itself
+function wireResultTalk(view, r) {
+  if (typeof r.lines.greet !== 'string') throw new Error(`[Ryokan] wireResultTalk: YOKAI_DATA.${r.name}.lines.greet missing`);
+  const say   = view.querySelector('.result-say');
+  const text  = say.querySelector('.result-say-text');
+  const art   = view.querySelector('.result-art');
+  let idx = -1, ambientIdx = -1, onScreen = true, reminder = null;
+
+  const lineAt = key => (key === 'mist' ? r.lines.mist[r.mist] : r.lines[key]);
+  const armReminder = () => {
+    clearTimeout(reminder);
+    reminder = talkLater(() => {
+      if (!view.classList.contains('active')) return;
+      if (!onScreen) { armReminder(); return; }
+      ambientIdx = (ambientIdx + 1) % TALK_AMBIENT.length;
+      speak(lineAt(TALK_AMBIENT[ambientIdx]), 'r');
+    }, TALK_AMBIENT_MS);
+  };
+  const speak = (line, side) => {
+    clearTimeout(reminder);
+    text.replaceChildren(thaiBreakable(line));
+    text.insertAdjacentHTML('beforeend', '<span class="result-say-caret result-say-caret--inline" aria-hidden="true">▼</span>');
+    say.className = 'result-say';
+    fitBubble(say, text);
+    document.fonts.ready.then(() => fitBubble(say, text));   // first load: the web font arrives after the first measure
+    restartClass(say, 'result-say--pop');
+    talkLater(() => say.classList.add('result-say--caret'), TALK_CARET_MS);
+    art.style.setProperty('--tilt', side === 'l' ? '-1.5deg' : '1.5deg');
+    restartClass(art, 'poked');
+    talkLater(() => { say.className = 'result-say result-say--waiting'; armReminder(); }, TALK_HOLD_BASE_MS + line.length * TALK_HOLD_PER_CHAR_MS);
+  };
+  const tap = side => {
+    clearTimers(_talkTimers);
+    idx = (idx + 1) % TALK_ORDER.length;
+    speak(lineAt(TALK_ORDER[idx]), side);
+  };
+
+  new IntersectionObserver(entries => { onScreen = entries[0].isIntersecting; }).observe(say);
+  if (!state.resultGreeted) {
+    state.resultGreeted = true;
+    talkLater(() => speak(r.lines.greet, 'r'), TALK_GREET_MS);
+  } else armReminder();
+
+  say.addEventListener('click', () => tap('r'));
+  art.addEventListener('click', ev => {
+    const b = art.getBoundingClientRect();
+    tap(ev.clientX < b.left + b.width / 2 ? 'l' : 'r');
+  });
+}
+
+// A wrapped line never shrinks its box: wrap at full width, measure the widest line, then set the box to exactly that.
+// Rects come back scaled while the pop animation runs, so the width is divided by the box's current scale.
+function fitBubble(say, text) {
+  say.style.width = '';
+  const range = document.createRange();
+  range.selectNodeContents(text);
+  const rects = [...range.getClientRects()];
+  const scale = say.getBoundingClientRect().width / say.offsetWidth;
+  const widest = (Math.max(...rects.map(b => b.right)) - Math.min(...rects.map(b => b.left))) / scale;
+  const cs = getComputedStyle(say);
+  const chrome = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+  say.style.width = Math.ceil(widest + chrome + 1) + 'px';
+}
+
+// ── NEAR MISS — fogged glass over the portrait, wiped like a misted window ──
+// A swipe hand rests on the glass waving; when the banner comes into view it rubs a thin streak (the face stays hidden)
+// and the mist creeps back · half wiped → the rest lifts · keyboard: Enter / Space lifts it · stays clear across a gender swap
+const FOG_BRUSH = 20, FOG_DONE = 0.5, FOG_DEMOS = 2, FOG_DEMO_AGAIN_MS = 7000;
+const FOG_DEMO_BRUSH = 12, FOG_DEMO_STRENGTH = 0.05;   // per dab — overlapping dabs add up to about a third
+const FOG_DEMO_PATH = [[0.5, 0.6], [0.3, 0.55], [0.7, 0.6], [0.32, 0.66], [0.68, 0.7], [0.5, 0.6]];
+
+function cssRgb(name) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  if (!/^#[0-9a-f]{6}$/i.test(v)) throw new Error(`[Ryokan] ${name} is not a #rrggbb colour: "${v}"`);
+  return [1, 3, 5].map(i => parseInt(v.slice(i, i + 2), 16));
+}
+const rgba = (rgb, a) => `rgba(${rgb.join(',')},${a})`;
+
+function wireNearFog(view) {
+  const portrait = view.querySelector('.result-near-portrait');
+  if (state.nearCleared) { portrait.classList.add('is-clear'); return; }
+  const dpr = window.devicePixelRatio || 1;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'result-fog';
+  canvas.tabIndex = 0;
+  canvas.setAttribute('role', 'button');
+  canvas.setAttribute('aria-label', 'กระจกฝ้า ถูหรือกด Enter เพื่อดูหน้า');
+  const hand = document.createElement('div');
+  hand.className = 'result-fog-hand';
+  hand.setAttribute('aria-hidden', 'true');
+  hand.innerHTML = SWIPE_HAND_SVG;
+  portrait.append(canvas, hand);
+
+  const ctx = canvas.getContext('2d');
+  const bg = cssRgb('--bg'), ink = cssRgb('--on-surface');
+  const box = portrait.getBoundingClientRect();
+  const w = canvas.width  = Math.round(box.width * dpr);
+  const h = canvas.height = Math.round(box.height * dpr);
+  if (!w || !h) throw new Error('[Ryokan] wireNearFog: the portrait has no size (result view not shown yet?)');
+  let last = null, touched = false, demos = 0, done = false, moves = 0;
+
+  const drawFog = alpha => {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = rgba(bg, 0.86);
+    ctx.fillRect(0, 0, w, h);
+    for (let i = 0; i < 12; i++) {   // uneven mist
+      const x = Math.random() * w, y = Math.random() * h, r = (24 + Math.random() * 46) * dpr;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, rgba(bg, 0.5));
+      g.addColorStop(1, rgba(bg, 0));
+      ctx.fillStyle = g;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    for (let i = 0; i < 16; i++) {   // condensation droplets
+      const x = Math.random() * w, y = Math.random() * h, r = (1.4 + Math.random() * 2.4) * dpr;
+      ctx.fillStyle = rgba(ink, 0.1);
+      ctx.beginPath(); ctx.arc(x, y + r * 0.35, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = rgba(bg, 1);
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  };
+  const dab = (x, y, strength, radius) => {
+    const r = radius * dpr;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(0,0,0,${strength})`);
+    g.addColorStop(0.6, `rgba(0,0,0,${strength * 0.8})`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  };
+  const wipeTo = (x, y, strength, radius) => {
+    if (!last) { dab(x, y, strength, radius); last = { x, y }; return; }
+    const steps = Math.max(1, Math.ceil(Math.hypot(x - last.x, y - last.y) / (4 * dpr)));
+    for (let i = 1; i <= steps; i++) dab(last.x + (x - last.x) * i / steps, last.y + (y - last.y) * i / steps, strength, radius);
+    last = { x, y };
+  };
+  const cleared = () => {
+    const data = ctx.getImageData(0, 0, w, h).data;
+    let clear = 0, total = 0;
+    const step = 8 * dpr;
+    for (let y = 0; y < h; y += step) for (let x = 0; x < w; x += step) {
+      total++;
+      if (data[(Math.floor(y) * w + Math.floor(x)) * 4 + 3] < 60) clear++;
+    }
+    return clear / total;
+  };
+  const lift = () => {
+    done = true;
+    state.nearCleared = true;
+    portrait.classList.add('is-clear');
+    canvas.addEventListener('transitionend', () => canvas.remove(), { once: true });
+  };
+  const rest = () => { hand.classList.remove('rubbing'); hand.style.transform = `translate(${w / 2 / dpr}px, ${h * 0.55 / dpr}px)`; };
+  const local = ev => {
+    const b = canvas.getBoundingClientRect();
+    return { x: (ev.clientX - b.left) * dpr, y: (ev.clientY - b.top) * dpr };
+  };
+
+  drawFog(1);
+  rest();
+  canvas.addEventListener('pointerdown', ev => {
+    if (done) return;
+    touched = true;
+    hand.classList.add('gone');
+    canvas.setPointerCapture(ev.pointerId);
+    last = null;
+    const p = local(ev);
+    wipeTo(p.x, p.y, 1, FOG_BRUSH);
+  });
+  canvas.addEventListener('pointermove', ev => {
+    if (done || !canvas.hasPointerCapture(ev.pointerId)) return;
+    const p = local(ev);
+    wipeTo(p.x, p.y, 1, FOG_BRUSH);
+    if (++moves % 12 === 0 && cleared() > FOG_DONE) lift();
+  });
+  canvas.addEventListener('pointerup', () => { last = null; if (!done && cleared() > FOG_DONE) lift(); });
+  canvas.addEventListener('keydown', ev => {
+    if (done || (ev.key !== 'Enter' && ev.key !== ' ')) return;
+    ev.preventDefault();
+    hand.classList.add('gone');
+    lift();
+  });
+
+  // demo: the hand rubs back and forth, then the streak slowly mists over again
+  const demo = () => {
+    if (touched || done || demos >= FOG_DEMOS || !canvas.isConnected) return;
+    demos++;
+    const dur = 1700, t0 = performance.now(), path = FOG_DEMO_PATH;
+    hand.classList.add('rubbing');
+    last = null;
+    const frame = now => {
+      if (touched) return;
+      const t = Math.min(1, Math.max(0, (now - t0) / dur));   // rAF's timestamp can be a hair before t0
+      const seg = Math.min(path.length - 2, Math.floor(t * (path.length - 1)));
+      const k = t * (path.length - 1) - seg;
+      const x = (path[seg][0] + (path[seg + 1][0] - path[seg][0]) * k) * w;
+      const y = (path[seg][1] + (path[seg + 1][1] - path[seg][1]) * k) * h;
+      hand.style.transform = `translate(${x / dpr}px, ${y / dpr}px)`;
+      wipeTo(x, y, FOG_DEMO_STRENGTH, FOG_DEMO_BRUSH);
+      if (t < 1) { requestAnimationFrame(frame); return; }
+      rest();
+      last = null;
+      let n = 0;
+      const refog = setInterval(() => {
+        if (touched || ++n > 12) { clearInterval(refog); if (!touched) drawFog(1); return; }
+        drawFog(0.12);
+      }, 90);
+      resultLater(demo, FOG_DEMO_AGAIN_MS);
+    };
+    requestAnimationFrame(frame);
+  };
+  if (prefersStill()) return;
+  const io = new IntersectionObserver(entries => {
+    if (!entries[0].isIntersecting) return;
+    io.disconnect();
+    resultLater(demo, 500);
+  }, { threshold: 0.8 });
+  io.observe(portrait);
+}
+
+// ── OMIKUJI — shake the box beside the dolls → the slip is drawn out; it asks first, then lifts and turns over ──
+// Motion after the reference "Reward Card Reveal": lift → flip (faces swap at 90°) → the label only after the face shows
+const OMIKUJI = {
   taken: [
-    { rank:'大吉', rankEn:'Great Fortune',     color:'#B02B2B',
-      text:'The love between you is entering its most luminous season. Let yourself be fully seen — your person has already chosen to stay.' },
-    { rank:'吉',   rankEn:'Good Fortune',      color:'#1B6B3A',
-      text:'A small act of tenderness today carries more weight than you know. The love you have is real — do not let busyness make it invisible.' },
-    { rank:'中吉', rankEn:'Moderate Fortune',  color:'#1B4F72',
-      text:'You are in a quiet chapter, not a fading one. Roots grow deepest in still seasons. Trust what you have built together.' },
-    { rank:'小吉', rankEn:'Small Fortune',     color:'#7D6608',
-      text:'Something between you two has been left unsaid. The words are not dangerous — the silence is. Speak gently.' },
-    { rank:'末吉', rankEn:'Uncertain Fortune', color:'#6C3483',
-      text:'The distance you feel right now is not permanent. But it will not close on its own. One step toward each other is enough.' },
-    { rank:'凶',   rankEn:'Caution',           color:'#5A4A4A',
-      text:'Love is asking you to be honest — with your partner, and with yourself. Comfort is not the same as connection. Look closer.' }
+    { rank: '大吉', th: 'ดีมาก',       text: 'ความรักของคุณสองคนกำลังเข้าสู่ช่วงที่สว่างที่สุด ให้เขาเห็นตัวตนของคุณทั้งหมดเถอะ เขาเลือกที่จะอยู่แล้ว' },
+    { rank: '吉',   th: 'ดี',          text: 'ความใส่ใจเล็กๆ วันนี้มีความหมายกว่าที่คิด รักที่มีอยู่เป็นของจริง อย่าให้ความยุ่งทำให้มันจางหายไป' },
+    { rank: '中吉', th: 'ดีปานกลาง',   text: 'นี่คือช่วงที่เงียบ ไม่ใช่ช่วงที่จืดจาง รากไม้หยั่งลึกที่สุดในฤดูที่นิ่ง เชื่อในสิ่งที่สองคนสร้างมาด้วยกัน' },
+    { rank: '小吉', th: 'ดีเล็กน้อย',  text: 'ยังมีบางเรื่องที่ไม่ได้พูดกัน คำพูดนั้นไม่ได้น่ากลัว ความเงียบต่างหากที่น่ากลัว ค่อยๆ พูดออกไป' },
+    { rank: '末吉', th: 'ดีในภายหลัง', text: 'ระยะห่างที่รู้สึกอยู่ตอนนี้ไม่ได้อยู่ตลอดไป แต่มันจะไม่หายไปเอง ขอแค่ก้าวเข้าหากันคนละก้าวก็พอ' },
+    { rank: '凶',   th: 'ระวัง',        text: 'ความรักกำลังขอให้คุณซื่อตรง ทั้งกับเขาและกับตัวเอง อยู่สบายไม่ได้แปลว่าใกล้กัน ลองมองให้ลึกกว่านี้' }
   ],
   single: [
-    { rank:'大吉', rankEn:'Great Fortune',     color:'#B02B2B',
-      text:'The one you are waiting for is closer than the loneliness makes it feel. Keep your heart open — this is not the end of the story.' },
-    { rank:'吉',   rankEn:'Good Fortune',      color:'#1B6B3A',
-      text:'Something is shifting in your favor. A meeting, a moment, a glance — it is already in motion. Stay present.' },
-    { rank:'中吉', rankEn:'Moderate Fortune',  color:'#1B4F72',
-      text:'Love is possible right now, but it requires you to show up differently than before. What old pattern are you ready to release?' },
-    { rank:'小吉', rankEn:'Small Fortune',     color:'#7D6608',
-      text:'You are learning what you truly need from love. This season of knowing is not empty — it is preparation.' },
-    { rank:'末吉', rankEn:'Uncertain Fortune', color:'#6C3483',
-      text:'The timing is not wrong, but something in you is still healing. Be patient with yourself. Love waits for readiness.' },
-    { rank:'凶',   rankEn:'Caution',           color:'#5A4A4A',
-      text:'You cannot build love on a foundation you have not repaired yet. The work you are avoiding is the work that sets you free.' }
+    { rank: '大吉', th: 'ดีมาก',       text: 'คนที่คุณรออยู่ใกล้กว่าที่ความเหงาทำให้รู้สึก เปิดใจไว้ เรื่องของคุณยังไม่จบแค่นี้' },
+    { rank: '吉',   th: 'ดี',          text: 'บางอย่างกำลังหันมาทางคุณ การพบกัน จังหวะหนึ่ง สายตาคู่หนึ่ง มันเริ่มขยับแล้ว อยู่กับตอนนี้ไว้' },
+    { rank: '中吉', th: 'ดีปานกลาง',   text: 'ความรักเป็นไปได้ในตอนนี้ แต่คุณต้องเปิดใจต่างจากเดิม นิสัยเก่าแบบไหนที่พร้อมจะวางลงแล้ว' },
+    { rank: '小吉', th: 'ดีเล็กน้อย',  text: 'คุณกำลังเรียนรู้ว่าต้องการอะไรจากความรักจริงๆ ช่วงนี้ไม่ได้ว่างเปล่า มันคือการเตรียมตัว' },
+    { rank: '末吉', th: 'ดีในภายหลัง', text: 'จังหวะไม่ได้ผิด แต่บางอย่างในใจยังรอให้หายดี ใจเย็นกับตัวเองหน่อย ความรักรอคนที่พร้อม' },
+    { rank: '凶',   th: 'ระวัง',        text: 'รักที่มั่นคงสร้างบนแผลที่ยังไม่หายไม่ได้ เรื่องที่คุณเลี่ยงอยู่ คือเรื่องที่จะปลดปล่อยคุณ' }
   ]
 };
+const KUJI_NUM = '一二三四五六七八九';
 
-function openOmikuji() {
-  document.getElementById('omikuji-pick').hidden   = false;
-  document.getElementById('omikuji-result').hidden = true;
-  document.getElementById('omikuji-modal').classList.add('open');
+function wireOmikuji(view) {
+  const box   = view.querySelector('.result-kuji-box');
+  const modal = view.querySelector('.kuji-modal');
+  const close = () => { modal.classList.remove('open'); box.focus(); };
+  const open  = () => {
+    modal.querySelector('.kuji-front small').textContent = '第' + KUJI_NUM[Math.floor(Math.random() * KUJI_NUM.length)] + '番';
+    modal.classList.remove('flipped');
+    void modal.offsetWidth;   // restart the slide-in each time the box is shaken
+    modal.classList.add('open');
+    modal.querySelector('.kuji-pick').focus();
+  };
+  const reveal = status => {
+    const pool = OMIKUJI[status];
+    if (!pool) throw new Error(`[Ryokan] wireOmikuji: no omikuji for "${status}"`);
+    const o = pool[Math.floor(Math.random() * pool.length)];
+    const rank = modal.querySelector('.kuji-rank');
+    rank.textContent = o.rank;
+    rank.classList.toggle('kuji-rank--bad', o.rank === '凶');
+    modal.querySelector('.kuji-rank-th').replaceChildren(thaiBreakable(o.th));
+    modal.querySelector('.kuji-text').replaceChildren(thaiBreakable(o.text));
+    modal.classList.add('flipped');
+    modal.querySelector('.kuji-close').focus();
+  };
+
+  box.addEventListener('click', () => {
+    if (box.classList.contains('shaking')) return;
+    box.classList.add('shaking');
+    resultLater(() => { box.classList.remove('shaking'); open(); }, prefersStill() ? 0 : KUJI_SHAKE_MS);
+  });
+  modal.addEventListener('click', ev => {
+    const pick = ev.target.closest('.kuji-pick');
+    if (pick) { reveal(pick.dataset.status); return; }
+    if (ev.target === modal || ev.target.closest('.kuji-close')) close();
+  });
+  modal.addEventListener('keydown', ev => { if (ev.key === 'Escape') close(); });
 }
 
-function drawOmikuji(status) {
-  const pool = OMIKUJI_LIST[status];
-  const o    = pool[Math.floor(Math.random() * pool.length)];
-  const rank   = document.getElementById('omikuji-rank');
-  const rankEn = document.getElementById('omikuji-rank-en');
-  rank.textContent    = o.rank;
-  rank.style.color    = o.color;
-  rankEn.textContent  = o.rankEn;
-  rankEn.style.color  = o.color;
-  document.getElementById('omikuji-text').replaceChildren(thaiBreakable(o.text));
-  document.getElementById('omikuji-pick').hidden   = true;
-  document.getElementById('omikuji-result').hidden = false;
+// ── SHARE — the phone's share sheet; without one, the line + link go to the clipboard (Share to Story comes later) ──
+function wireResultShare(view, r) {
+  const text = `ภูตเนื้อคู่ของฉันคือ ${r.name} แล้วของเธอล่ะ`;
+  const failed = () => showToast('แชร์ไม่สำเร็จ ลองอีกครั้งนะ');
+  view.querySelector('.result-share').addEventListener('click', () => {
+    if (navigator.share) {
+      navigator.share({ title: 'Ryokan of The Spirits', text, url: location.href })
+        .catch(err => { if (err.name !== 'AbortError') failed(); });
+      return;
+    }
+    navigator.clipboard.writeText(`${text} ${location.href}`).then(() => showToast('คัดลอกข้อความกับลิงก์แล้ว'), failed);
+  });
 }
 
-function closeOmikuji() {
-  document.getElementById('omikuji-modal').classList.remove('open');
+function showToast(msg) {
+  const t = document.createElement('p');
+  t.className = 'toast';
+  t.setAttribute('role', 'status');
+  t.append(thaiBreakable(msg));
+  document.body.append(t);
+  setTimeout(() => t.remove(), TOAST_MS);
+}
+
+// ── PLAY AGAIN — first tap warns the result will be gone, a second tap within 3 s really restarts ──
+function wireResultAgain(view) {
+  const again = view.querySelector('.result-again');
+  const label = again.innerHTML;
+  let armed = null;
+  const disarm = () => { clearTimeout(armed); armed = null; again.classList.remove('armed'); again.innerHTML = label; };
+  again.addEventListener('click', () => {
+    if (armed) { disarm(); resetGame(); return; }
+    again.classList.add('armed');
+    again.replaceChildren(thaiBreakable('แตะอีกครั้ง ผลนี้จะหายไป'));
+    armed = setTimeout(disarm, AGAIN_ARM_MS);
+  });
 }
 
 // ── HOUSE HEART — card "ใจของคุณเป็นแบบไหน?" (per house; the invite line is prefixed with the yokai's name) ──
@@ -1928,6 +2228,7 @@ const YOKAI_DATA = {
       more:  'ถ้ารู้สึกแบบนั้น บอกเขาตรงๆ ว่าอยากช่วยคิดด้วย เขาจะดีใจมาก เพราะได้วางแผนกับคุณคือเวลาที่เขาชอบที่สุด'
     },
     lines: {
+      greet: 'มาถึงตรงเวลาพอดี ข้าคำนวณไว้แล้ว',
       poke1: 'มีอะไรหรือเปล่า ข้ากำลังคิดเรื่องสำคัญอยู่', chat1: 'ห้องพักเดือนหน้า ข้าจัดไว้หมดแล้ว',
       chat2: 'ฟืนน่ะ ข้าย้ายมาไว้ข้างครัวแล้ว', poke2: '…จะจิ้มต่อก็ได้ ข้าไม่ว่าอะไร',
       mist: {
@@ -1952,6 +2253,7 @@ const YOKAI_DATA = {
       clash: 'เรื่องจริงจังอย่างนัดหมายหรือค่าใช้จ่าย เขาลืมบ่อย',
       more:  'ถ้าเรื่องไหนสำคัญ เขียนโน้ตแปะไว้ให้เขาเลย เขาไม่ได้ไม่ใส่ใจหรอก แค่ในหัวมีแต่เรื่องฝัน แล้วเขาจะตอบแทนคุณด้วยฝันดีๆ ทุกคืน'
     }, lines: {
+      greet: 'อ้าว… เจ้าหลุดออกมาจากฝันข้ารึ',
       poke1: 'หาววว… ปลุกข้าทำไมเนี่ย', chat1: 'ฝันของเจ้าเมื่อคืน รสหวานแปลกๆ นะ',
       chat2: 'ข้าสงสัยมานาน ทำไมคนถึงฝันซ้ำ', poke2: 'หาววว… จิ้มต่อก็ได้ ข้าหลับต่อละ',
       mist: {
@@ -1976,6 +2278,7 @@ const YOKAI_DATA = {
       clash: 'เขาชอบเป็นคนตัดสินใจ บางทีก็ลืมถามความเห็นคุณ',
       more:  'บอกเขาตรงๆ ได้เลยว่าอยากตัดสินใจด้วยกัน เขาชอบคนพูดตรง แล้วจะยิ่งเคารพคุณมากขึ้นด้วย'
     }, lines: {
+      greet: 'เข้ามาใกล้ๆ ให้ข้าเห็นหน้าชัดๆ หน่อย',
       poke1: 'กล้าจิ้มมังกรเชียวรึ', chat1: 'เรือนนี้ต้องขยาย ข้าคิดไว้แล้ว',
       chat2: 'อยู่ข้างข้าไว้ ไม่มีใครกล้ารังแกเจ้า', poke2: 'ก็ได้ เจ้าคนเดียวที่ข้ายอมให้จิ้ม',
       mist: {
@@ -2001,6 +2304,7 @@ const YOKAI_DATA = {
       more:  'แค่บอกว่าวันนี้ไม่ไหว เขาจะหยุดทันที แล้วนั่งเป็นเพื่อนเงียบๆ แทน เขาซนก็จริง แต่อ่านใจคุณออกเร็วกว่าที่คิด'
     },
     lines: {
+      greet: 'หาข้าเจอจนได้นะ เก่งนี่',
       poke1: 'จิ้มข้าเหรอ แล้วถ้าข้าจิ้มคืนล่ะ', chat1: 'เต้าหู้ทอดหายไปไหนนะ ไม่ใช่ข้าหรอก',
       chat2: 'กฎห้ามเล่นในโถง ใครตั้งกันล่ะ', poke2: 'ยอมก็ได้ จิ้มต่อเถอะ ชอบข้าล่ะสิ',
       mist: {
@@ -2027,6 +2331,7 @@ const YOKAI_DATA = {
       clash: 'เขาเก็บเรื่องของตัวเองไว้เงียบๆ จนคุณต้องเดาเอาเอง',
       more:  'ลองชวนเขาเล่าบ้าง ถามเบาๆ ไม่ต้องเร่ง เขาจะค่อยๆ เปิดใจ เพราะคุณเป็นคนแรกที่ถามเขาแบบนั้น'
     }, lines: {
+      greet: '…เจ้ามองเห็นข้าด้วยรึ',
       poke1: '…อุ่นดีนะ มือของคนเป็น', chat1: 'ดวงวิญญาณคืนนี้ เงียบกว่าทุกที',
       chat2: 'อย่าเพิ่งไปไหนนะ อยู่ตรงนี้ก่อน', poke2: 'จิ้มเถอะ… ไม่มีใครแตะข้ามานานแล้ว',
       mist: {
@@ -2052,6 +2357,7 @@ const YOKAI_DATA = {
       more:  'ไม่ต้องรีบทำให้เขาหายเศร้า แค่นั่งอยู่ด้วยก็พอ พอเขาพร้อม เขาจะกลับมายิ้มให้คุณเอง และจะจำได้เสมอว่าวันนั้นคุณไม่ได้ไปไหน'
     },
     lines: {
+      greet: 'อ๊ะ… เจ้ามาจริงๆ ด้วย',
       poke1: 'อุ๊ย… มือเจ้าอุ่นจัง', chat1: 'หิมะแรกจะตกเมื่อไหร่นะ…',
       chat2: 'นึกว่าเจ้าลืมข้าไปแล้ว…', poke2: 'จิ้มอีกก็ได้… ข้าไม่หนีแล้ว',
       mist: {
@@ -2077,6 +2383,7 @@ const YOKAI_DATA = {
       more:  'บอกเขาว่าขอลองเองก่อน ถ้าพลาดค่อยมาช่วย เขาจะยอมถอยไปยืนเชียร์ แล้วเชียร์เสียงดังกว่าใคร'
     },
     lines: {
+      greet: 'โอ้ มาแล้วรึ! มานี่เลย มาๆ',
       poke1: 'ฮ่าๆ จิ้มแรงอีกสิ ข้าไม่สะเทือนหรอก', chat1: 'แขกห้องสามถามถึงเจ้า ไปทักหน่อยสิ',
       chat2: 'ไปตลาดเช้ากับข้าสิ แล้วข้าจะอวดเจ้าให้ทั่ว', poke2: 'ข้ายอมแล้ว จิ้มได้ตามใจเลย',
       mist: {
@@ -2101,6 +2408,7 @@ const YOKAI_DATA = {
       clash: 'เขาตื่นเต้นง่าย บางทีก็ลากคุณไปทั้งที่คุณอยากพัก',
       more:  'บอกเขาว่าวันนี้ขอนอนเฉยๆ เขาไม่งอนหรอก แล้วจะแปลงร่างเป็นหมอนนุ่มๆ มานอนข้างคุณแทน'
     }, lines: {
+      greet: 'ทายสิ วันนี้ข้าแปลงเป็นอะไรอยู่',
       poke1: 'ฮะๆ อย่าน่า จั๊กกะจี้นะ', chat1: 'วันนี้ข้าแปลงเป็นกาน้ำชา เจ้าจับไม่ได้หรอก',
       chat2: 'ไปงานวัดกัน ข้าเลี้ยงเอง… ด้วยใบไม้', poke2: 'จิ้มอีกที ข้าจะแปลงเป็นเจ้าซะเลย',
       mist: {
@@ -2128,6 +2436,7 @@ const YOKAI_DATA = {
       more:  'ถ้าสงสัย ถามเขาตรงๆ ได้เลย เขาตอบตรงเสมอ แค่ไม่ค่อยเริ่มพูดก่อน พอรู้แบบนี้ ความเงียบของเขาก็กลายเป็นความสบายใจแทน'
     },
     lines: {
+      greet: 'มาแล้วรึ นั่งก่อนสิ',
       poke1: 'อย่าจิ้ม', chat1: 'เจ้ากินอะไรมารึยัง',
       chat2: 'ชาของเจ้า ชงไว้ที่เดิมแล้ว', poke2: 'ขนปีกยุ่งหมดแล้ว บอกว่าอย่าจิ้มไงเล่า',
       mist: {
@@ -2153,6 +2462,7 @@ const YOKAI_DATA = {
       more:  'ถ้าวันไหนรู้สึกแบบนั้น บอกเขาเบาๆ ว่าเรื่องนี้ขอทำเอง เขาจะเข้าใจ แล้วเปลี่ยนเป็นคอยเชียร์อยู่ข้างๆ แทน'
     },
     lines: {
+      greet: 'มาแล้วเหรอ… ข้าดีใจจัง',
       poke1: 'อุ๊ย… เกล็ดข้าลื่นนะ ระวังด้วย', chat1: 'ข้าเก็บเปลือกหอยสวยๆ ไว้ให้เจ้า',
       chat2: 'เหนื่อยไหม มานั่งพักริมน้ำกับข้าก่อน', poke2: 'จิ้มได้นะ ถ้าเจ้ายิ้มได้ ข้าก็ดีใจ',
       mist: {
@@ -2177,6 +2487,7 @@ const YOKAI_DATA = {
       clash: 'เขาพูดตรงและสั่งเก่ง บางคำอาจฟังแรงไปหน่อย',
       more:  'เขาไม่ได้โกรธหรอก แค่พูดแบบที่คิด ถ้าคำไหนแรงไป บอกเขาตรงๆ เขาจะจำไว้ แล้วพูดกับคุณให้นุ่มลงจริงๆ'
     }, lines: {
+      greet: 'ช้าไปนิดนะ แต่ไม่เป็นไร ข้ารอได้',
       poke1: 'อย่าเพิ่งแตะน่า', chat1: 'งานวันนี้ข้าแบ่งครบแล้ว',
       chat2: 'กินข้าวให้ตรงเวลา ข้าจะคอยดู', poke2: 'เอาล่ะ จิ้มได้ แต่ห้ามทำใยข้าพังนะ',
       mist: {
@@ -2202,6 +2513,7 @@ const YOKAI_DATA = {
       more:  'ถ้าวันไหนรู้สึกอึดอัด บอกเขาตรงๆ ได้เลยว่าขอเวลาสักพัก เขาไม่ถือหรอก แค่อยากรู้ว่าคุณยังโอเคอยู่ แล้วเขาก็จะไปนั่งรอเงียบๆ ตรงที่คุณมองเห็น'
     },
     lines: {
+      greet: 'มาแล้ว! ข้านั่งรอตรงนี้ทั้งวันเลย',
       poke1: 'งายยย หิวแล้วเหรอ?', chat1: 'ข้าเก็บลูกพลับมา กินด้วยกันนะ',
       chat2: 'คืนนี้หนาว เอาผ้าห่มไปอีกผืนสิ', poke2: 'หางข้ามันกระดิกเองนี่นา ไม่ได้ตั้งใจหรอก',
       mist: {
@@ -2229,6 +2541,7 @@ const YOKAI_DATA = {
       more:  'เขาไม่ได้เบื่อคุณหรอก แค่ต้องการเวลาของตัวเอง แล้วเขาจะกลับมาพร้อมของเล็กๆ ที่ซ่อมเสร็จแล้ว วางไว้ข้างคุณเงียบๆ'
     },
     lines: {
+      greet: '…อ้อ เจ้าเองรึ',
       poke1: 'เฮ้อ อย่าปลุกจะได้ไหม กำลังจะหลับพอดี', chat1: 'บานเลื่อนห้องสองฝืด ซ่อมแล้ว',
       chat2: 'แดดตรงระเบียงกำลังดีเลย', poke2: 'ก็ได้… เกาคางแทนจิ้มก็แล้วกัน',
       mist: {
@@ -2253,6 +2566,7 @@ const YOKAI_DATA = {
       clash: 'เขาไม่ชอบความวุ่นวาย บ้านเสียงดังหรือคนเยอะ เขาจะเหนื่อยเร็ว',
       more:  'ชวนเขาออกไปเดินเล่นที่เงียบๆ สักพัก เขาจะกลับมายิ้มได้ แล้วเล่าให้คุณฟังว่าเห็นอะไรสวยๆ มาบ้าง'
     }, lines: {
+      greet: 'อ้าว… มายืนตรงนั้นนานแล้วรึ',
       poke1: 'ฟู่… ตกใจหมดเลย', chat1: 'ดอกไม้ริมสระบานแล้ว ไปดูกันไหม',
       chat2: 'แดดตรงนี้อุ่นดี มานอนผึ่งด้วยกันสิ', poke2: 'เบาๆ สิ ข้าบ้าจี้นะ',
       mist: {
@@ -2277,6 +2591,7 @@ const YOKAI_DATA = {
       clash: 'วันที่คุณอยากอยู่บ้านเฉยๆ เขาอาจอยู่ไม่สุข',
       more:  'ปล่อยให้เขาออกไปวิ่งเล่นสักพัก แล้วค่อยกลับมานั่งด้วยกัน เขาจะกลับมาพร้อมเรื่องตื่นเต้นเล่าให้คุณฟังจนคุณเผลอหลับไป'
     }, lines: {
+      greet: 'มาสักที! ข้าเบื่อจะแย่แล้ว',
       poke1: 'ระวังนะ จิ้มข้าทีนึง ไฟช็อตจี๊ดๆ เลย', chat1: 'ข้าแข่งตีกลองกับฟูจินชนะอีกแล้ว',
       chat2: 'อยู่เฉยๆ ไม่เป็น ไปหาอะไรทำกัน', poke2: 'จิ้มมาเลย ข้าไม่กลัวหรอก',
       mist: {
@@ -2302,6 +2617,7 @@ const YOKAI_DATA = {
       more:  'ชวนเขาทำงานบ้านให้เป็นเกม แข่งกันว่าใครเก็บเสร็จก่อน เขาจะตั้งใจขึ้นมาทันที แล้วงานก็เสร็จเร็วกว่าที่คิด'
     },
     lines: {
+      greet: 'ลมพัดเจ้ามาหาข้าจนได้!',
       poke1: 'โอ๊ะ! จั๊กจี้นะ', chat1: 'ลมเย็นมาแล้ว ออกไปวิ่งเล่นกัน',
       chat2: 'ดูสิ เมฆก้อนนั้นเหมือนซาลาเปาเลย', poke2: 'พอๆ ยอมแล้ว จั๊กจี้จะแย่',
       mist: {

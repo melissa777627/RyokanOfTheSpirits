@@ -42,7 +42,10 @@ function createInitialState() {
     stage:         1,
     currentQ:      0,
     bentoSelected: [],
-    dollImage:     ''
+    dollImage:     '',
+
+    resultGreeted: false,   // the yokai's greet line plays once per result (a gender swap doesn't greet again)
+    nearCleared:   false    // the near-miss glass stays wiped across a gender swap
   };
 }
 
@@ -226,8 +229,8 @@ function validateYokaiData() {
     if (y.whyLead !== null && (!isText(y.whyLead) || y.why === null)) fail('whyLead must be text and needs why (or null)');
     if (y.life !== null && !hasTexts(y.life, ['lead', 'gain', 'clash', 'more'])) fail('life needs lead/gain/clash/more (or null)');
     if (y.lines !== null) {
-      const ok = hasTexts(y.lines, ['poke1', 'chat1', 'chat2', 'poke2']) && hasTexts(y.lines.mist, Object.keys(HOUSE_POOLS));
-      if (!ok) fail('lines needs poke1/chat1/chat2/poke2 + mist for all 4 houses (or null)');
+      const ok = hasTexts(y.lines, ['greet', 'poke1', 'chat1', 'chat2', 'poke2']) && hasTexts(y.lines.mist, Object.keys(HOUSE_POOLS));
+      if (!ok) fail('lines needs greet/poke1/chat1/chat2/poke2 + mist for all 4 houses (or null)');
     }
   }
 }

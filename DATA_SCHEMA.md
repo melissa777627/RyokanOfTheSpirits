@@ -32,7 +32,10 @@ let state = {
   stage:         1,        // 1 = house sorting, 2 = yokai selection
   currentQ:      0,        // index ภายใน stage ปัจจุบัน (0-based) · stage 2 index 0 = Bento
   bentoSelected: [],       // food ที่ลากลงกล่อง — cosmetic only
-  dollImage:     ''        // PNG dataURL (ตัวตุ๊กตา + หน้าที่วาด + ของแต่ง) จาก view-doll ใน E7 — cosmetic only
+  dollImage:     '',       // PNG dataURL (ตัวตุ๊กตา + หน้าที่วาด + ของแต่ง) จาก view-doll ใน E7 — cosmetic only
+
+  resultGreeted: false,    // หน้า result: ภูตทัก (lines.greet) ไปแล้ว — สลับเพศ (renderResult ใหม่) ไม่ทักซ้ำ
+  nearCleared:   false     // หน้า result: กระจกฝ้าคู่ที่เกือบได้ถูกเช็ดแล้ว — สลับเพศแล้วยังใส · ทั้งคู่รีเซ็ตตอนเล่นใหม่
 };
 ```
 
@@ -83,6 +86,7 @@ const YOKAI_DATA = {
       more:  '...'            // ส่วนกาง — รับมือกับจุดกระทบยังไง (ห้ามซ้ำหน้าการ์ด)
     },
     lines: {                  // บับเบิ้ลแตะคุยข้างหัว (ข้า/เจ้า) — แตะวน poke1 → chat1 → chat2 → poke2 → mist → วนใหม่
+      greet: '…',             // ทักเองครั้งเดียวตอนเข้าหน้า (0.9 วิ) — ไม่อยู่ในวงแตะ · ทิ้งไว้ 15 วิ ภูตพูด chat1/chat2 เอง
       poke1: '…', chat1: '…', chat2: '…', poke2: '…',
       mist: { yellow: '…', purple: '…', green: '…', blue: '…' }   // key = บ้านของช้อย E5 ที่ผู้เล่นตอบ (houseAnswers[4])
     },                        // null = ไม่มีบับเบิ้ล
@@ -408,6 +412,10 @@ function getNearMiss(mbti) { /* หาไม่เจอในบ้าน = thr
 //   ครบ 4 บ้าน ตรวจโดย validateHouseHeart() ตอนโหลดหน้า
 // (บทพูดหลัง loading แบบเก่า memory/near เลิกใช้ 2026-10-27 — loading ไป result ตรง · ข้อความเดิมอยู่ใน git e9e0a96)
 
+// OMIKUJI (index.html) — ใบเซียมซีหน้า result: { taken: [...6], single: [...6] } ตามคำตอบ "ตอนนี้คุณโสดอยู่ไหม"
+//   แต่ละใบ { rank: '大吉'|'吉'|'中吉'|'小吉'|'末吉'|'凶', th: คำไทยของอันดับ, text: คำทำนาย } · สุ่ม 1 ใบ
+//   (แทน OMIKUJI_LIST ภาษาอังกฤษเดิม 2026-11-03 — ข้อความไทยแปลจากชุดเดิม)
+
 function toggleResultGender() {
   state.resultGenderShown =
     state.resultGenderShown === 'male' ? 'female' : 'male';
@@ -428,3 +436,6 @@ function toggleResultGender() {
 | playerGender = nonbinary | targetGender = 'any' → random ที่ result แต่ toggle ได้ |
 | refresh กลางคัน | state อยู่ใน memory เท่านั้น → หน้าโหลดใหม่เริ่มที่ landing เอง |
 | ยังไม่มีอาร์ต Yokai | หน้า result โชว์ kanji (`YOKAI_DATA[x].kanji`) แทนรูป |
+| สลับเพศบนหน้า result | renderResult() ใหม่ทั้งหน้า · ไม่ทักซ้ำ (`resultGreeted`) · กระจกที่เช็ดแล้วยังใส (`nearCleared`) · timer ของหน้าเก่าถูกล้างก่อน |
+| ไม่มีใครเฉียด (`nearMiss` = null) | การ์ด 岐 เป็นประโยคเดียวเต็มการ์ด ไม่มีกระจก |
+| แชร์บนเครื่องที่ไม่มี share sheet | คัดลอก "ข้อความ + ลิงก์" ลงคลิปบอร์ด แล้วขึ้น toast · คัดลอกไม่ได้ = toast "แชร์ไม่สำเร็จ ลองอีกครั้งนะ" |

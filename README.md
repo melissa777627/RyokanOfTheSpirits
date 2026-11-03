@@ -63,7 +63,10 @@ assets/
 | `quiz/cloud_bg.png` | พื้นหลังเมฆญี่ปุ่น + ลาย asanoha — view-quiz และ view-result |
 | `fx/rain_ripples_glow.webp` | วงคลื่นฝน (animated WebP พื้นใส 1280×720, 48 เฟรม 4s loop, 3.9MB) — reveal หลังวาดตุ๊กตา E7 · เส้นขาว ใช้บนพื้นมืดเท่านั้น · จากชุด effect ของเจ้าของ (มีสิทธิ์ใช้) |
 | `quiz/cloud_bg.png` | พื้นหลังทุกอีเวนต์คำถาม E1–E10 (`#view-quiz`) · 750×1334 เมฆญี่ปุ่นบนลาย asanoha โทนครีม |
-| `doll/{name}_teru.png` | ตุ๊กตาไล่ฝนประจำ Yokai (ใช้ทั้งสองเพศ) · 1000×1000 พื้นใส · name ตัวเล็ก · มีแล้ว 11: hebi inugami kitsune nekomata ningyo oni shinigami tanuki tengu yukionna yumekui · ยังขาด: tenjin ryuu jorogumo raijin fuujin → `YOKAI_DATA[x].dollImage` |
+| `choice/choiceevent1/{bell,omamori,pocketwatch,notebook}.png` | รูปของหาย E1 ครบ 4 บ้าน · 1000×1000 พื้นใส สไตล์สติกเกอร์ขอบขาว · bell = กระดิ่งเล็ก (ม่วง) · omamori = เครื่องรางโอมาโมริ 成就 (ฟ้า) · pocketwatch = นาฬิกาพก (เหลือง) · notebook = สมุดเล่มเล็ก (เขียว) · แสดงแบบ D: เงาสีเดียวข้างข้อความ → ข้อที่เลือกขยาย 120px ลงสี · ตอนนี้ใช้ใน `lab/choice-img-lab.html` เท่านั้น |
+| `choice/choiceevent1/omamori_outline.png` | เครื่องรางแบบขอบขาว + เส้นดำรอบนอก — แบบที่ไม่ได้เลือก (เก็บไว้เผื่อ) |
+| `event10_mist/BG.PNG` | ภาพฉาก E10 "โคมดวงสุดท้าย" (ภาพร่างชั่วคราวของเจ้าของ) · 1080×1920 PNG · ถนนงานเทศกาล โคม โทริอิ ท้องฟ้าพลบค่ำ · ใช้ใน key scene E10 (`#view-key`) เส้นสั่นด้วย `#choice-boil-*` |
+| `event5_porch/BG.PNG` | ⬜ ยังไม่มี — ภาพฉาก E5 "ฟ้าสาง" ระเบียงรุ่งสาง 750×1334 · ระหว่างรอ เกมโชว์ช่องลายทางบอกชื่อไฟล์ || `doll/{name}_teru.png` | ตุ๊กตาไล่ฝนประจำ Yokai (ใช้ทั้งสองเพศ) · 1000×1000 พื้นใส · name ตัวเล็ก · มีแล้ว 11: hebi inugami kitsune nekomata ningyo oni shinigami tanuki tengu yukionna yumekui · ยังขาด: tenjin ryuu jorogumo raijin fuujin → `YOKAI_DATA[x].dollImage` |
 | `doll/teru_body.png` | ตุ๊กตาไล่ฝน (หน้าว่าง) สำหรับ view-doll · 1000×1000 พื้นใส · หน้า = วงกลม center (482,386) r≈168 — ระบายได้เฉพาะพิกเซลสีหน้า |
 | `doll/acc_{section}_{n}.png` | ⬜ ของแต่งตุ๊กตา (หน้าแต่งตัว E7) — section = `ribbon` \| `hat` \| `flower` \| `charm` · PNG พื้นใส สี่เหลี่ยมจัตุรัส ~320×320 ครอปชิดตัวของ · ตอนนี้ใช้ emoji แทน (`DOLL_ACCESSORIES` ใน index.html) — ได้รูปแล้วต้องเปลี่ยนทั้งการ์ดบนชั้นวางและ `drawDollAccessories()` เป็น drawImage |
 | `seigaiha.svg` | Seigaiha (鱗) scale pattern — overlay opacity 0.18 |

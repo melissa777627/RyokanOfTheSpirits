@@ -39,8 +39,17 @@ Our palette is rooted in traditional Japanese pigments, balanced with soft, appr
   --rain-dusk:          #5B6B7A;
   --rain-dusk-deep:     #3B4856;
 
-  /* Accent orange — ส้มอิฐ สถานะที่ถูกเลือก: .choice-btn, .bento-choice-btn, .gender-card, .gender-img-btn */
+  /* Accent orange — ส้มอิฐ · เหลือใช้เฉพาะหน้า result (ส่วนผสมสีไม้ด้านล่าง, ขอบบับเบิ้ลคุย) — เลิกใช้เป็นสถานะที่ถูกเลือกแล้ว */
   --accent-orange:      #D2691E;
+
+  /* 臙脂 Enji — แดงครั่งเข้ม (ชุดสี B เจ้าของเลือก 2026-11) */
+  --ink-enji:           #9F353A;
+  --cta:                var(--ink-enji);   /* ปุ่มยันต์ "ไปต่อ", ผ้าม่านชื่ออีเวนต์ */
+  --sel:                var(--primary);    /* สถานะที่ถูกเลือก: ตัวเลือกคำถาม, การ์ดเพศ, ตัวเลือกเบนโตะ */
+  --washi-grain:        repeating-linear-gradient(90deg, transparent 0 3px, color-mix(in srgb, var(--ink-brown) 3%, transparent) 3px 4px);  /* ลายกระดาษ: ปุ่มยันต์ + การ์ดเรื่อง */
+
+  /* สเกลตัวอักษรหน้าอีเวนต์ — แต่ละขั้นมีหน้าที่เดียว */
+  --fs-eyebrow: 10px; --fs-small: 13px; --fs-body: 16px; --fs-voice: 17px; --fs-ask: 19px; --fs-title: 22px;
 
   /* Wood + gold — หน้า result · ผสมจาก token ด้านบนด้วย color-mix ไม่มี hex ใหม่ */
   --wood-walnut:        color-mix(in srgb, var(--ink-brown) 62%, var(--on-surface));       /* ป้ายหัวข้อ, ขอบสวิตช์เพศ */
@@ -131,17 +140,43 @@ Depth is achieved through **Tonal Layering**, not structural shadows.
 |---|---|---|---|---|
 | **Primary CTA** | gradient `--primary` → `--primary-container` | none | `3rem` (pill) | scale 1.02 |
 | **Secondary** | transparent | ghost (`--outline-variant`) | `3rem` | scale 1.02 |
-| **Choice** | `--surface-lowest` | ghost (`--outline-variant`) | `1.5rem` | background → `--surface-low` · selected: ขอบ `--accent-orange` |
+| **Choice** | `--surface-lowest` | ghost (`--outline-variant`) | `1.5rem` | selected: ขอบ `--sel` 2.5px + พื้นแดงจาง 8% |
+| **Next (お札 fuda)** | `--washi-grain` + `--bg` | รอ: ghost · พร้อม: กรอบ `--cta` สองชั้น | `8px` | กดได้แล้วเด้ง (pop) · ค้าง 4s ขยับขึ้นลง — ใช้ในหน้าคำถาม (`.cta`) |
 | **FAB** | `--primary` | none | `50%` | scale 1.05 — ใช้กับ BGM เท่านั้น (เซียมซีย้ายเป็นกล่องในหน้า: FAB ควรเป็น action หลักอันเดียว) |
 
 ### Cards & Lists
 - **Rule of Silence:** No divider lines. Separate items with vertical whitespace or background color shifts.
 - **Asymmetry (Result cards):** Slightly varied corner radii (e.g., top-left `2rem`, others `1.5rem`) for scrapbook feel.
 
-### Quiz Progress Bar
-- Track: `--surface-low`
-- Fill: `--primary`
-- Add small character icon at leading edge of fill
+### Journey Thread (`.journey-thread`) — แถบความคืบหน้าแบบด้ายแดง
+- 11 ปม (E1–E5 · Bento · E6–E10) คั่นด้วยเส้น 2px · ปมที่ผ่านแล้ว = `--primary` ทึบ · ปมปัจจุบัน = วงแหวน `--primary` 3px เต้นเบาๆ (1.6s) · ยังไม่ถึง = `--surface-low` + ghost
+- `renderThread(el, step)` สร้างใหม่ทุกข้อ · หน้าเลือกเพศ = step 0 (ยังไม่มีปมไหนผูก)
+
+### Event Noren (`.noren-wrap`) — ป้ายชื่ออีเวนต์แบบผ้าม่านร้าน
+- ราวไม้ `--ink-brown` 5px · ผ้า `--cta` แถวเดียว: `EVENT 04` (`--font-kanji` `--fs-eyebrow` จาง 75%) · `·` · ชื่อฉาก (`--font-display` `--fs-voice`) · ชายผ้า 3 แฉก แต่ละแฉกสองท่อน (บน/ล่าง 5px)
+- ชื่อฉาก = `q.scene` ตัดอีโมจินำหน้า และถ้ามี " · " ใช้แค่ส่วนท้าย (`norenName()`)
+- การเคลื่อนไหว: ทั้งผืนเอียงจากราว ≤2° (5.2s) · แฉกงอแยกจังหวะกัน ท่อนล่างตามช้ากว่า · ปิดเมื่อ reduced motion
+- อยู่ในหน้า เลื่อนจอแล้วเลื่อนหายไปกับเนื้อเรื่อง (ไม่ติดหัวจอ) · ห่างการ์ดเรื่อง 19px
+
+### Story Card + Ink Reveal (`.quiz-story`)
+- การ์ดกระดาษ `--washi-grain` + `--bg`, radius 1.5rem, `--fs-body`, line-height 1.8 · ประโยคคำถามเป็นย่อหน้าสุดท้ายในการ์ด สีแดง `--primary` ตัวหนา `--fs-voice` (`.quiz-prompt`)
+- ข้อความขึ้นทีละวลี (วลี = ส่วนที่คั่นด้วยเว้นวรรค): เนื้อเรื่องจางเข้าเฉยๆ 1.2s · คำถามซึมแบบหมึก (เบลอ 3px → ชัด) · พัก 0.55s ต่อวลี, 1.3s หลัง ? ! … —, 1.7s ระหว่างย่อหน้า (`INK`)
+- "— tap to show all —" โผล่หลัง 1.5s · แตะตรงไหนก็ได้ในหน้า = ขึ้นครบทันที · reduced motion = ขึ้นครบเลย
+- ตัวเลือกโผล่หลังเรื่องขึ้นครบเท่านั้น (ก่อนหน้านั้นแตะไม่ติด) · ถ้าตัวเลือกแรกตกขอบจอ เลื่อนลงให้เห็นเอง
+
+### Choice List (`.choice-btn`) — รายการตัวเลือก
+- แนวตั้งเต็มกว้าง · วงกลม ○ (`.choice-radio`) → เลือกแล้วเป็นวงแดง `--sel` + ✓ · ข้ออื่นจางเหลือ 60%
+- ลอยขึ้นทีละใบ ห่าง 90ms · ไม่แตะเลย 6s → การ์ดเรืองแสงทีละใบ 2 รอบ (บอกว่าแตะได้)
+
+### Choice Pictures (`c.image` — E1 ของหาย)
+- ทุกตัวเลือกที่ยังไม่ถูกเลือกเป็น**เงาสีเดียวกัน** 44px (`brightness(0) opacity(.5)`) — ความสวยของรูปไม่มีผลต่อการเลือก
+- ข้อที่เลือก**กางออก**: รูปขยาย 120px ลงสีจริง เอียง −6° อยู่เหนือข้อความ (เหมือนจังหวะได้ไอเทม) · วงกลมเลือกย้ายไปมุมซ้ายบน
+- เส้นยึกยือ (line boil): `.choice-pic` สลับ SVG filter `#choice-boil-0…3` (fractalNoise 0.06, 2 octaves, scale 2.4) 8 เฟรม/วิ · ปิดเมื่อ reduced motion
+- รูปสไตล์สติกเกอร์ขอบขาว พื้นใส 1000×1000 ทุกชิ้นต้องสไตล์/ขนาดในกรอบใกล้กัน
+
+### Next Fuda + Answer Seal (`.cta`, `.answer-seal`)
+- ปุ่มอยู่ชิดขวา กว้าง ≤280px (ไม่เต็มแถวเหมือนตัวเลือก) · ตรา 次 สี่เหลี่ยมซ้าย · ข้อความบอกสิ่งที่ยังขาด: "เปิดประตูให้ครบ · n/4" → "เลือกคำตอบก่อน" → "ไปต่อ →"
+- กด → ปุ่มค้างสถานะพร้อม (`.sent`), ตรา 次 กดลงหนึ่งที · ตราซากุระ 🌸 กรอบแดงสองชั้นปั๊มลงบน ○ ของข้อที่เลือก (scale 2.2 → 1) · รอ 0.85s แล้วไปข้อต่อไป (`sealAnswer()` → `confirmAnswer()`)
 
 ### Narration Overlay (`.narration`) — บทเชื่อมฉาก
 - ใช้กับ `lead` / `afterArrange` / `outro` ใน `questions.js` (1 string = 1 หน้า)
@@ -161,17 +196,33 @@ Depth is achieved through **Tonal Layering**, not structural shadows.
 - ทุกอีเวนต์คำถาม E1–E10 (Stage 1+2): ภาพเมฆญี่ปุ่นบนลาย asanoha `assets/ui/quiz/cloud_bg.png` (`cover`, ทับบน `--bg`) · Bento ใช้ BG ของตัวเอง
 - `.quiz-next-wrap` พื้นใส (ไม่มี gradient `--bg` ทับภาพ)
 
-### Sliding Doors (`q.doors` — E4 ห้องต้องห้าม) — Split Reveal
-- การ์ดช้อยทุกใบเริ่มหลังประตูบานเลื่อน fusuma 2 บาน (`.choice-doors` > `.choice-door--l/--r`) ชนกันกลางการ์ด
-- **ไม่มีรูปช้อย** — การ์ดเป็นข้อความอย่างเดียว อยู่กลางการ์ด (`.quiz-choices--doors`, สูงอย่างน้อย 150px) · เหนือตารางมีบรรทัดบอกวิธีเล่น "— Tap each door to slide it open —" (`.quiz-doors-hint`: pill กระจกฝ้า `--surface-lowest` 88% + ตัวหนา `--on-surface` ให้อ่านออกบนพื้นเมฆ · เฟดขึ้นพร้อมช้อย ไม่ขึ้นก่อนคำถาม)
-- ประตูแง้มออก ±10% แล้วปิดกลับ **ครั้งเดียว** ตอนการ์ดเพิ่งขึ้น (เริ่ม 2.3s ไล่ทีละบานห่าง 0.15s, `doorNudgeL/R`) — ใบ้ว่าเลื่อนได้ ไม่วนซ้ำ
-- ประตูแต่ละบานมีกรอบไม้ `--ink-brown` 4px (inset box-shadow, มุมนอกโค้งตามการ์ด 18px) — สองบานชนกันเป็นเสากลางหนา · กรอบเลื่อนไปกับบานประตู
-- แตะครั้งแรก = ประตูแยกออกซ้าย/ขวา (animation `doorOpenL/R` → `translateX(∓105%)`, 720ms easeInOutCubic — ใช้ animation ไม่ใช่ transition เพราะต้องแทนที่ลูปแง้ม และ `animationend` ของ `doorOpenL` คือสัญญาณ `.doors-ready`) เผยช้อย · แตะอีกครั้ง (หลังเปิดสุดแล้ว `.doors-ready`) = เลือก · แตะรัวระหว่างเลื่อน = แค่เปิด ไม่เลือก
-- เปิดค้างได้หลายบาน · **Next กดได้เมื่อเปิดครบ 4 บาน + เลือกแล้ว** (ให้ผู้เล่นอ่านครบทุกช้อย ไม่เลือกบานแรกที่เปิด)
-- ภาพประตูเป็น CSS ชั่วคราว: พื้น `--surface-low` + ลายตาราง shoji + ที่จับกลม (hikite) จาง `--on-surface` · รอรูปจริงจากเจ้าของ
+### Sliding Doors (`q.doors` — E4 ห้องต้องห้าม)
+- ตาราง 2×2 (`.quiz-choices--doors`, gap 12px) การ์ดสูง ≥176px ข้อความกลาง 15px · วงกลมเลือกมุมขวาบน · มุม 「 」 จาง `--ink-brown` 45% (`--font-kanji`) — สิ่งที่อยู่บนการ์ดคือเสียงที่ได้ยิน
+- เหนือตารางมีบรรทัด "แตะประตูเพื่อเลื่อนเปิด แล้วเงี่ยหูฟังทีละบาน" (`.quiz-doors-hint` pill กระจกฝ้า อ่านออกบนเมฆ · เฟดขึ้นพร้อมตัวเลือก)
+- ประตูแต่ละบาน: กรอบไม้ `--ink-brown` 4px · ลายโชจิด้านบน · แผงไม้ทึบ (koshi) 22% ล่าง · ที่จับกลม (hikite) ข้างรอยต่อ
+- สถานะบน `.choice-btn`: `.closed` (ซ่อนข้อความ+วงกลม) → `.opening` (เลื่อน 720ms, `DOOR_SLIDE_MS`) → `.open` + `.seen` · **เปิดบานใหม่ = บานที่เปิดค้างอยู่ปิดเอง** เหลือเปิดแค่บานที่กำลังฟัง + บานที่เลือก (`shutOtherDoors`) · บานที่ฟังแล้วถูกปิดซ้ำ จางเหลือ 45% หลังปิดสนิท
+- ตอนเปิด ข้อความลอยเข้ามาเบลอทีละวลี (`hearIn` ต่อ `.th-unit`, ห่าง 90ms) · ประตูแง้มครั้งเดียวหลังตัวเลือกลอยขึ้น 1.2s · reduced motion = ไม่มี transition / hear-in / แง้ม
+- แตะบานปิด = เปิด · แตะระหว่างเลื่อน = ไม่มีผล · แตะบานที่เปิด = เลือก (บานอื่นปิด) · ปุ่มยันต์นับบานที่ฟังแล้วตั้งแต่เปิดหน้า "เปิดประตูให้ครบ · n/4" → "เลือกคำตอบก่อน" → "ไปต่อ"
+- ภาพประตูเป็น CSS ชั่วคราว · รอรูปจริงจากเจ้าของ
+
+### Key Scene VN (`#view-key`) — E5 / E10 แบบวิชวลโนเวล
+- ภาพอีเวนต์เต็มจอ (cover) + หมอกลอยช้า (`.key-mist` 14s) · `.key-fx` เข้มขึ้นตามบรรทัด (บรรทัด/ทั้งหมด): e5 `--dawn` แสงทองฟ้าสาง (screen blend) · e10 `--fade` หมอก `--bg` 60% · ด้ายแดงอยู่บนสุด
+- e10 เส้นภาพสั่น (`choiceBoil`, inset −4px) · ไฟล์ภาพยังไม่มี = ช่องลายทางบอกชื่อไฟล์ + 750×1334 (`.key-art--todo`) + console warning — ไม่เงียบ
+- กล่องบทด้านล่าง: กระดาษ + glass · **บรรยาย** ไม่มีป้ายชื่อ ตัวอักษร `--ink-brown` · **คำพูด** ป้าย "???" แดง + เส้นแดงซ้าย + หางชี้ขึ้น `--fs-voice` · พิมพ์ทีละตัว 24ms (บรรยาย) / 38ms (คำพูด) · ▼ เมื่อจบบรรทัด · "— tap to continue —" หลังลังเล 2.5s
+- แตะจอ: พิมพ์ให้จบ → บรรทัดถัดไป → ช่วงเลือก
+- เมนูบนขอบกล่อง: LOG (ไอคอนนาฬิกาย้อน `--primary`) เปิดแผ่น glass แยกบรรยาย/คำพูด · HIDE ซ่อนด้าย+กล่องจนแตะ (หายไปในช่วงเลือก)
+- ช่วงเลือก: กล่องหดเหลือคำถามสีแดง · จอหรี่ 35% · ยืม `#quiz-choices` + ปุ่มยันต์ของหน้าคำถามมาวางเหนือกล่อง (ชิดล่าง ไม่ทับกล่อง) · ตราซากุระเหมือนหน้าคำถาม · reduced motion = ไม่พิมพ์ทีละตัว ไม่สั่น
+
+### Scroll Key Card (`.key-card`) — ป้ายชื่อก่อนฉากใหญ่
+- จอหรี่ `--on-surface` 55% · ม้วนกระดาษ 74% กว้าง แกนไม้ `--ink-brown` คลี่จากกลาง 0.9s · แล้ว EVENT nn (`--cta`) / ชื่อฉาก (display 24px กฎชื่อสั้นเดียวกับผ้าม่าน) / คันจิ (`--cta`) ซึมแบบหมึก
+- ค้าง 3.2s หรือแตะ (reduced motion 1.2s) แล้วจาง 0.6s
+
+### Rain (`q.weather: 'rain'` — E7)
+- เส้นฝนตรงดิ่ง 90 เส้น (`.quiz-rain` > `.rain-drop`): ยาวจาง 70% (40–110px, opacity .3–.7) + ขีดสั้นชัด 30% (12–26px, .6–.9) · กว้าง 1px (25% เป็น 2px) · ปลายล่างชัดสุด สี `--secondary` 45% ผสม `--bg` (ขาวจะหายบนพื้นครีม)
+- อยู่ใต้การ์ดเรื่อง/ตัวเลือก เหนือ BG เมฆ (`#view-quiz` isolation + z-index −1) · fixed กว้างเท่าคอลัมน์มือถือ · ตก 0.7–1.3s · reduced motion = เส้นนิ่ง
 
 ### Glass Scene (`#view-quiz.quiz-glass-scene`)
-- E3 ฟ้าผ่าเท่านั้น: story box / choice แบบ glass + black overlay fade-in (BG เมฆเหมือนข้ออื่น)
+- E3 ฟ้าผ่าเท่านั้น: การ์ดเรื่อง / ตัวเลือกแบบ glass + ม่านดำจางออก 1.4s (`.quiz-black-in`) (BG เมฆเหมือนข้ออื่น)
 
 ### Bento Arrange (`#view-bento`) — ชั้นวางของกิน + ลากลงกล่อง
 - หน้าเบนโตะสูงเท่าจอ (`100dvh`, ไม่เลื่อน) · `.bento-main` มี `min-height: 0` ให้กล่องเบนโตะหดได้ — **ปุ่ม Continue ต้องอยู่ในจอเสมอ** (ทดสอบแล้วถึงจอสูง 467px)
@@ -292,3 +343,14 @@ Depth is achieved through **Tonal Layering**, not structural shadows.
 - **DON'T** use 1px solid borders for layout sectioning.
 - **DON'T** use hard drop shadows. Keep shadows ambient and barely visible.
 - **DON'T** use `background: white` or `#FFFFFF`. Base is always `--bg`.
+
+### Crowd Intro (`#crowd-intro`) — E2 แขกภูตกรูเข้าเรียวกัง (อนุมัติจาก lab/crowd-lab "เดิม + ห้องเต็มก่อน")
+- Overlay fixed กว้าง `--max-w`, z-index 930 (ใต้ chapter/narration), BG cloud_bg ของตัวเอง · สร้างใหม่ทุกรอบโดย `playCrowdIntro` · class/keyframes ขึ้นต้น `crowd-*`
+- ลำดับ (วินาที): จอสั่น 3 ที + "ตึง ตึง ตึง!" (0.1) → หรี่ 50% (0.6) → แถบ obi ครีมเลื่อนเข้าจากซ้าย (0.9) + "โครม!" แดงเอียง (0.95) → ฝน
+- เงาโยไค 12 ตนครึ่งบน (CSS mask จาก assets/yokai, 62% บน, แถวหน้า/หลัง, แถวหน้าสลับเข้ม 1/0.82, แถวหลัง 0.5) วิ่งผ่านตั้งแต่ 1.2s · กระดาษเปียกเป็นดวง · น้ำหยดใต้แถบ · หยดน้ำเกาะจอ 7 หยด
+- แท็บ "ห้องว่าง 12" ติดขอบบนซ้ายของแถบ ลดทีละ 1 ตอนแต่ละตนวิ่งเข้า → แดง "เต็ม!"
+- คอมเมนต์ไหลแบบ Niconico 5 อัน (เริ่ม 0.4s หลังเต็ม ห่าง 0.62s ข้ามจอ 3.4s) + บรรทัดคนมาสาย · ตัวขาวขอบเข้ม · ใหญ่/แดง/ทองบางอัน · `width: max-content` (กันตัดบรรทัดที่ `<wbr>`)
+- คนมาสาย: เงาทานูกิ 1.3s หลังคอมเมนต์สุดท้าย สะดุด "ตุ้บ!" · บรรทัดของเขาตามมา 0.6s
+- จบ: แถบออก → การ์ด E2 ขึ้นข้างใต้ แล้ว overlay จาง 0.5s · รวม ~10s
+- SKIP ▸▸ มุมขวาบน โชว์ทุกคน → ปิดทุกอย่างทันที การ์ดขึ้นครั้งเดียว · หลังแถบออก ปุ่มซ่อนและกดไม่ได้ · reduced motion = ข้ามฉาก
+- ข้อความคอมเมนต์/ตัวหนังสือเสียงยังเป็นร่าง รอเจ้าของอนุมัติ · รูปโยไคเต็มไฟล์ ~450KB × 13 — ควร export เงาไฟล์เล็กภายหลัง

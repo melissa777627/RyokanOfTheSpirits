@@ -22,7 +22,19 @@
   --ink-brown:         #6B4A35;   /* narration text — softer than --on-surface */
   --rain-dusk:         #5B6B7A;   /* rainy-night blue-grey (E7 doll scene) */
   --rain-dusk-deep:    #3B4856;
-  --accent-orange:     #D2691E;   /* selected state: quiz/bento choices, gender cards */
+  --accent-orange:     #D2691E;   /* result page only: wood mixes below, talk-bubble rim — no longer a selected state */
+  --ink-enji:          #9F353A;   /* 臙脂 enji — deep lacquer red (colour set B, owner pick 2026-11) */
+  --cta:               var(--ink-enji);   /* the Next fuda, the event noren */
+  --sel:               var(--primary);    /* selected answer / gender / bento choice — torii red */
+  /* washi grain — the fuda's paper, reused under the question text */
+  --washi-grain:       repeating-linear-gradient(90deg, transparent 0 3px, color-mix(in srgb, var(--ink-brown) 3%, transparent) 3px 4px);
+  /* event-page type scale — each step has one job, so the eye knows where to land */
+  --fs-eyebrow:        10px;   /* EVENT 01 on the noren */
+  --fs-small:          13px;   /* hints */
+  --fs-body:           16px;   /* story, choices */
+  --fs-voice:          17px;   /* scene name, the question inside the story */
+  --fs-ask:            19px;
+  --fs-title:          22px;
   --shadow-ambient:    0 8px 32px rgba(26,18,10,0.06);
   --shadow-float:      0 8px 40px rgba(26,18,10,0.10);
   /* wood + gold for the result page — mixed from the tokens above, no new hex */
@@ -439,64 +451,29 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   z-index: 1;
 }
 
-/* Journey progress bar — sits at very top of each view */
-.journey-progress {
-  width: 100%;
-  height: 3px;
-  background: var(--surface-low);
-  position: relative;
-  overflow: hidden;
-}
-.journey-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-container) 100%);
-  border-radius: 0 2px 2px 0;
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-/* Shimmer sweep on fill */
-.journey-progress-fill::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%);
-  animation: progressShimmer 2.2s ease-in-out infinite;
-}
-@keyframes progressShimmer {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(400%); }
-}
-
-/* Step dots row */
-.journey-dots {
+/* Journey thread — a red thread with 11 knots (E1–E5 · Bento · E6–E10): done knots fill, the current one
+   pulses · built by renderThread() */
+.journey-thread {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 24px 0;
+  padding: 14px 24px 0;
 }
-.jd-dot {
-  width: 5px;
-  height: 5px;
+.knot {
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: var(--outline-variant);
-  transition: background 0.3s, transform 0.3s;
+  flex-shrink: 0;
+  background: var(--surface-low);
+  box-shadow: inset 0 0 0 1.5px var(--outline-variant);
 }
-.jd-dot.active {
-  background: var(--primary);
-  transform: scale(1.35);
+.knot.done { background: var(--primary); box-shadow: none; }
+.knot.now  { background: var(--bg); box-shadow: inset 0 0 0 3px var(--primary); }
+.thread-line { flex: 1; height: 2px; background: var(--outline-variant); }
+.thread-line.done { background: var(--primary); }
+@media (prefers-reduced-motion: no-preference) {
+  .knot.now { animation: knotPulse 1.6s ease-in-out infinite; }
 }
-.jd-dot.done {
-  background: var(--primary-container);
-}
-.jd-label {
-  font-family: var(--font-kanji);
-  font-size: 0.52rem;
-  letter-spacing: 0.22em;
-  color: var(--on-surface);
-  opacity: 0.32;
-  margin-left: 8px;
-  white-space: nowrap;
-}
+@keyframes knotPulse { 50% { transform: scale(1.3); } }
 
 /* Mirror art placeholder — simple rect, swap for <img class="mirror-art-img"> when ready */
 .mirror-placeholder {
@@ -881,9 +858,9 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 
 /* Selected state */
 .gender-card.selected {
-  box-shadow: 0 0 0 2px var(--accent-orange), var(--shadow-float);
+  box-shadow: 0 0 0 2px var(--sel), var(--shadow-float);
 }
-.gender-card.selected .gc-symbol { opacity: 1; color: var(--accent-orange); }
+.gender-card.selected .gc-symbol { opacity: 1; color: var(--sel); }
 .gender-card.selected .gc-kanji  { opacity: 0.18; }
 
 /* Bottom panel — pushed to foot of screen, fader behind it, starts hidden */
@@ -934,7 +911,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 .gender-img-btn:active img { transform: scale(0.96); }
 .gender-img-btn.selected   { box-shadow: none !important; }
 .gender-img-btn.selected img {
-  filter: drop-shadow(0 0 14px var(--accent-orange)) drop-shadow(0 4px 12px rgba(26,18,10,0.18));
+  filter: drop-shadow(0 0 14px var(--sel)) drop-shadow(0 4px 12px rgba(26,18,10,0.18));
   transform: translateY(-4px) scale(1.03);
 }
 
@@ -972,42 +949,333 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
    7. VIEW: QUIZ
 ════════════════════════════════════════ */
 
-/* Cloud BG — every question event E1–E10 */
+/* Cloud BG — every question event E1–E10 · column: thread · body (page scrolls) · Next fuda stuck to the foot */
 #view-quiz {
   background: url('assets/ui/quiz/cloud_bg.png') center center / cover no-repeat, var(--bg);
 }
+#view-quiz.active { display: flex; flex-direction: column; }
+.quiz-body { flex: 1; padding: 14px 20px 8px; }
 
-/* Stage 1 base */
-#view-quiz.quiz-stage1 {
-  overflow: hidden;
+/* Event title as a 暖簾 noren hung at the top-left of the page (scrolls away with the story).
+   Rod · cloth "EVENT 04 · name" in one row · a short hem cut into 3 strips, each with an upper and a lower
+   segment so it bends (the lower half lags and swings further) instead of moving like a stiff card.
+   The whole cloth leans ≤2° from the rod (the name barely shears); each strip has its own timing */
+.noren-wrap {
+  position: relative;
+  width: fit-content;
+  margin: 2px 0 19px 8px;
+  padding-top: 5px;
+}
+.noren-wrap::before {   /* the rod */
+  content: '';
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  top: 0;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--ink-brown);
+  z-index: 2;
+}
+.noren-body { position: relative; transform-origin: top center; }
+.noren {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 14px 5px;
+  border-radius: 2px 2px 0 0;
+  background: var(--cta);
+  color: var(--bg);
+}
+.noren-no {
+  font-family: var(--font-kanji);
+  font-size: var(--fs-eyebrow);
+  letter-spacing: 0.24em;
+  white-space: nowrap;
+}
+.noren-no, .noren-dot { color: color-mix(in srgb, var(--bg) 75%, transparent); }
+.noren-name { font-family: var(--font-display); font-size: var(--fs-voice); line-height: 1.25; }
+.noren-hem { display: flex; gap: 3px; }
+.noren-strip { flex: 1; height: 5px; background: var(--cta); transform-origin: top center; }
+.noren-low {
+  display: block;
+  height: 5px;
+  margin-top: 5px;
+  border-radius: 0 0 6px 6px;
+  background: var(--cta);
+  transform-origin: top center;
+}
+.noren-strip:nth-child(1) { --d: 4.2s; --delay: -0.4s; --lag: 0.12s; }
+.noren-strip:nth-child(2) { --d: 3.7s; --delay: -1.6s; --lag: 0.16s; }
+.noren-strip:nth-child(3) { --d: 4.9s; --delay: -2.7s; --lag: 0.1s; }
+@media (prefers-reduced-motion: no-preference) {
+  .noren-body  { animation: norenSway 5.2s ease-in-out infinite; }
+  .noren-strip { animation: norenStrip var(--d) ease-in-out var(--delay) infinite; }
+  .noren-low   { animation: norenStrip var(--d) ease-in-out calc(var(--delay) - var(--lag)) infinite; }
+}
+@keyframes norenSway {
+  0%, 100% { transform: skewX(0deg); }
+  30%      { transform: skewX(-2deg); }
+  65%      { transform: skewX(1.2deg); }
+}
+@keyframes norenStrip {
+  0%, 100% { transform: skewX(0deg); }
+  20%      { transform: skewX(-9deg); }
+  45%      { transform: skewX(4deg); }
+  70%      { transform: skewX(-3deg); }
 }
 
-/* E3 ฟ้าผ่า only — glassmorphism */
-#view-quiz.quiz-glass-scene .quiz-story-box {
-  background: rgba(255, 255, 255, 0.48);
+/* Story card — washi paper; the question is its last paragraph, red and bold */
+.quiz-story {
+  padding: 18px 20px;
+  border-radius: 1.5rem;
+  background: var(--washi-grain), var(--bg);
+  box-shadow: var(--shadow-ambient);
+  font-size: var(--fs-body);
+  line-height: 1.8;
+  color: var(--on-surface);
+}
+.quiz-story p + p { margin-top: 12px; }
+.quiz-prompt { font-size: var(--fs-voice); font-weight: 700; line-height: 1.5; color: var(--primary); }
+/* The story never lands as one wall: phrase by phrase it fades in (no blur — easy on the eyes); only the red
+   question soaks in like ink on washi (blurred → sharp) so the eye lands on it · tap anywhere = all at once
+   (revealInk, INK pacing) */
+.ink { opacity: 0; transition: opacity 1.2s ease; }
+.quiz-prompt .ink { filter: blur(3px); transition: opacity 1.2s ease, filter 1.2s ease; }
+.ink.on { opacity: 1; filter: none; }
+.quiz-skip-hint {
+  margin: 10px 0 0;
+  text-align: center;
+  font-family: var(--font-kanji);
+  font-size: var(--fs-small);
+  letter-spacing: 0.24em;
+  color: color-mix(in srgb, var(--on-surface) 55%, transparent);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.quiz-skip-hint.on { opacity: 1; }
+
+/* ── Choices: a vertical list, radio ○ → ✓ ─────────────────── */
+.quiz-choices { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; padding-bottom: 8px; }
+.choice-btn {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+  border-radius: 1.5rem;
+  background: var(--surface-lowest);
+  box-shadow: var(--shadow-ambient), inset 0 0 0 1.5px var(--outline-variant);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--on-surface);
+  opacity: 0;
+  transform: translateY(14px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.25s ease, background 0.2s ease;
+}
+.choice-btn:active { transform: scale(0.98); }
+.choice-text { flex: 1; }
+.choice-radio {
+  position: relative;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--on-surface) 35%, transparent);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bg);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.choice-btn.selected {
+  box-shadow: var(--shadow-float), inset 0 0 0 2.5px var(--sel);
+  background: color-mix(in srgb, var(--sel) 8%, var(--surface-lowest));
+}
+.choice-btn.selected .choice-radio { background: var(--sel); box-shadow: none; }
+.choice-btn.selected .choice-radio::after { content: '✓'; }
+/* the list rises only once the story has arrived — until then it is invisible and can't be tapped
+   (a tap there skips the story, it never picks an answer) */
+.quiz-choices:not(.in) { pointer-events: none; }
+.quiz-choices.in .choice-btn { opacity: 1; transform: none; transition-delay: calc(var(--i) * 90ms); }
+.quiz-choices.in.has-pick .choice-btn { transition-delay: 0s; }
+.quiz-choices.in.has-pick .choice-btn:not(.selected) { opacity: 0.6; }
+/* idle nudge: cards glow one after another so the player sees they are tappable */
+@media (prefers-reduced-motion: no-preference) {
+  .quiz-choices.nudge:not(.has-pick) .choice-btn { animation: cardNudge 1.4s ease-in-out calc(var(--i) * 160ms) 2; }
+}
+@keyframes cardNudge {
+  40% { transform: translateY(-3px); box-shadow: var(--shadow-float), inset 0 0 0 2px color-mix(in srgb, var(--sel) 55%, transparent); }
+}
+
+/* Choice pictures (c.image — E1's lost things). Unpicked = the same ink silhouette for all four, so how
+   pretty a drawing is can't sway the pick; the picked card opens up: the picture grows and colours in above
+   the words, like an item-get moment. Lines boil (hand-drawn wobble) via #choice-boil-0…3 */
+.choice-pic {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  transition: width 0.45s cubic-bezier(0.34, 1.3, 0.64, 1), height 0.45s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+.choice-pic img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(0) opacity(0.5);
+  transition: filter 0.45s ease, transform 0.45s ease;
+}
+.choice-btn.has-pic { align-items: center; }
+.choice-btn.has-pic.selected { flex-direction: column; text-align: center; padding: 14px 12px; }
+.choice-btn.has-pic.selected .choice-radio { position: absolute; top: 14px; left: 16px; margin: 0; }
+.choice-btn.selected .choice-pic { width: 120px; height: 120px; }
+.choice-btn.selected .choice-pic img { filter: none; transform: rotate(-6deg); }
+@media (prefers-reduced-motion: no-preference) {
+  .choice-pic { animation: choiceBoil 0.5s steps(1) infinite; }
+}
+@keyframes choiceBoil {
+  0%  { filter: url(#choice-boil-0); }
+  25% { filter: url(#choice-boil-1); }
+  50% { filter: url(#choice-boil-2); }
+  75% { filter: url(#choice-boil-3); }
+}
+
+/* E4 sliding doors (q.doors) — 2×2 fusuma cards. Only the door being listened to and the picked door stay
+   open: opening another slides the last one shut (shutOtherDoors). States on .choice-btn:
+   .closed → .opening (sliding, DOOR_SLIDE_MS) → .open (+ .seen for good) · a seen door shut again fades back */
+.quiz-choices--doors { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.quiz-choices--doors .choice-btn {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 176px;
+  padding: 34px 14px 18px;
+  border-radius: 1rem;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.6;
+}
+/* ○ / seal in the top-right — the one corner free of the 「 」 marks and clear of the door frame */
+.quiz-choices--doors .choice-radio { position: absolute; top: 12px; right: 12px; margin: 0; }
+.choice-btn.closed .choice-radio,
+.choice-btn.closed .choice-text { visibility: hidden; }
+.choice-doors {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+/* each panel: wooden frame (kamachi) · shoji lattice above · solid wood kick panel (koshi) below */
+.choice-door {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  background:
+    linear-gradient(to top, var(--ink-brown) 0 4px, color-mix(in srgb, var(--ink-brown) 70%, var(--surface-low)) 4px 22%, var(--ink-brown) 22% calc(22% + 3px), transparent calc(22% + 3px)),
+    repeating-linear-gradient(to right, transparent 0 calc(50% - 1px), color-mix(in srgb, var(--ink-brown) 45%, transparent) calc(50% - 1px) 50%),
+    repeating-linear-gradient(to bottom, transparent 0 25px, color-mix(in srgb, var(--ink-brown) 45%, transparent) 25px 26px),
+    var(--bg);
+  transition: transform 720ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+.choice-door--l {
+  left: 0;
+  border-radius: 1rem 0 0 1rem;
+  box-shadow: inset 0 0 0 4px var(--ink-brown), inset -6px 0 8px color-mix(in srgb, var(--on-surface) 14%, transparent);
+}
+.choice-door--r {
+  right: 0;
+  border-radius: 0 1rem 1rem 0;
+  box-shadow: inset 0 0 0 4px var(--ink-brown), inset 6px 0 8px color-mix(in srgb, var(--on-surface) 14%, transparent);
+}
+/* hikite — the round finger pull near the seam */
+.choice-door::after {
+  content: '';
+  position: absolute;
+  top: 52%;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--ink-brown) 35%, color-mix(in srgb, var(--ink-brown) 35%, transparent) 70%);
+}
+.choice-door--l::after { right: 9px; }
+.choice-door--r::after { left: 9px; }
+.choice-btn:is(.opening, .open) .choice-door--l { transform: translateX(-105%); }
+.choice-btn:is(.opening, .open) .choice-door--r { transform: translateX(105%); }
+/* a door already listened to and shut again fades back — only once it has finished shutting */
+.choice-btn.seen.closed .choice-doors { opacity: 0.45; transition: opacity 0.4s ease 0.5s; }
+/* faint 「 」 corners — what's on the card is a sound you heard, not a line you read */
+.quiz-choices--doors .choice-text::before,
+.quiz-choices--doors .choice-text::after {
+  position: absolute;
+  font-family: var(--font-kanji);
+  font-size: 22px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--ink-brown) 45%, transparent);
+}
+.quiz-choices--doors .choice-text::before { content: '「'; top: 30px; left: 12px; }
+.quiz-choices--doors .choice-text::after  { content: '」'; bottom: 12px; right: 12px; }
+@media (prefers-reduced-motion: no-preference) {
+  /* "straining to hear": behind the opening door the words drift in blurred and faint, phrase by phrase */
+  .quiz-choices--doors .choice-btn:is(.opening, .open) .choice-text .th-unit {
+    display: inline-block;
+    animation: hearIn 1s ease both;
+    animation-delay: calc(350ms + var(--u) * 90ms);
+  }
+  /* once, after the cards have risen: each pair parts a crack and shuts, so players see they slide */
+  .quiz-choices.in .choice-btn.closed .choice-door--l { animation: doorNudgeL 0.9s ease-in-out calc(1.2s + var(--i) * 150ms); }
+  .quiz-choices.in .choice-btn.closed .choice-door--r { animation: doorNudgeR 0.9s ease-in-out calc(1.2s + var(--i) * 150ms); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .choice-door { transition: none; }
+}
+@keyframes hearIn {
+  0%   { opacity: 0;   filter: blur(5px); transform: translateY(3px); }
+  60%  { opacity: 0.6; filter: blur(1.5px); }
+  100% { opacity: 1;   filter: none; transform: none; }
+}
+@keyframes doorNudgeL { 45% { transform: translateX(-9%); } }
+@keyframes doorNudgeR { 45% { transform: translateX(9%); } }
+/* Hint on a frosted pill so it reads over the cloud backdrop; arrives with the choices */
+.quiz-doors-hint {
+  display: table;
+  margin: 16px auto 0;
+  padding: 6px 16px;
+  border-radius: 3rem;
+  background: color-mix(in srgb, var(--surface-lowest) 88%, transparent);
+  box-shadow: var(--shadow-ambient);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--on-surface);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.quiz-doors-hint.in { opacity: 1; }
+
+/* E3 ฟ้าผ่า only — glassmorphism + the black curtain fades out over the page */
+#view-quiz.quiz-glass-scene .quiz-story {
+  background: color-mix(in srgb, var(--bg) 48%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: none;
 }
 #view-quiz.quiz-glass-scene .choice-btn {
-  background: rgba(255, 255, 255, 0.22);
+  background: color-mix(in srgb, var(--bg) 22%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: none;
 }
-#view-quiz.quiz-glass-scene .choice-text {
-  color: #1a1a1a;
-  text-shadow: none;
-  background: transparent;
-}
-
-/* E3 — black overlay fades out revealing BG (position:fixed covers all) */
-#view-quiz.quiz-glass-scene.quiz-vn-enter::before {
+#view-quiz.quiz-glass-scene .choice-btn.selected { background: color-mix(in srgb, var(--sel) 10%, color-mix(in srgb, var(--bg) 40%, transparent)); }
+#view-quiz.quiz-glass-scene.quiz-black-in::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: #000;
+  background: var(--on-surface);
   z-index: 1000;
   pointer-events: none;
   animation: quizBlackReveal 1.4s ease forwards;
@@ -1017,276 +1285,392 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   100% { opacity: 0; }
 }
 
-/* Visual-novel reveal — BG fades 0.55s, then story slides up, choices follow */
-#view-quiz.quiz-vn-enter .quiz-scene-label,
-#view-quiz.quiz-vn-enter .quiz-story-box {
-  animation: quizVnStory 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: 0.85s;
-}
-#view-quiz.quiz-vn-enter .quiz-choices {
-  animation: quizVnFade 0.55s ease both;
-  animation-delay: 1.65s;
-}
-#view-quiz.quiz-vn-enter .quiz-next-wrap {
-  animation: quizVnFade 0.4s ease both;
-  animation-delay: 1.9s;
-}
-@keyframes quizVnStory {
-  from { opacity: 0; transform: translateY(80vh); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes quizVnFade {
-  from { opacity: 0; transform: translateY(18px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Scene label — thin kanji eyebrow */
-.quiz-scene-label {
-  font-family: var(--font-kanji);
-  font-size: 0.62rem;
-  letter-spacing: 0.28em;
-  color: var(--secondary);
-  opacity: 0.5;
-  text-align: center;
-  margin: 14px 24px 0;
-  text-transform: uppercase;
-}
-
-/* Story box — aged parchment scroll feel */
-.quiz-story-box {
-  position: relative;
-  margin: 10px 20px 0;
-  padding: 18px 22px 16px;
-  background: var(--surface-lowest);
-  border-radius: 16px;
-  box-shadow:
-    var(--shadow-ambient),
-    inset 0 1px 0 rgba(255,255,255,0.55),
-    inset 0 -1px 0 rgba(26,18,10,0.04);
-  overflow: hidden;
-}
-/* Ink-wash corner brushstroke accent */
-.quiz-story-box::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0;
-  width: 48px; height: 48px;
-  background: radial-gradient(ellipse at 0% 0%,
-    rgba(176,43,43,0.07) 0%, transparent 70%);
-  pointer-events: none;
-}
-.quiz-story-box::after {
-  content: '✦';
-  position: absolute;
-  bottom: 10px; right: 14px;
-  font-size: 0.45rem;
-  color: var(--secondary);
-  opacity: 0.22;
-}
-.quiz-story-box p {
-  font-size: 0.88rem;
-  line-height: 1.8;
-  color: var(--on-surface);
-  opacity: 0.82;
-  text-align: left;
-  white-space: pre-line;
-  position: relative;
-  z-index: 1;
-}
-
-/* ── Choice oracle card grid ────────────────────────────── */
-.quiz-choices {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 16px 20px 40px;
-}
-
-/* Each card: tall, image on top, text below */
-.choice-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  width: 100%;
-  padding: 0;
-  background: var(--surface-lowest);
-  border-radius: 18px;
-  border: 1.5px solid var(--outline-variant);
-  font-family: var(--font-body);
-  color: var(--on-surface);
-  box-shadow: var(--shadow-ambient);
-  overflow: hidden;
-  cursor: pointer;
-  opacity: 0;
-  animation: choiceCardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
-              box-shadow 0.22s ease;
-}
-.choice-btn:nth-child(1) { animation-delay: 0s; }
-.choice-btn:nth-child(2) { animation-delay: 0.04s; }
-.choice-btn:nth-child(3) { animation-delay: 0.08s; }
-.choice-btn:nth-child(4) { animation-delay: 0.12s; }
-
-@keyframes choiceCardIn {
-  from { opacity: 0; transform: translateY(16px) scale(0.96); }
-  to   { opacity: 1; transform: translateY(0)    scale(1);    }
-}
-
-.choice-btn:not(:disabled):hover { transform: translateY(-4px) scale(1.02); }
-/* hover border/shadow must not cover the orange selected ring */
-.choice-btn:not(:disabled):not(.selected):hover {
-  box-shadow: 0 12px 32px rgba(26,18,10,0.10);
-  border-color: rgba(26,18,10,0.22);
-}
-.choice-btn:not(:disabled):active { transform: scale(0.97); }
-
-/* Selected oracle card — orange border only, no fill */
-.choice-btn.selected,
-#view-quiz.quiz-glass-scene .choice-btn.selected {
-  border-color: var(--accent-orange);
-  box-shadow: 0 0 0 1.5px var(--accent-orange);
-}
-.choice-btn:disabled { cursor: not-allowed; opacity: 0.45; }
-.choice-btn.selected:disabled { opacity: 1; }
-
-/* E4 sliding doors (q.doors) — Split Reveal: two fusuma panels part from the card's centre
-   (X ∓105%, 720ms easeInOutCubic) · CSS placeholder art: washi panel + shoji lattice + round pull */
-.choice-btn { position: relative; }
-.choice-doors {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-}
-.choice-door {
-  position: absolute;
+/* Rain (q.weather 'rain' — E7) — hair-thin straight streaks, long-and-faint mixed with short-and-brighter, each
+   brightest at its tail · Nami blue mixed into cream (white would vanish on the cream clouds) · the layer sits
+   at z-index -1 inside the isolated view: above the cloud BG, under the story card and choices · fixed to the
+   mobile column so it covers the screen however long the page scrolls · drops built by setQuizWeather() */
+#view-quiz { position: relative; isolation: isolate; }
+.quiz-rain {
+  position: fixed;
   top: 0;
   bottom: 0;
-  width: 50%;
-  background:
-    repeating-linear-gradient(to right, transparent 0 calc(33.3% - 1px), color-mix(in srgb, var(--on-surface) 14%, transparent) calc(33.3% - 1px) 33.3%),
-    repeating-linear-gradient(to bottom, transparent 0 23px, color-mix(in srgb, var(--on-surface) 14%, transparent) 23px 24px),
-    var(--surface-low);
+  left: 50%;
+  width: min(100%, var(--max-w));
+  transform: translateX(-50%);
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
 }
-/* Each panel has its own wooden frame (kamachi) — the two meet as a thicker centre stile; the frame
-   slides away with the panel. Outer corners follow the card's 18px radius */
-.choice-door--l {
-  left: 0;
-  border-radius: 18px 0 0 18px;
-  box-shadow: inset 0 0 0 4px var(--ink-brown), inset -7px 0 8px color-mix(in srgb, var(--on-surface) 14%, transparent);
-}
-.choice-door--r {
-  right: 0;
-  border-radius: 0 18px 18px 0;
-  box-shadow: inset 0 0 0 4px var(--ink-brown), inset 7px 0 8px color-mix(in srgb, var(--on-surface) 14%, transparent);
-}
-/* hikite — the round finger pull near the seam */
-.choice-door::after {
-  content: '';
+.rain-drop {
   position: absolute;
-  top: 50%;
-  width: 12px;
-  height: 12px;
-  margin-top: -6px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--on-surface) 30%, transparent) 40%, color-mix(in srgb, var(--on-surface) 12%, transparent) 70%);
+  top: var(--y);   /* reduced motion: streaks stand still, spread down the screen */
+  left: var(--x);
+  width: var(--w);
+  height: var(--len);
+  border-radius: 1px;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--secondary) 45%, var(--bg)));
+  opacity: var(--o);
 }
-.choice-door--l::after { right: 10px; }
-.choice-door--r::after { left: 10px; }
-/* Opening is an animation, not a transition — it replaces the entry nudge below cleanly, and its
-   animationend (doorOpenL) is what marks the card .doors-ready (index.html buildChoiceDoors) */
-.choice-btn.doors-open .choice-door--l { animation: doorOpenL 720ms cubic-bezier(0.65, 0, 0.35, 1) forwards; }
-.choice-btn.doors-open .choice-door--r { animation: doorOpenR 720ms cubic-bezier(0.65, 0, 0.35, 1) forwards; }
-@keyframes doorOpenL { to { transform: translateX(-105%); } }
-@keyframes doorOpenR { to { transform: translateX(105%); } }
-/* Once, just after the cards land (quiz-vn-enter choices end ~2.2s): each closed door parts a crack
-   and shuts, card by card, so players see they slide */
-.choice-btn:not(.doors-open) .choice-door--l { animation: doorNudgeL 0.9s ease-in-out 2.3s; }
-.choice-btn:not(.doors-open) .choice-door--r { animation: doorNudgeR 0.9s ease-in-out 2.3s; }
-.choice-btn:nth-child(2):not(.doors-open) .choice-door { animation-delay: 2.45s; }
-.choice-btn:nth-child(3):not(.doors-open) .choice-door { animation-delay: 2.6s; }
-.choice-btn:nth-child(4):not(.doors-open) .choice-door { animation-delay: 2.75s; }
-@keyframes doorNudgeL { 0%, 100% { transform: translateX(0); } 45% { transform: translateX(-10%); } }
-@keyframes doorNudgeR { 0%, 100% { transform: translateX(0); } 45% { transform: translateX(10%); } }
-
-/* Doors question: no picture area — the choice text sits in the middle of the card */
-.quiz-choices--doors .choice-btn {
-  min-height: 150px;
-  justify-content: center;
+@media (prefers-reduced-motion: no-preference) {
+  .rain-drop { top: 0; animation: rainFall var(--d) linear var(--delay) infinite; }
 }
-.quiz-choices--doors .choice-text {
-  padding: 16px 14px;
-  font-size: 0.8rem;
-  line-height: 1.5;
-}
-/* Hint sits on a frosted pill so it reads over the cloud backdrop; arrives with the choices */
-.bento-instruction.quiz-doors-hint {
-  display: table;
-  margin: 16px auto 0;
-  padding: 6px 16px;
-  border-radius: 3rem;
-  background: color-mix(in srgb, var(--surface-lowest) 88%, transparent);
-  box-shadow: var(--shadow-ambient);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  color: var(--on-surface);
-  opacity: 1;
-}
-#view-quiz.quiz-vn-enter .quiz-doors-hint {
-  animation: quizVnFade 0.55s ease both;
-  animation-delay: 1.65s;
+@keyframes rainFall {
+  from { transform: translateY(calc(var(--len) * -1)); }
+  to   { transform: translateY(105dvh); }
 }
 
-/* Image area — top half of card */
-.choice-img {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  background: linear-gradient(160deg, var(--surface-low) 0%, var(--bg) 100%);
-  background-size: contain !important;
-  background-repeat: no-repeat !important;
-  background-position: center !important;
-  border-radius: 0;
-  flex-shrink: 0;
-  position: relative;
-}
-/* Subtle spirit shimmer in placeholder */
-.choice-img::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 50% 60%,
-    rgba(176,43,43,0.06) 0%, transparent 65%);
-}
-.choice-btn.selected .choice-img { /* no fill change */ }
-
-/* Text area — bottom of card */
-.choice-text {
-  display: block;
-  padding: 10px 10px 12px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1.35;
-  color: var(--on-surface);
-  text-align: center;
-  letter-spacing: 0.02em;
-  transition: color 0.18s;
-  background: var(--surface-lowest);
-}
-
-
-/* Quiz next button — bottom-right, same ghost style as gender */
+/* ── Next — お札 fuda: a paper talisman at the right edge (the choices own the full width).
+   Small square seal 次 (tsugi, "next") · the label says what's still missing, then "ไปต่อ" · when it can be
+   pressed the double enji frame inks in and the seal tilts like a fresh stamp ── */
 .quiz-next-wrap {
   position: sticky;
   bottom: 0;
   display: flex;
   justify-content: flex-end;
-  padding: 12px 20px 24px;
+  padding: 12px 20px calc(16px + env(safe-area-inset-bottom));
   pointer-events: none;
 }
-.quiz-next-wrap .btn-gender-next {
+.cta {
   pointer-events: all;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(280px, 100%);
+  min-height: 52px;
+  padding: 0 20px 0 10px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--on-surface);
+  background: var(--washi-grain), var(--bg);
+  transition: transform 0.2s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
+.cta-kanji {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  font-family: var(--font-kanji);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  transition: background 0.3s, color 0.3s, transform 0.3s;
+}
+.cta-label { flex: 1; text-align: center; }
+.cta-arrow { font-size: 17px; }
+.cta:disabled {
+  cursor: default;
+  color: color-mix(in srgb, var(--on-surface) 50%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--outline-variant);
+}
+.cta:disabled .cta-kanji { box-shadow: inset 0 0 0 1.5px var(--outline-variant); }
+.cta:disabled .cta-arrow { display: none; }
+.cta:not(:disabled) {
+  color: var(--cta);
+  box-shadow: var(--shadow-float), inset 0 0 0 2px var(--cta), inset 0 0 0 5px var(--bg), inset 0 0 0 6px color-mix(in srgb, var(--cta) 45%, transparent);
+}
+.cta:not(:disabled) .cta-kanji { background: var(--cta); color: var(--bg); transform: rotate(-6deg); }
+.cta:not(:disabled):active { transform: scale(0.97); }
+/* pressed: stays inked (not back to the waiting paper) while the seal lands; the 次 presses down once */
+.cta.sent { pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .cta.sent .cta-kanji { animation: kanjiPress 0.35s ease; }
+  .cta.pop { animation: ctaPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .cta.nudge:not(:disabled) { animation: ctaNudge 1.2s ease-in-out infinite; }
+}
+@keyframes kanjiPress { 50% { transform: rotate(-6deg) scale(0.82); } }
+@keyframes ctaPop { 40% { transform: scale(1.05); } }
+@keyframes ctaNudge { 50% { transform: translateY(-3px); } }
+
+/* the sakura seal lands on the chosen answer's own ○ — it covers the radio, never the words */
+.answer-seal {
+  position: absolute;
+  z-index: 4;
+  inset: -9px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 2px var(--primary), inset 0 0 0 4px var(--bg), inset 0 0 0 5px color-mix(in srgb, var(--primary) 45%, transparent);
+  font-size: 18px;
+  line-height: 1;
+  transform: rotate(-14deg);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .answer-seal { animation: stampPress 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .choice-btn.selected:has(.answer-seal) { animation: cardThud 0.45s ease; }
+}
+@keyframes stampPress {
+  0%   { opacity: 0; transform: rotate(-14deg) scale(2.2); }
+  55%  { opacity: 1; transform: rotate(-14deg) scale(0.85); }
+  100% { opacity: 1; transform: rotate(-14deg) scale(1); }
+}
+@keyframes cardThud { 55% { transform: scale(0.985); } }
+
+/* ════════════════════════════════════════
+   7b. VIEW: KEY SCENE — E5 / E10 as a visual-novel scene (showKeyScene)
+   art fills the screen · thread · stage (choice menu) · dialogue box · Next fuda (borrowed from the quiz)
+════════════════════════════════════════ */
+#view-key {
+  position: relative;
+  isolation: isolate;   /* art / mist / fx paint under the content */
+  overflow: hidden;
+  background: var(--on-surface);
+}
+#view-key.active { display: flex; flex-direction: column; height: 100dvh; }
+
+/* the event art (cover) · e10 lines boil with the same hand-drawn wobble as the choice pictures */
+.key-art { position: absolute; inset: 0; background: center / cover no-repeat; }
+.key-art--boil { inset: -4px; }   /* bleed past the edges so the wobble never shows a gap */
+@media (prefers-reduced-motion: no-preference) {
+  .key-art--boil { animation: choiceBoil 0.5s steps(1) infinite; }
+}
+/* art file not drawn yet: a striped slot that names the file to draw */
+.key-art--todo {
+  display: grid;
+  place-items: center;
+  align-content: start;
+  padding-top: 32%;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 14px, color-mix(in srgb, var(--ink-brown) 7%, transparent) 14px 28px),
+    var(--surface-low);
+  color: var(--ink-brown);
+  font-size: 14px;
+  line-height: 1.7;
+  text-align: center;
+}
+.key-art--todo b { font-size: 16px; }
+/* a slow mist drifting over the art */
+.key-mist {
+  position: absolute;
+  inset: -10%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 30% at 20% 70%, color-mix(in srgb, var(--bg) 55%, transparent), transparent 70%),
+    radial-gradient(ellipse 50% 25% at 80% 55%, color-mix(in srgb, var(--bg) 45%, transparent), transparent 70%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .key-mist { animation: keyMistDrift 14s ease-in-out infinite alternate; }
+}
+@keyframes keyMistDrift { to { transform: translateX(8%); opacity: 0.7; } }
+/* scene mood that grows line by line (opacity = line / lines): e5 dawn light · e10 the mist swallows him */
+.key-fx { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.6s ease; }
+.key-fx--dawn {
+  background: radial-gradient(ellipse 90% 55% at 70% 0%, color-mix(in srgb, var(--ink-gold) 35%, transparent), transparent 70%);
+  mix-blend-mode: screen;
+}
+.key-fx--fade { background: color-mix(in srgb, var(--bg) 60%, transparent); }
+
+.key-thread { position: relative; }
+.key-stage { position: relative; flex: 1; min-height: 0; }
+.key-dim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--on-surface) 35%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s;
+}
+.key-dim.on { opacity: 1; }
+/* choice phase: the borrowed #quiz-choices fills the stage, bottom-aligned (margin-top: auto, not
+   justify-content: flex-end, which would clip the top when it overflows) — never over the box */
+.key-menu {
+  position: absolute;
+  inset: 10px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.key-menu:empty { display: none; }
+.key-menu > .quiz-choices { margin-top: auto; padding-bottom: 0; }
+
+/* dialogue box — narration vs his speech told apart by name tag, rule, tail and text colour (not colour alone) */
+.key-box-wrap { position: relative; padding: 0 14px 14px; }
+.key-box {
+  position: relative;
+  min-height: 150px;
+  padding: 26px 20px 30px;
+  border-radius: 1.5rem;
+  background: var(--washi-grain), color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-float);
+  font-size: var(--fs-body);
+  line-height: 1.8;
+  color: var(--on-surface);
+}
+.key-box--narr { color: var(--ink-brown); }
+.key-name {
+  position: absolute;
+  top: -14px;
+  left: 18px;
+  padding: 4px 14px;
+  border-radius: 3rem;
+  background: var(--primary);
+  color: var(--bg);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  display: none;
+}
+.key-box--speech {
+  font-size: var(--fs-voice);
+  background: var(--washi-grain), color-mix(in srgb, var(--bg) 96%, transparent);
+  box-shadow: var(--shadow-float), inset 4px 0 0 var(--primary);
+}
+.key-box--speech .key-name { display: block; }
+.key-box--speech::after {   /* tail pointing up at him in the art */
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  margin-left: -10px;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 10px solid color-mix(in srgb, var(--bg) 96%, transparent);
+}
+.key-box--asking { min-height: 0; padding-bottom: 20px; }
+/* quick menu — quiet letter-spaced words resting on the box's top edge, like a margin note on washi */
+.key-quick {
+  position: absolute;
+  top: -13px;
+  right: 16px;
+  z-index: 1;
+  display: flex;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 3rem;
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+}
+.key-quick button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-family: var(--font-kanji);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: color-mix(in srgb, var(--on-surface) 50%, transparent);
+}
+.key-quick button[hidden] { display: none; }   /* HIDE leaves once the choices are up */
+.key-quick-ico { width: 15px; height: 15px; flex-shrink: 0; stroke: var(--primary); }
+/* ▼ — this line is done, tap for the next */
+.key-next-mark {
+  position: absolute;
+  right: 18px;
+  bottom: 12px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 10px solid var(--primary);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.key-next-mark.on { opacity: 1; }
+.key-tap-hint {
+  margin-top: 10px;
+  text-align: center;
+  font-family: var(--font-kanji);
+  font-size: var(--fs-small);
+  letter-spacing: 0.24em;
+  color: var(--bg);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.key-tap-hint.on { opacity: 0.85; }
+@media (prefers-reduced-motion: no-preference) {
+  .key-next-mark.on { animation: keyMarkBob 0.9s ease-in-out infinite; }
+  .key-tap-hint.on { animation: keyHintBreathe 2.2s ease-in-out infinite; }
+}
+@keyframes keyMarkBob { 50% { transform: translateY(4px); } }
+@keyframes keyHintBreathe { 50% { opacity: 0.45; } }
+/* HIDE: thread + box step aside to show the art; a tap anywhere brings them back */
+.key-hide-ui .key-thread, .key-hide-ui .key-box-wrap { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+.key-foot:empty { display: none; }
+
+/* LOG — narration as plain ink paragraphs, his lines tagged "???" with a red rule */
+.key-log {
+  position: absolute;
+  inset: 44px 0 0;
+  z-index: 20;
+  padding: 28px 24px;
+  overflow-y: auto;
+  font-size: var(--fs-body);
+  line-height: 1.75;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.key-log[hidden] { display: none; }
+.key-log-head {
+  margin-bottom: 20px;
+  text-align: center;
+  font-family: var(--font-kanji);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: color-mix(in srgb, var(--on-surface) 50%, transparent);
+}
+#key-log-lines p + p { margin-top: 14px; }
+.key-log-narr { color: var(--ink-brown); }
+.key-log-speech { padding-left: 14px; box-shadow: inset 3px 0 0 var(--primary); color: var(--on-surface); }
+.key-log-who { display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--primary); }
+.key-log-close {
+  display: block;
+  margin: 24px auto 0;
+  padding: 6px 18px;
+  font-family: var(--font-kanji);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  color: color-mix(in srgb, var(--on-surface) 55%, transparent);
+}
+
+/* Scroll title card — 巻物: the screen dims, a hanging scroll with wooden rods unrolls sideways from the
+   centre, then EVENT nn / scene name / kanji soak in like ink (the red question's effect) · ~3.2s or tap */
+.key-card {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  place-items: center;
+  background: color-mix(in srgb, var(--on-surface) 55%, transparent);
+}
+.key-card.playing { display: grid; }
+.key-card.out { opacity: 0; pointer-events: none; }
+.kc-scroll {
+  position: relative;
+  width: 74%;
+  margin-top: -12%;
+  padding: 22px 18px;
+  text-align: center;
+  background: var(--washi-grain), var(--bg);
+  box-shadow: var(--shadow-float);
+}
+.kc-scroll::before, .kc-scroll::after {   /* the rods */
+  content: '';
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  width: 7px;
+  border-radius: 4px;
+  background: var(--ink-brown);
+}
+.kc-scroll::before { left: -4px; }
+.kc-scroll::after  { right: -4px; }
+.kc-no    { font-family: var(--font-kanji); font-size: var(--fs-eyebrow); letter-spacing: 0.32em; color: var(--cta); }
+.kc-name  { margin-top: 6px; font-family: var(--font-display); font-size: 24px; line-height: 1.3; color: var(--on-surface); }
+.kc-kanji { margin-top: 4px; font-family: var(--font-kanji); font-size: var(--fs-small); letter-spacing: 0.4em; color: var(--cta); }
+@media (prefers-reduced-motion: no-preference) {
+  .key-card.playing { animation: kcDim 0.5s ease both; }
+  .key-card.playing .kc-scroll { animation: kcUnroll 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both; }
+  .key-card.playing .kc-inner  { animation: kcInk 0.7s ease 0.9s both; }
+  .key-card.playing.out { animation: kcOut 0.6s ease both; }   /* the card fades off while the first line starts */
+}
+@keyframes kcDim    { from { opacity: 0; } }
+@keyframes kcOut    { from { opacity: 1; } to { opacity: 0; } }
+@keyframes kcUnroll { from { clip-path: inset(-10px 47% -10px 47%); } to { clip-path: inset(-10px -10px -10px -10px); } }
+@keyframes kcInk    { from { opacity: 0; filter: blur(3px); } }
 
 /* ════════════════════════════════════════
    8. VIEW: BENTO
@@ -1793,8 +2177,8 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   box-shadow: 0 10px 28px rgba(26,18,10,0.10);
 }
 .bento-choice-btn.selected {
-  border-color: var(--accent-orange);
-  box-shadow: 0 0 0 1.5px var(--accent-orange);
+  border-color: var(--sel);
+  box-shadow: 0 0 0 1.5px var(--sel);
 }
 .bento-choice-img {
   width: 100%;
@@ -1817,7 +2201,7 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   line-height: 1.35;
   transition: color 0.18s;
 }
-.bento-choice-btn.selected .bento-choice-text { color: var(--accent-orange); }
+.bento-choice-btn.selected .bento-choice-text { color: var(--sel); }
 
 /* Next button */
 .bento-next-wrap {
@@ -3193,3 +3577,261 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   border-radius: 50%;
   box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--outline-variant);
 }
+
+/* ════════════════════════════════════════
+   CROWD INTRO — E2: storm-soaked guests burst into the ryokan (playCrowdIntro)
+   Three thumps shake the screen ("ตึง ตึง ตึง!") → "โครม!" as a cream obi band slides in → yokai bust
+   silhouettes hurry through it while the vacancy tab counts down to "เต็ม!" → danmaku comments fly
+   across → a late tanuki trips ("ตุ้บ!") → band leaves, the overlay fades over the E2 card.
+   Everything is keyed to .crowd-intro.playing; times come from CROWD_PACE as CSS vars (--out, --obi-at …).
+   Measured at play time: --stage-w / --stage-h / --run. Classes and keyframes are all crowd-prefixed.
+════════════════════════════════════════ */
+.crowd-intro {
+  --crowd-ink: color-mix(in srgb, var(--on-surface) 78%, var(--secondary));   /* silhouettes */
+  --crowd-band-top: 42%;
+  --crowd-band-h: 104px;
+  position: fixed;
+  inset: 0;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  z-index: 930;   /* under chapter (940) / narration (950): E2's lead narration fades out over it */
+  display: none;
+  overflow: hidden;
+  background: url('assets/ui/quiz/cloud_bg.png') center / cover no-repeat, var(--bg);
+  color: var(--on-surface);
+  transition: opacity 0.5s ease;
+}
+.crowd-intro.open { display: block; }
+.crowd-intro.leaving { opacity: 0; pointer-events: none; }   /* fading over the E2 card — nothing tappable */
+.crowd-shake { position: absolute; inset: 0; }
+.crowd-intro.playing .crowd-shake { animation: crowdKnock 0.9s ease both; }
+@keyframes crowdKnock {
+  0%, 30%, 60%, 100% { transform: none; }
+  8%, 38%, 68%       { transform: translate(-3px, 2px); }
+  16%, 46%, 76%      { transform: translate(3px, -1px); }
+}
+.crowd-dim { position: absolute; inset: 0; background: color-mix(in srgb, var(--on-surface) 50%, transparent); opacity: 0; }
+.crowd-intro.playing .crowd-dim { animation: crowdFadeIn 0.5s ease var(--dim-at) both, crowdFadeOut 0.5s ease var(--out) forwards; }
+@keyframes crowdFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes crowdFadeOut { to { opacity: 0; } }
+
+/* variety-show sound words — big, outlined, tilted; they pop for a beat and vanish */
+.crowd-sfx {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: 6;
+  width: max-content;   /* one line, whatever room is left to the right */
+  font-family: var(--font-display);
+  font-size: var(--size);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--c);
+  -webkit-text-stroke: 5px var(--on-surface);
+  paint-order: stroke fill;
+  opacity: 0;
+  rotate: var(--tilt);
+}
+.crowd-sfx--center { translate: -50% 0; }
+.crowd-intro.playing .crowd-sfx { animation: crowdSfxPop var(--hold) ease var(--at) both; }
+@keyframes crowdSfxPop {
+  0%   { opacity: 0; transform: scale(1.6); }
+  14%  { opacity: 1; transform: scale(1); }
+  75%  { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+/* rain over the night outside — pale streaks read well on the dimmed screen */
+.crowd-rain { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; opacity: 0; }
+.crowd-intro.playing .crowd-rain { animation: crowdFadeIn 0.6s ease both, crowdFadeOut 0.6s ease var(--out) forwards; }
+.crowd-drop {
+  position: absolute;
+  top: 0;
+  left: var(--x);
+  width: 1px;
+  height: var(--len);
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--bg) 70%, transparent));
+  opacity: var(--o);
+  transform: translateY(calc(var(--len) * -1));
+}
+.crowd-intro.playing .crowd-drop { animation: crowdRainFall var(--d) linear var(--delay) infinite; }
+@keyframes crowdRainFall { to { transform: translateY(var(--stage-h)); } }
+
+/* the band — a cream obi; the guests' busts hurry through it like a window onto the hall */
+.crowd-obi {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--crowd-band-top);
+  height: var(--crowd-band-h);
+  z-index: 2;
+  overflow: hidden;
+  background: var(--washi-grain), var(--bg);
+  box-shadow: var(--shadow-float);
+  clip-path: inset(0 100% 0 0);
+}
+.crowd-intro.playing .crowd-obi {
+  animation: crowdObiIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) var(--obi-at) both,
+             crowdObiOut 0.5s cubic-bezier(0.64, 0, 0.78, 0) var(--out) forwards;
+}
+@keyframes crowdObiIn  { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes crowdObiOut { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
+
+/* wet: dark blots soak into the band's paper as the dripping guests brush past */
+.crowd-blot {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--r);
+  height: var(--r);
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--secondary) 18%, transparent) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.4);
+}
+.crowd-intro.playing .crowd-blot { animation: crowdSoak 1.4s ease-out var(--delay) both; }
+@keyframes crowdSoak { to { opacity: 1; transform: none; } }
+
+/* busts (top 62% of the real yokai art, one ink colour via mask): two rows — the back row smaller and paler;
+   front-row neighbours differ a shade so overlapping shadows never melt into one blob */
+.crowd-walker {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: var(--s);
+  height: calc(var(--s) * 0.62);
+  overflow: hidden;
+  z-index: var(--z);
+  opacity: var(--o);
+  transform: translateX(calc(var(--s) * -1));
+}
+.crowd-walker i {
+  display: block;
+  width: 100%;
+  height: var(--s);
+  background: var(--crowd-ink);
+  -webkit-mask: var(--art) center top / contain no-repeat;
+          mask: var(--art) center top / contain no-repeat;
+}
+.crowd-intro.playing .crowd-walker   { animation: crowdWalk var(--d) linear var(--at) both; }
+.crowd-intro.playing .crowd-walker i { animation: crowdBob var(--bob) ease-in-out infinite alternate; }
+@keyframes crowdWalk { to { transform: translateX(var(--run)); } }
+@keyframes crowdBob  { to { transform: translateY(-4px) rotate(-2deg); } }
+/* the latecomer: one small shadow runs in after everyone, trips halfway, scrambles on */
+.crowd-intro.playing .crowd-walker--late   { animation: crowdLateRun var(--d) linear var(--at) both; }
+.crowd-intro.playing .crowd-walker--late i { animation: crowdBob 0.16s ease-in-out infinite alternate, crowdTrip 0.5s ease var(--trip-at) both; }
+@keyframes crowdLateRun {
+  0%   { transform: translateX(calc(var(--s) * -1)); }
+  38%  { transform: translateX(calc(var(--stage-w) * 0.42)); }
+  62%  { transform: translateX(calc(var(--stage-w) * 0.46)); }   /* down, picks itself up */
+  100% { transform: translateX(calc(var(--stage-w) + var(--s))); }
+}
+@keyframes crowdTrip {
+  30%  { rotate: 28deg; translate: 0 14px; }
+  70%  { rotate: 10deg; translate: 0 6px; }
+  100% { rotate: 0deg;  translate: 0 0; }
+}
+
+/* water drips from under the band — the guests are soaked */
+.crowd-drip {
+  position: absolute;
+  left: var(--x);
+  top: calc(var(--crowd-band-top) + var(--crowd-band-h));
+  z-index: 2;
+  width: 3px;
+  height: 7px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: color-mix(in srgb, var(--bg) 75%, var(--secondary));
+  opacity: 0;
+}
+.crowd-intro.playing .crowd-drip { animation: crowdDrip 0.8s ease-in var(--delay) var(--n); }
+@keyframes crowdDrip { 0% { opacity: 0.9; transform: none; } 100% { opacity: 0; transform: translateY(70px); } }
+
+/* water splashes onto the "lens": soft blurred beads land on the screen, then slide down and fade */
+.crowd-bead {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: 7;
+  width: var(--r);
+  height: var(--r);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--bg) 55%, transparent) 0%, transparent 35%),
+              radial-gradient(circle, transparent 55%, color-mix(in srgb, var(--bg) 35%, transparent) 75%, transparent 80%);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  opacity: 0;
+  transform: scale(0.2);
+}
+.crowd-intro.playing .crowd-bead { animation: crowdBeadHit 0.25s ease-out var(--at) both, crowdBeadSlide 2.2s ease-in calc(var(--at) + 0.6s) forwards; }
+@keyframes crowdBeadHit   { to { opacity: 1; transform: none; } }
+@keyframes crowdBeadSlide { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(46px) scaleY(1.2); } }
+
+/* vacancy tab on the band's top-left edge, right where every runner comes in: "ห้องว่าง 12" ticks down
+   as each one appears → red "เต็ม!" */
+.crowd-vacancy {
+  position: absolute;
+  left: 0;
+  top: calc(var(--crowd-band-top) - 30px);
+  z-index: 6;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px 6px 0 0;
+  background: var(--washi-grain), var(--bg);
+  box-shadow: inset 3px 0 0 var(--cta);
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0;
+}
+.crowd-vacancy b { font-size: 22px; font-variant-numeric: tabular-nums; color: var(--cta); line-height: 1; }
+.crowd-vacancy.tick b { animation: crowdTick 0.25s ease; }
+.crowd-vacancy.full { background: var(--primary); color: var(--bg); box-shadow: none; }
+.crowd-vacancy.full b { color: var(--bg); }
+.crowd-intro.playing .crowd-vacancy { animation: crowdFadeIn 0.3s ease var(--vac-at) both, crowdFadeOut 0.4s ease var(--out) forwards; }
+@keyframes crowdTick { 40% { transform: scale(1.35); } }
+
+/* danmaku — the guests' voices fly right → left like viewer comments on a variety stream: one at a time,
+   white with a dark outline, the loud ones bigger / red / gold */
+.crowd-danmaku { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+.crowd-intro.playing .crowd-danmaku { animation: crowdFadeOut 0.5s ease calc(var(--out) + 0.6s) forwards; }
+.crowd-cmt {
+  position: absolute;
+  left: 100%;
+  top: var(--lane);
+  width: max-content;   /* parked at left: 100% it would shrink to its smallest unit — Chrome still breaks at <wbr> under nowrap */
+  font-weight: 700;
+  font-size: var(--size);
+  white-space: nowrap;
+  line-height: 1.2;
+  color: var(--bg);
+  -webkit-text-stroke: 4px var(--on-surface);
+  paint-order: stroke fill;
+}
+.crowd-cmt--red  { color: var(--primary); -webkit-text-stroke-color: var(--bg); }
+.crowd-cmt--gold { color: var(--ink-gold); }
+.crowd-intro.playing .crowd-cmt { animation: crowdFly var(--d) linear var(--at) both; }
+@keyframes crowdFly { to { transform: translateX(calc(-1 * (var(--stage-w) + 100%))); } }
+
+/* SKIP ▸▸ — game-style, top-right, shown to everyone; it stays still while the screen shakes */
+.crowd-skip {
+  position: absolute;
+  right: 10px;
+  top: calc(10px + env(safe-area-inset-top));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 3rem;
+  background: color-mix(in srgb, var(--on-surface) 55%, transparent);
+  color: var(--bg);
+  font-family: var(--font-kanji);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  opacity: 0;
+}
+.crowd-skip-arrows { letter-spacing: -0.1em; }
+.crowd-intro.playing .crowd-skip { animation: crowdFadeIn 0.3s ease 0.5s both, crowdFadeOut 0.3s ease var(--out) forwards; }
+.crowd-intro.ending .crowd-skip { visibility: hidden; }   /* faded out with the band — and no longer tappable */

@@ -143,9 +143,9 @@ const QUESTIONS = {
       id:     'e1',
       scene:  'Dusk',                    // ป้ายฉากบน quiz header
       lead:   [],                        // บทเชื่อมก่อนฉาก (ว่างได้) — ดู Section 7
-      text:   'Story / situation text',
+      text:   'Story / situation text — Question?',   // คำถาม = ส่วนหลัง " — " ตัวสุดท้าย (การ์ดโชว์เป็นย่อหน้าแดง)
       choices: [
-        { text: 'Choice text', house: 'purple' },   // house = บ้านหลัก (+2) · บ้านสำรองมาจาก SECONDARY_HOUSE
+        { text: 'Choice text', house: 'purple', image: 'assets/ui/choice/…png' },   // house = บ้านหลัก (+2) · บ้านสำรองมาจาก SECONDARY_HOUSE · image ไม่บังคับ
         { text: 'Choice text', house: 'blue'   },
         { text: 'Choice text', house: 'yellow' },
         { text: 'Choice text', house: 'green'  }
@@ -210,6 +210,11 @@ const QUESTIONS = {
 - `yokai[0..2]` ต้องมี `sets.JP` และ `sets.TF` · `yokai[3..5]` ต้องมี `axis: 'EI'`
 - ถ้ามี `doll`: ต้องมีทั้ง `JP` และ `TF` ค่าเป็น `'before'` | `'after'`
 - ถ้ามี `doors` (house question): ต้องเป็น `true` เท่านั้น
+- Stage 1: `text` ต้องมี `" — "` คั่นก่อนคำถาม (ส่วนหลังตัวสุดท้าย = คำถามสีแดงในการ์ด)
+- `keyScene` (ข้อใดก็ได้): `{ art: path, kanji: text, fx: 'dawn' | 'fade', boil?: true }` → เล่นใน `#view-key` แทน narration + การ์ด · กฎ (`validateKeyScene`): art/kanji เป็นข้อความไม่ว่าง · fx = dawn | fade · boil = true หรือไม่มี · ห้ามมี `doll` / `doors` / `intro` · lead เป็น string หรือ array ของ string เท่านั้น (ไม่มี slow/reply/say) · เครื่องหมาย " ต้องปิดครบ · บรรทัด = lead + ฉาก (Stage 1: ข้อความก่อน " — ", Stage 2: บรรทัดของ `q.text`) ส่วนในเครื่องหมายคำพูด = คำพูด · ตอนนี้ e5 (暁, dawn) และ e10 (最後の灯, fade, boil) — คันจิเป็นตัวชั่วคราว
+- `weather` (ข้อใดก็ได้): `'rain'` เท่านั้น หรือไม่มี — ตอนนี้ e7 · หน้าคำถามโชว์ฝนหลังการ์ด
+- `intro` (ข้อใดก็ได้): `'crowd'` เท่านั้น หรือไม่มี — เล่นฉากหลังบทเชื่อม ก่อนการ์ดคำถาม · ตอนนี้ e2 (แขกภูตกรูเข้าเรียวกัง)
+- `image` (house question): มีครบทั้ง 4 ช้อยหรือไม่มีเลย (รูปเดียวจะดึงสายตา) · เป็น path · ห้ามใช้กับ `doors` — ตอนนี้ใช้ใน E1 (`bell` ม่วง · `omamori` ฟ้า · `pocketwatch` เหลือง · `notebook` เขียว)
 - ข้อความในเกมเป็น**ภาษาไทย** ตามต้นฉบับใน memory ของเจ้าของ (`project_questions_draft.md`) — คัดลอกลง `questions.js` ตรงตัว
 - ลำดับช้อยในไฟล์ไม่มีผล: UI สุ่มลำดับทุกครั้ง (`shuffled()`)
 

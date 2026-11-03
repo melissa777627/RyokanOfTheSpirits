@@ -77,23 +77,8 @@
 
     <div class="gender-bg" aria-hidden="true"></div>
 
-    <!-- Journey progress — Event 0 of 10 (pre-quiz, so 0%) -->
-    <div class="journey-progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Journey progress">
-      <div class="journey-progress-fill" style="width:0%"></div>
-    </div>
-    <div class="journey-dots" aria-hidden="true">
-      <span class="jd-dot active"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-label">0 / 10</span>
-    </div>
+    <!-- Journey thread — 11 knots, none tied yet (renderThread) -->
+    <div class="journey-thread" id="gender-thread" aria-hidden="true"></div>
 
     <header class="view-header">
       <span></span>
@@ -149,49 +134,84 @@
        VIEW: QUIZ — Step 4
   ════════════════════════════════════════ -->
   <div id="view-quiz" class="view">
+    <div class="quiz-rain" id="quiz-rain" aria-hidden="true" hidden><!-- setQuizWeather() --></div>
 
-    <div class="journey-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Journey progress">
-      <div class="journey-progress-fill" id="quiz-progress-fill" style="width:10%"></div>
-    </div>
-    <div class="journey-dots" id="quiz-dots" aria-hidden="true">
-      <span class="jd-dot active"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-dot"></span>
-      <span class="jd-label" id="quiz-dot-label">1 / 11</span>
-    </div>
+    <div class="journey-thread" id="quiz-thread" aria-hidden="true"><!-- renderThread() --></div>
 
-    <header class="view-header">
-      <span></span>
-      <span class="event-badge" id="quiz-event-badge">Event 1</span>
-    </header>
+    <!-- tap anywhere while the story is soaking in = show it all (renderQuestion wires it) -->
+    <div class="quiz-body" id="quiz-body">
+      <div class="noren-wrap">
+        <div class="noren-body">
+          <div class="noren"><span class="noren-no" id="quiz-noren-no"></span><span class="noren-dot">·</span><span class="noren-name" id="quiz-noren-name"></span></div>
+          <div class="noren-hem">
+            <span class="noren-strip"><span class="noren-low"></span></span>
+            <span class="noren-strip"><span class="noren-low"></span></span>
+            <span class="noren-strip"><span class="noren-low"></span></span>
+          </div>
+        </div>
+      </div>
 
-    <p class="quiz-scene-label" id="quiz-scene"></p>
+      <div class="quiz-story" id="quiz-story"></div>
+      <p class="quiz-skip-hint" id="quiz-skip-hint">— tap to show all —</p>
 
-    <div class="story-box quiz-story-box">
-      <p id="quiz-story">TBA</p>
-    </div>
+      <p class="quiz-doors-hint hidden" id="quiz-doors-hint"><!-- DOORS_HINT via thaiBreakable --></p>
 
-    <p class="bento-instruction quiz-doors-hint hidden" id="quiz-doors-hint">— Tap each door to slide it open —</p>
-
-    <div class="quiz-choices" id="quiz-choices">
-      <!-- Rendered by loadQuestion() -->
+      <div class="quiz-choices" id="quiz-choices"><!-- renderQuestion() --></div>
     </div>
 
     <div class="quiz-next-wrap">
-      <button id="btn-quiz-next" class="btn-gender-next" onclick="confirmAnswer()" disabled>
-        Next &nbsp;→
-      </button>
+      <button id="btn-quiz-next" class="cta" onclick="sealAnswer()" disabled><!-- setNextWaiting / setNextReady --></button>
     </div>
 
   </div><!-- /view-quiz -->
+
+  <!-- ════════════════════════════════════════
+       VIEW: KEY SCENE — E5 / E10 as a visual-novel scene over their own art (showKeyScene)
+       scroll title card → lines in the dialogue box (tap) → choices rise above the box
+  ════════════════════════════════════════ -->
+  <div id="view-key" class="view" onclick="advanceKeyScene()">
+    <div class="key-art" id="key-art" aria-hidden="true"></div>
+    <div class="key-mist" aria-hidden="true"></div>
+    <div class="key-fx" id="key-fx" aria-hidden="true"></div>
+    <div class="journey-thread key-thread" id="key-thread" aria-hidden="true"><!-- renderThread() --></div>
+
+    <div class="key-stage">
+      <div class="key-dim" id="key-dim"></div>
+      <!-- choice phase: #quiz-choices is borrowed in here and the Next fuda into #key-foot; endKeyScene() returns them -->
+      <div class="key-menu" id="key-menu"></div>
+    </div>
+
+    <div class="key-box-wrap">
+      <div class="key-box" id="key-box" aria-live="polite">
+        <span class="key-name">???</span>
+        <div class="key-quick">
+          <button type="button" onclick="openKeyLog(event)"><svg class="key-quick-ico" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8l0 4l2 2"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg>LOG</button>
+          <button type="button" id="key-hide-btn" onclick="hideKeyBox(event)">HIDE</button>
+        </div>
+        <div class="key-text" id="key-text"></div>
+        <span class="key-next-mark" id="key-next-mark" aria-hidden="true"></span>
+      </div>
+      <p class="key-tap-hint" id="key-tap-hint">— tap to continue —</p>
+    </div>
+
+    <div class="key-foot" id="key-foot"></div>
+
+    <div class="key-log" id="key-log" onclick="event.stopPropagation()" hidden>
+      <p class="key-log-head">LOG</p>
+      <div id="key-log-lines"></div>
+      <button type="button" class="key-log-close" onclick="closeKeyLog()">CLOSE</button>
+    </div>
+
+    <div class="key-card" id="key-card">
+      <div class="kc-scroll">
+        <div class="kc-inner">
+          <p class="kc-no" id="kc-no"></p>
+          <p class="kc-name" id="kc-name"></p>
+          <p class="kc-kanji" id="kc-kanji"></p>
+        </div>
+      </div>
+    </div>
+  </div><!-- /view-key -->
 
   <!-- ════════════════════════════════════════
        VIEW: BENTO — Step 5
@@ -377,6 +397,15 @@
     </filter>
   </svg>
 
+  <!-- Choice-picture line boil (E1 lost things): fine centred noise warps only the edges; .choice-pic flips
+       through these four (choiceBoil keyframes) at 8 fps, like animation redrawn every frame -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="choice-boil-0"><feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="1"/><feDisplacementMap in="SourceGraphic" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+    <filter id="choice-boil-1"><feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+    <filter id="choice-boil-2"><feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="13"/><feDisplacementMap in="SourceGraphic" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+    <filter id="choice-boil-3"><feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="21"/><feDisplacementMap in="SourceGraphic" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+  </svg>
+
   <!-- Chapter intro — number → line → title (QUESTIONS.chapters) · sits under narration -->
   <div id="chapter-intro" class="chapter-intro" onclick="finishChapter()" aria-live="polite">
     <div class="chapter-intro-content">
@@ -394,6 +423,12 @@
   <div id="narration" class="narration" onclick="advanceNarration()">
     <div id="narration-text" class="narration-text frost-band"></div>
     <p id="narration-tap" class="narration-tap">— tap to continue —</p>
+  </div>
+
+  <!-- E2 crowd intro — storm-soaked guests burst in (playCrowdIntro builds the scene into #crowd-scene each run) -->
+  <div id="crowd-intro" class="crowd-intro">
+    <div class="crowd-shake" id="crowd-scene"></div>
+    <button class="crowd-skip" onclick="skipCrowdIntro()">SKIP <span class="crowd-skip-arrows" aria-hidden="true">▸▸</span></button>
   </div>
 
   <!-- Black fade curtain — used for cinematic view transitions -->
@@ -424,6 +459,7 @@
 
 validateQuestions();   // fail fast if questions.js breaks DATA_SCHEMA §4
 validateThaiBreak();   // fail fast if a thai-break.js list entry can never match
+renderThread(document.getElementById('gender-thread'), 0);   // Event 0 — no knot tied yet
 
 // ── THAI LINE BREAKING — every Thai string goes on screen through this ──
 // Units from thaiTokens() (thai-break.js) never wrap inside; <wbr> marks where a phrase may wrap.
@@ -710,16 +746,46 @@ function advanceNarration() {
 
 // ── QUIZ ─────────────────────────────────────────────────────
 let _pendingChoice = null;
+let _quizIdle  = null;   // idle nudge (choices glow / Next bobs) — one at a time
+let _inkTimer  = null;   // story reveal step
+let _sealTimer = null;   // beat between the seal landing and the next question
+
+const QUIZ_HINT = {
+  pick:  'เลือกคำตอบก่อน',
+  next:  'ไปต่อ',
+  doors: 'เปิดประตูให้ครบ',
+  doorsHint: 'แตะประตูเพื่อเลื่อนเปิด แล้วเงี่ยหูฟังทีละบาน'
+};
+// story pacing (ms) — one place to tune how fast the scene soaks in
+const INK = { start: 250, phrase: 550, sentence: 1300, paragraph: 1700, end: 350 };
+const SKIP_HINT_MS = 1500, CHOICE_NUDGE_MS = 6000, NEXT_NUDGE_MS = 4000, SEAL_BEAT_MS = 850;
+
+function motionOn() { return !matchMedia('(prefers-reduced-motion: reduce)').matches; }
 
 function currentQuestion() {
   return state.stage === 2 ? QUESTIONS.yokai[state.currentQ] : QUESTIONS.house[state.currentQ];
 }
 
-function confirmAnswer() {
+// Next pressed → the sakura seal stamps onto the chosen answer's ○ → a beat to see it → record + move on
+function sealAnswer() {
   if (!_pendingChoice) return;
+  clearTimeout(_quizIdle);
+  const btn = document.getElementById('btn-quiz-next');
+  btn.classList.remove('nudge');
+  btn.classList.add('sent');
+  const wrap = document.getElementById('quiz-choices');
+  wrap.classList.add('sealed');
+  const seal = document.createElement('span');
+  seal.className = 'answer-seal';
+  seal.textContent = '🌸';
+  wrap.querySelector('.choice-btn.selected .choice-radio').append(seal);
+  _sealTimer = setTimeout(confirmAnswer, motionOn() ? SEAL_BEAT_MS : 250);
+}
+
+function confirmAnswer() {
+  if (!_pendingChoice) throw new Error('confirmAnswer: no choice picked');
   const choice = _pendingChoice;
   _pendingChoice = null;
-  document.getElementById('btn-quiz-next').disabled = true;
 
   if (state.stage === 1) {
     pickHouseAnswer(choice.house);
@@ -754,108 +820,255 @@ function journeyStep() {
   return state.stage === 1 ? state.currentQ + 1 : 6 + state.currentQ;
 }
 
+// The red thread: one knot per step, a line between — knots before `step` are tied, `step` itself pulses
+function renderThread(el, step) {
+  const total = QUESTIONS.house.length + QUESTIONS.yokai.length;
+  el.replaceChildren();
+  for (let i = 1; i <= total; i++) {
+    if (i > 1) {
+      const line = document.createElement('span');
+      line.className = 'thread-line' + (i <= step ? ' done' : '');
+      el.append(line);
+    }
+    const knot = document.createElement('span');
+    knot.className = 'knot' + (i < step ? ' done' : i === step ? ' now' : '');
+    el.append(knot);
+  }
+}
+
 function loadQuestion() {
   const q = currentQuestion();
+  endKeyScene();   // a key scene borrowed the choice list + Next fuda — they go home before any quiz card
+  // key scenes (E5, E10) play as a visual-novel scene over their own art — lead, scene and choices in one view
+  if (q.keyScene) { showKeyScene(q); return; }
   // The doll question's scene plays as narration (both sets), so its quiz card shows only the prompt
   const pages = q.doll ? [...q.lead, q.text] : q.lead;
   showNarration(pages, () => {
-    if (dollOrder(q) === 'before') {
-      // T/F set: draw first, then the prompt
-      startDoll(() => { showView('quiz'); renderQuestion(q, true); });
-      return;
-    }
-    renderQuestion(q, Boolean(q.doll));
+    // E2: the storm-soaked guests burst in before the question card
+    if (q.intro === 'crowd') { playCrowdIntro(() => showQuestionCard(q)); return; }
+    showQuestionCard(q);
   });
+}
+
+function showQuestionCard(q) {
+  if (dollOrder(q) === 'before') {
+    // T/F set: draw first, then the prompt
+    startDoll(() => { showView('quiz'); renderQuestion(q, true); });
+    return;
+  }
+  renderQuestion(q, Boolean(q.doll));
+}
+
+// Scene names start with an emoji and may carry a " · " subtitle — the noren shows only the last, short name
+function norenName(q) { return q.scene.replace(/^\S+\s+/, '').split(' · ').pop(); }
+
+// Story paragraphs + the question. Stage 1 keeps the question at the end of q.text after " — ";
+// Stage 2 has it as set.prompt · sceneShown = the scene already played as narration → the question only
+function storyParts(q, set, sceneShown) {
+  if (state.stage === 1) {
+    const cut = q.text.lastIndexOf(' — ');
+    if (cut < 0) throw new Error(`${q.id}: Stage 1 text needs " — " before its question`);
+    return { paras: sceneShown ? [] : [q.text.slice(0, cut)], prompt: q.text.slice(cut + 3) };
+  }
+  return { paras: sceneShown ? [] : q.text.split('\n').filter(Boolean), prompt: set.prompt };
+}
+
+// A paragraph whose space-separated phrases are each an .ink span (Thai clauses are split by spaces)
+function inkParagraph(text, className) {
+  const p = document.createElement('p');
+  if (className) p.className = className;
+  for (const part of text.split(/(\s+)/)) {
+    if (!part) continue;
+    if (/^\s+$/.test(part)) { p.append(part); continue; }
+    const ink = document.createElement('span');
+    ink.className = 'ink';
+    ink.append(thaiBreakable(part));
+    p.append(ink);
+  }
+  return p;
+}
+
+// Reveal .ink spans one after another · a longer breath after ? ! … — and between paragraphs.
+// Returns finish-now (safe to call twice); done() runs once, when everything is showing
+function revealInk(inks, done) {
+  let i = 0;
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    clearTimeout(_inkTimer);
+    inks.forEach(n => n.classList.add('on'));
+    done();
+  };
+  if (!motionOn()) { finish(); return finish; }
+  const step = () => {
+    if (i >= inks.length) { _inkTimer = setTimeout(finish, INK.end); return; }
+    const n = inks[i++];
+    n.classList.add('on');
+    const next = inks[i];
+    const pause = /[?!…—]$/.test(n.textContent) ? INK.sentence : INK.phrase;
+    _inkTimer = setTimeout(step, next && next.parentElement !== n.parentElement ? INK.paragraph : pause);
+  };
+  _inkTimer = setTimeout(step, INK.start);
+  return finish;
+}
+
+function armQuizIdle(fn, ms) {
+  clearTimeout(_quizIdle);
+  _quizIdle = setTimeout(fn, ms);
+}
+
+// The Next fuda always says the one thing still missing: open every door (n/4) → pick → ไปต่อ
+function setNextWaiting(label) {
+  const btn = document.getElementById('btn-quiz-next');
+  btn.disabled = true;
+  btn.classList.remove('nudge', 'sent');
+  btn.replaceChildren(nextKanji(), nextLabel(label));
+}
+function setNextReady() {
+  const btn = document.getElementById('btn-quiz-next');
+  const was = btn.disabled;
+  btn.disabled = false;
+  const arrow = document.createElement('span');
+  arrow.className = 'cta-arrow';
+  arrow.textContent = '→';
+  btn.replaceChildren(nextKanji(), nextLabel(QUIZ_HINT.next), arrow);
+  if (was) { btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); }
+  armQuizIdle(() => btn.classList.add('nudge'), NEXT_NUDGE_MS);
+}
+// 次 (tsugi, "next") — the small square seal on the fuda
+function nextKanji() {
+  const k = document.createElement('span');
+  k.className = 'cta-kanji';
+  k.textContent = '次';
+  return k;
+}
+function nextLabel(text) {
+  const l = document.createElement('span');
+  l.className = 'cta-label';
+  l.append(thaiBreakable(text));
+  return l;
+}
+function updateQuizNext(wrap) {
+  const total  = wrap.children.length;
+  const unseen = wrap.querySelectorAll('.choice-btn:not(.seen)').length;   // doors not yet listened to
+  if (wrap.classList.contains('quiz-choices--doors') && unseen) { setNextWaiting(`${QUIZ_HINT.doors} · ${total - unseen}/${total}`); return; }
+  if (!_pendingChoice) { setNextWaiting(QUIZ_HINT.pick); return; }
+  setNextReady();
+}
+
+// Long story on a small phone: the choices can rise below the fold — scroll just enough to show the first one
+function bringChoicesIntoView(wrap) {
+  const first = wrap.firstElementChild.getBoundingClientRect();
+  const foot  = document.querySelector('#view-quiz .quiz-next-wrap').getBoundingClientRect();
+  const below = first.bottom - foot.top + 16;
+  if (below > 0) window.scrollBy({ top: below, behavior: motionOn() ? 'smooth' : 'auto' });
 }
 
 // sceneShown = scene text was already shown (narration) → show prompt only
 function renderQuestion(q, sceneShown) {
   const isStage2 = state.stage === 2;
   if (isStage2) guardState(2);
-  const set     = isStage2 ? getStage2Set(q) : { prompt: '', choices: q.choices };
+  const set = isStage2 ? getStage2Set(q) : { prompt: '', choices: q.choices };
+  clearTimeout(_quizIdle);
+  clearTimeout(_inkTimer);
+  clearTimeout(_sealTimer);
+  window.scrollTo(0, 0);
 
   const view = document.getElementById('view-quiz');
-  view.classList.toggle('quiz-stage1', !isStage2);
   view.classList.toggle('quiz-glass-scene', q.id === 'e3');
-  view.classList.remove('quiz-vn-enter');
+  setQuizWeather(q.weather);
+  view.classList.remove('quiz-black-in');
   void view.offsetWidth;
-  if (!isStage2) view.classList.add('quiz-vn-enter');
+  if (q.id === 'e3') view.classList.add('quiz-black-in');
 
   // eventNum = story numbering E1–E10 (Bento has no event number)
-  const step     = journeyStep();
   const eventNum = isStage2 ? 5 + state.currentQ : state.currentQ + 1;
-  const total    = QUESTIONS.house.length + QUESTIONS.yokai.length;
+  renderThread(document.getElementById('quiz-thread'), journeyStep());
+  document.getElementById('quiz-noren-no').textContent = 'EVENT ' + String(eventNum).padStart(2, '0');
+  document.getElementById('quiz-noren-name').replaceChildren(thaiBreakable(norenName(q)));
 
-  // Progress bar
-  document.getElementById('quiz-progress-fill').style.width = (step / total * 100) + '%';
+  // Story: paragraphs, then the question as the last red one — revealed phrase by phrase
+  const { paras, prompt } = storyParts(q, set, sceneShown);
+  const story = document.getElementById('quiz-story');
+  story.replaceChildren(...paras.map(p => inkParagraph(p)), inkParagraph(prompt, 'quiz-prompt'));
 
-  // Dots
-  const dots = document.querySelectorAll('#quiz-dots .jd-dot');
-  dots.forEach((d, i) => {
-    d.classList.toggle('done',   i < step - 1);
-    d.classList.toggle('active', i === step - 1);
-    d.classList.remove(i < step - 1 ? 'active' : 'done');
-  });
-  document.getElementById('quiz-dot-label').textContent = step + ' / ' + total;
-
-  // Header + scene
-  document.getElementById('quiz-event-badge').textContent = 'Event ' + eventNum;
-  document.getElementById('quiz-scene').replaceChildren(thaiBreakable(q.scene));
-  // scene text may be empty when the whole scene lives in the lead narration (E9)
-  document.getElementById('quiz-story').replaceChildren(thaiBreakable(
-    (sceneShown ? [set.prompt] : [q.text, set.prompt]).filter(Boolean).join('\n\n')));
-
-  // Reset next button for new question
   _pendingChoice = null;
-  document.getElementById('btn-quiz-next').disabled = true;
 
   // Choices — q.doors: text-only cards, each behind closed sliding doors (Split Reveal) + a hint line
   const wrap = document.getElementById('quiz-choices');
-  wrap.innerHTML = '';
-  wrap.classList.toggle('quiz-choices--doors', Boolean(q.doors));
-  document.getElementById('quiz-doors-hint').classList.toggle('hidden', !q.doors);
-  shuffled(set.choices).forEach(c => {
-    const btn = document.createElement('button');
-    btn.className = 'choice-btn';
+  wrap.replaceChildren();
+  wrap.className = 'quiz-choices' + (q.doors ? ' quiz-choices--doors' : '');
+  const hint = document.getElementById('quiz-doors-hint');
+  hint.replaceChildren(thaiBreakable(QUIZ_HINT.doorsHint));
+  hint.classList.toggle('hidden', !q.doors);
+  hint.classList.remove('in');
+  shuffled(set.choices).forEach((c, i) => wrap.append(buildChoice(q, c, i, wrap)));
+  updateQuizNext(wrap);   // the fuda says what is missing from the start (doors 0/4, else "pick")
 
-    if (!q.doors) {
-      const img = document.createElement('div');
-      img.className = 'choice-img';
-      if (c.image) {
-        img.style.backgroundImage = `url('${c.image}')`;
-        img.style.backgroundSize  = 'cover';
-        img.style.backgroundPosition = 'center';
-        img.classList.add('choice-img--has-img');
-      }
-      btn.appendChild(img);
-    }
-
-    const txt = document.createElement('span');
-    txt.className = 'choice-text';
-    txt.append(thaiBreakable(c.text));
-    btn.appendChild(txt);
-    if (q.doors) btn.appendChild(buildChoiceDoors(btn));
-
-    btn.addEventListener('click', () => {
-      if (q.doors && !btn.classList.contains('doors-open')) { btn.classList.add('doors-open'); return; }
-      if (q.doors && !btn.classList.contains('doors-ready')) return;   // still sliding — a quick double tap only opens
-      wrap.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      _pendingChoice = c;
-      updateQuizNext(wrap);
-    });
-    wrap.appendChild(btn);
+  // The choices rise only once the story has arrived — or the player taps anywhere to see it all
+  const body = document.getElementById('quiz-body');
+  const skip = document.getElementById('quiz-skip-hint');
+  skip.classList.remove('on');
+  const skipTimer = setTimeout(() => skip.classList.add('on'), SKIP_HINT_MS);
+  const finish = revealInk([...story.querySelectorAll('.ink')], () => {
+    clearTimeout(skipTimer);
+    skip.classList.remove('on');
+    body.removeEventListener('click', finish);
+    wrap.classList.add('in');
+    hint.classList.add('in');
+    bringChoicesIntoView(wrap);
+    armQuizIdle(() => wrap.classList.add('nudge'), CHOICE_NUDGE_MS);
   });
+  body.addEventListener('click', finish);
 }
 
-// Next needs a choice — and on a doors question every door opened first, so all four were read
-function updateQuizNext(wrap) {
-  const allOpen = !wrap.querySelector('.choice-doors') || !wrap.querySelector('.choice-btn:not(.doors-open)');
-  document.getElementById('btn-quiz-next').disabled = !_pendingChoice || !allOpen;
+// One answer card: radio ○ · (picture) · words · (doors). Picking one marks it and asks the fuda to update
+function buildChoice(q, c, i, wrap) {
+  const btn = document.createElement('button');
+  btn.className = 'choice-btn' + (c.image ? ' has-pic' : '');
+  btn.style.setProperty('--i', i);
+  btn.setAttribute('aria-pressed', 'false');
+  const radio = document.createElement('span');
+  radio.className = 'choice-radio';
+  btn.append(radio);
+  if (c.image) {
+    const pic = document.createElement('span');
+    pic.className = 'choice-pic';
+    const img = document.createElement('img');
+    img.src = c.image;
+    img.alt = '';
+    pic.append(img);
+    btn.append(pic);
+  }
+  const txt = document.createElement('span');
+  txt.className = 'choice-text';
+  txt.append(thaiBreakable(c.text));
+  btn.append(txt);
+  if (q.doors) {
+    btn.classList.add('closed');
+    btn.append(buildChoiceDoors());
+    txt.querySelectorAll('.th-unit').forEach((u, n) => u.style.setProperty('--u', n));   // phrase order for the hear-in
+  }
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();   // a card tap never counts as "show the whole story"
+    if (wrap.classList.contains('sealed')) return;
+    if (q.doors && btn.classList.contains('closed')) { openDoor(btn, wrap); return; }
+    if (q.doors && btn.classList.contains('opening')) return;   // still sliding — a quick double tap only opens
+    wrap.querySelectorAll('.choice-btn').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-pressed', 'false'); });
+    btn.classList.add('selected');
+    btn.setAttribute('aria-pressed', 'true');
+    wrap.classList.add('has-pick');
+    if (q.doors) shutOtherDoors(wrap, btn);
+    _pendingChoice = c;
+    updateQuizNext(wrap);
+  });
+  return btn;
 }
 
-// Two fusuma panels meeting at the card's centre; once they've slid away the card can be picked
-function buildChoiceDoors(btn) {
+// Two fusuma panels meeting at the card's centre
+function buildChoiceDoors() {
   const doors = document.createElement('div');
   doors.className = 'choice-doors';
   doors.setAttribute('aria-hidden', 'true');
@@ -864,12 +1077,256 @@ function buildChoiceDoors(btn) {
     door.className = className;
     doors.appendChild(door);
   });
-  doors.firstChild.addEventListener('animationend', e => {
-    if (e.animationName !== 'doorOpenL') return;   // the nudge loop never ends; only the opening counts
-    btn.classList.add('doors-ready');
-    updateQuizNext(btn.parentElement);
-  });
   return doors;
+}
+
+// Slide a door open: the last one listened to shuts first; once fully open the card counts as heard (.seen)
+const DOOR_SLIDE_MS = 720;   // = .choice-door transition
+function openDoor(btn, wrap) {
+  shutOtherDoors(wrap, btn);
+  btn.classList.replace('closed', 'opening');
+  setTimeout(() => {
+    if (!btn.isConnected) return;   // the question moved on while it slid
+    btn.classList.replace('opening', 'open');
+    btn.classList.add('seen');
+    updateQuizNext(wrap);
+  }, motionOn() ? DOOR_SLIDE_MS : 0);
+}
+
+// Only the door being listened to and the picked door stay open — every other open door slides shut
+function shutOtherDoors(wrap, keep) {
+  wrap.querySelectorAll('.choice-btn.open').forEach(b => {
+    if (b !== keep && !b.classList.contains('selected')) b.classList.replace('open', 'closed');
+  });
+}
+
+// Weather layer behind the story card — only 'rain' so far (E7); drops are made once, on the first rainy question
+const RAIN_DROPS = 90;
+function setQuizWeather(weather) {
+  const layer = document.getElementById('quiz-rain');
+  layer.hidden = weather !== 'rain';
+  if (layer.hidden || layer.childElementCount) return;
+  for (let i = 0; i < RAIN_DROPS; i++) {
+    const short = Math.random() < 0.3;   // ~30% short, brighter dashes; the rest long and faint
+    const drop = document.createElement('span');
+    drop.className = 'rain-drop';
+    const vars = {
+      '--x': Math.random() * 100 + '%',
+      '--y': Math.random() * 90 + '%',
+      '--w': Math.random() < 0.25 ? '2px' : '1px',
+      '--len': (short ? 12 + Math.random() * 14 : 40 + Math.random() * 70) + 'px',
+      '--o': short ? 0.6 + Math.random() * 0.3 : 0.3 + Math.random() * 0.4,
+      '--d': 0.7 + Math.random() * 0.6 + 's',
+      '--delay': -Math.random() * 2 + 's'
+    };
+    for (const [k, v] of Object.entries(vars)) drop.style.setProperty(k, v);
+    layer.append(drop);
+  }
+}
+
+// ── KEY SCENE (E5, E10) — a visual-novel scene over the event's own art ─────
+// Flow: scroll title card → lead + scene line by line in the dialogue box (tap) → the question stays in the
+// shrunken box and the choices rise above it. The choice phase reuses the quiz's own pieces: #quiz-choices
+// and the Next fuda are borrowed into this view (buildChoice / updateQuizNext / sealAnswer / confirmAnswer
+// work unchanged) and endKeyScene() puts them back before the next quiz card.
+const KEY_TYPE_MS = { narr: 24, speech: 38 };   // his words type a little slower than the narrator's
+const KEY_CARD_MS = 3200, KEY_CARD_REDUCED_MS = 1200, KEY_CARD_FADE_MS = 600, KEY_TAP_HINT_MS = 2500;
+const KEY_ART_TODO = 'ภาพฉาก (รอวาด)';
+const _key = { q: null, set: null, prompt: '', lines: [], at: 0, phase: 'off', home: null,
+               cardTimer: null, typeTimer: null, hintTimer: null };
+
+// 'EVENT 05' — story numbering E1–E10 (Bento has no event number), same as the quiz noren
+function eventNumber() { return state.stage === 2 ? 5 + state.currentQ : state.currentQ + 1; }
+
+// Lead pages + scene paragraphs → box lines. A page is a string ('\n' = next line) or an array of strings;
+// a quoted part is his speech and the quote marks go (the box itself shows who is talking).
+// validateQuestions() already rejects { slow } / { reply } / { say } entries in a key scene
+function keyLines(pages) {
+  return pages.flatMap(page => (Array.isArray(page) ? page : page.split('\n'))).flatMap(line =>
+    (line.match(/["“][^"”]*["”]|[^"“”]+/g) || [])
+      .map(s => s.trim()).filter(Boolean)
+      .map(s => /^["“]/.test(s) ? { text: s.slice(1, -1).trim(), speech: true } : { text: s, speech: false }));
+}
+
+function showKeyScene(q) {
+  endKeyScene();
+  const isStage2 = state.stage === 2;
+  if (isStage2) guardState(2);
+  const set = isStage2 ? getStage2Set(q) : { prompt: '', choices: q.choices };
+  const { paras, prompt } = storyParts(q, set, false);
+  Object.assign(_key, { q, set, prompt, lines: keyLines([...q.lead, ...paras]), at: 0, phase: 'card' });
+
+  showView('key');
+  setKeyArt(q.keyScene);
+  const fx = document.getElementById('key-fx');
+  fx.className = 'key-fx key-fx--' + q.keyScene.fx;
+  fx.style.opacity = 0;
+  renderThread(document.getElementById('key-thread'), journeyStep());
+  document.getElementById('key-hide-btn').hidden = false;
+
+  // the scroll title card first, so the change of layout feels like a chapter moment
+  document.getElementById('kc-no').textContent = 'EVENT ' + String(eventNumber()).padStart(2, '0');
+  document.getElementById('kc-name').replaceChildren(thaiBreakable(norenName(q)));
+  document.getElementById('kc-kanji').textContent = q.keyScene.kanji;
+  const card = document.getElementById('key-card');
+  card.classList.remove('playing', 'out');
+  void card.offsetWidth;   // restart the unroll for the second key scene
+  card.classList.add('playing');
+  _key.cardTimer = setTimeout(startKeyLines, motionOn() ? KEY_CARD_MS : KEY_CARD_REDUCED_MS);
+}
+
+// Owner's art if the file loads · otherwise a striped slot that names the file to draw (no silent fallback)
+function setKeyArt(scene) {
+  const art = document.getElementById('key-art');
+  art.className = 'key-art' + (scene.boil ? ' key-art--boil' : '');
+  art.style.backgroundImage = '';
+  art.replaceChildren();
+  const probe = new Image();
+  probe.onload = () => { art.style.backgroundImage = `url('${scene.art}')`; };
+  probe.onerror = () => {
+    console.warn('[Ryokan] key scene art missing:', scene.art);
+    art.classList.add('key-art--todo');
+    const label = document.createElement('div');
+    const title = document.createElement('b');
+    title.append(thaiBreakable(KEY_ART_TODO));
+    label.append(title, document.createElement('br'), scene.art, document.createElement('br'), '750 × 1334 px');
+    art.append(label);
+  };
+  probe.src = scene.art;
+}
+
+function startKeyLines() {
+  if (_key.phase !== 'card') return;
+  clearTimeout(_key.cardTimer);
+  _key.phase = 'read';
+  const card = document.getElementById('key-card');
+  card.classList.add('out');
+  _key.cardTimer = setTimeout(() => card.classList.remove('playing'), KEY_CARD_FADE_MS);
+  showKeyLine();
+}
+
+// narration: no name tag, ink-brown · his line: "???" tag (his name is lost in the mist), red rule, tail up
+function setKeySpeaker(speech) {
+  const box = document.getElementById('key-box');
+  box.classList.toggle('key-box--speech', speech);
+  box.classList.toggle('key-box--narr', !speech);
+}
+
+function showKeyLine() {
+  const line = _key.lines[_key.at];
+  clearTimeout(_key.hintTimer);
+  document.getElementById('key-next-mark').classList.remove('on');
+  document.getElementById('key-tap-hint').classList.remove('on');
+  setKeySpeaker(line.speech);
+  document.getElementById('key-fx').style.opacity = (_key.at + 1) / _key.lines.length;
+  // the whole line is laid out from the first frame (graphemes hidden) so typing never re-wraps it
+  const text = document.getElementById('key-text');
+  text.replaceChildren(thaiBreakable(line.text, true));
+  const graphemes = [...text.querySelectorAll('.th-g')];
+  graphemes.forEach(g => g.classList.add('narration-unrevealed'));
+  if (!motionOn()) { finishKeyLine(); return; }
+  let i = 0;
+  _key.typeTimer = setInterval(() => {
+    graphemes[i++].classList.remove('narration-unrevealed');
+    if (i >= graphemes.length) finishKeyLine();
+  }, line.speech ? KEY_TYPE_MS.speech : KEY_TYPE_MS.narr);
+}
+
+function finishKeyLine() {
+  clearInterval(_key.typeTimer);
+  _key.typeTimer = null;
+  document.querySelectorAll('#key-text .narration-unrevealed').forEach(g => g.classList.remove('narration-unrevealed'));
+  document.getElementById('key-next-mark').classList.add('on');
+  // the tap hint only shows if they hesitate
+  _key.hintTimer = setTimeout(() => document.getElementById('key-tap-hint').classList.add('on'), KEY_TAP_HINT_MS);
+}
+
+// The whole view is the tap target: card → skip it · hidden box → bring it back · typing → finish the line ·
+// shown → next line, or the choices after the last one. In the choice phase taps on empty space do nothing
+function advanceKeyScene() {
+  const view = document.getElementById('view-key');
+  if (_key.phase === 'card') { startKeyLines(); return; }
+  if (view.classList.contains('key-hide-ui')) { view.classList.remove('key-hide-ui'); return; }
+  if (_key.phase !== 'read') return;
+  if (_key.typeTimer) { finishKeyLine(); return; }
+  if (_key.at < _key.lines.length - 1) { _key.at++; showKeyLine(); return; }
+  showKeyChoices();
+}
+
+// The question stays in the box (shrunk) · the quiz's own choice list rises into the stage above it
+function showKeyChoices() {
+  _key.phase = 'ask';
+  clearTimeout(_key.hintTimer);
+  document.getElementById('key-next-mark').classList.remove('on');
+  document.getElementById('key-tap-hint').classList.remove('on');
+  document.getElementById('key-hide-btn').hidden = true;   // hide only makes sense while reading
+  setKeySpeaker(false);
+  const box = document.getElementById('key-box');
+  box.classList.add('key-box--asking');
+  const ask = document.createElement('p');
+  ask.className = 'quiz-prompt';
+  ask.append(thaiBreakable(_key.prompt));
+  document.getElementById('key-text').replaceChildren(ask);
+  document.getElementById('key-dim').classList.add('on');
+
+  const wrap = document.getElementById('quiz-choices');
+  const foot = document.getElementById('btn-quiz-next').parentElement;
+  _key.home = { wrap: [wrap.parentElement, wrap.nextSibling], foot: [foot.parentElement, foot.nextSibling] };
+  document.getElementById('key-menu').append(wrap);
+  document.getElementById('key-foot').append(foot);
+  wrap.replaceChildren();
+  wrap.className = 'quiz-choices';
+  _pendingChoice = null;
+  setNextWaiting(QUIZ_HINT.pick);
+  shuffled(_key.set.choices).forEach((c, i) => wrap.append(buildChoice(_key.q, c, i, wrap)));
+  requestAnimationFrame(() => wrap.classList.add('in'));
+  armQuizIdle(() => wrap.classList.add('nudge'), CHOICE_NUDGE_MS);
+}
+
+function hideKeyBox(e) {
+  e.stopPropagation();
+  document.getElementById('view-key').classList.add('key-hide-ui');   // look at the art without the box in the way
+}
+
+// Log keeps the split: narration as plain ink paragraphs, his lines tagged "???" with a red rule
+function openKeyLog(e) {
+  e.stopPropagation();
+  const shown = _key.phase === 'ask' ? _key.lines : _key.lines.slice(0, _key.at + 1);
+  document.getElementById('key-log-lines').replaceChildren(...shown.map(line => {
+    const p = document.createElement('p');
+    p.className = line.speech ? 'key-log-speech' : 'key-log-narr';
+    if (line.speech) {
+      const who = document.createElement('span');
+      who.className = 'key-log-who';
+      who.textContent = '???';
+      p.append(who);
+    }
+    p.append(thaiBreakable(line.text));
+    return p;
+  }));
+  document.getElementById('key-log').hidden = false;
+}
+function closeKeyLog() { document.getElementById('key-log').hidden = true; }
+
+// Back to a clean slate: timers stopped, borrowed quiz pieces returned home, box/stage/log reset.
+// Called before every key scene and from loadQuestion(), so the next quiz card always has its own pieces
+function endKeyScene() {
+  clearTimeout(_key.cardTimer);
+  clearInterval(_key.typeTimer);
+  clearTimeout(_key.hintTimer);
+  _key.typeTimer = null;
+  _key.phase = 'off';
+  if (_key.home) {
+    const { wrap, foot } = _key.home;
+    wrap[0].insertBefore(document.getElementById('quiz-choices'), wrap[1]);
+    foot[0].insertBefore(document.getElementById('btn-quiz-next').parentElement, foot[1]);
+    _key.home = null;
+  }
+  document.getElementById('view-key').classList.remove('key-hide-ui');
+  document.getElementById('key-box').classList.remove('key-box--asking', 'key-box--speech', 'key-box--narr');
+  document.getElementById('key-text').replaceChildren();
+  document.getElementById('key-dim').classList.remove('on');
+  document.getElementById('key-log').hidden = true;
 }
 
 // ── BENTO ─────────────────────────────────────────────────────
@@ -1475,6 +1932,191 @@ function openDollWheel() {
 
 function closeDollWheel() {
   document.getElementById('doll-wheel-panel').classList.remove('open');
+}
+
+// ── CROWD INTRO — E2: the storm-soaked guests burst into the ryokan (DESIGN_SYSTEM "Crowd Intro") ──
+// Approved in lab/crowd-lab.html ("เดิม + ห้องเต็มก่อน"). loadQuestion() plays it after E2's lead narration,
+// before the E2 card. Times are seconds from the first knock.
+const CROWD_ART = ['tengu_m', 'nekomata_f', 'oni_m', 'tanuki_m', 'yukionna_f', 'inugami_m', 'shinigami_f', 'hebi_m',
+                   'raijin_m', 'fuujin_f', 'ningyo_f', 'oni_f'];   // busts streaming through (assets/yokai/*.png)
+const CROWD_LATE_ART = 'tanuki_m';
+// draft lines (owner may still rewrite) · kind: big = louder, red / gold = colour
+const CROWD_COMMENTS = [
+  ['เปียกไปหมดทั้งตัวแล้ว', ''], ['ขอหลบฝนด้วยเถิด!', 'big'], ['ใครสะบัดน้ำใส่ข้า!?', 'red'],
+  ['ขอผ้าเช็ดตัวหน่อย', 'gold'], ['ปิดประตูที ฝนสาดเข้ามา!!', 'big red']
+];
+const CROWD_LATE_LINE = ['รอข้าด้วยยย ข้าก็เปียกนะ!', ''];   // 6th line — rides with the latecomer
+const CROWD_LANES = ['16%', '72%', '24%', '80%', '30%'];
+const CROWD_LATE_LANE = '72%';
+const CROWD_PACE = {
+  knockAt: 0.1, knockHold: 1.4, dimAt: 0.6, crashAt: 0.95, crashHold: 0.9, obiAt: 0.9, vacAt: 1.4,
+  crowdAt: 1.2, spread: 1.9, front: [2.0, 2.5], back: [2.6, 3.1], wet: [1.8, 3.6],
+  afterFull: 0.4,          // the first comment leaves this long after the last room fills
+  gap: 0.62, cross: 3.4,   // between comments · time a comment takes to cross the screen
+  breath: 1.3,             // quiet beat after the last comment, then the latecomer runs in
+  lineLag: 0.6, lateRun: 2.0, tripAt: 0.75, tripHold: 1.0,
+  page: 0.4, fade: 0.5     // after the band leaves: when the overlay starts fading over the E2 card · how long
+};
+// sound words: text, x, y, size (px), colour, tilt, start, hold, centred
+const CROWD_SFX = [
+  ['ตึง ตึง ตึง!', '50%', '20%', 30, 'var(--bg)', '0deg', CROWD_PACE.knockAt, CROWD_PACE.knockHold, true],
+  ['โครม!', '8%', '30%', 34, 'var(--primary)', '-8deg', CROWD_PACE.crashAt, CROWD_PACE.crashHold, false]
+];
+const CROWD_TRIP_SFX = ['ตุ้บ!', '44%', '36%', 22, 'var(--ink-gold)', '-10deg'];
+
+let _crowdDone   = null;   // E2 card — runs exactly once, on skip or at the end
+let _crowdTimers = [];
+
+// same seed every run → the same crowd every time
+function crowdRandom(seed) { return () => (seed = (seed * 16807) % 2147483647) / 2147483647; }
+function crowdPick(rnd, [lo, hi]) { return lo + rnd() * (hi - lo); }
+function crowdEl(tag, className, vars) {
+  const n = document.createElement(tag);
+  n.className = className;
+  if (vars) Object.entries(vars).forEach(([k, v]) => n.style.setProperty('--' + k, v));
+  return n;
+}
+function crowdArtUrl(art) { return `assets/yokai/${art}.png`; }
+// a silhouette bust: the art only shapes it (CSS mask) — fail loudly if the file is missing (it would just vanish)
+function crowdWalker(art, vars) {
+  const probe = new Image();
+  probe.onerror = () => { throw new Error(`[Ryokan] crowd intro: missing ${crowdArtUrl(art)}`); };
+  probe.src = crowdArtUrl(art);
+  const w = crowdEl('span', 'crowd-walker', { art: `url('${crowdArtUrl(art)}')`, ...vars });
+  w.append(document.createElement('i'));
+  return w;
+}
+function crowdText(className, text, vars) {
+  const n = crowdEl('span', className, vars);
+  n.append(thaiBreakable(text));
+  return n;
+}
+function crowdSfx([text, x, y, size, c, tilt, at, hold, centred]) {
+  return crowdText('crowd-sfx' + (centred ? ' crowd-sfx--center' : ''), text, { x, y, size: size + 'px', c, tilt, at: at + 's', hold: hold + 's' });
+}
+function crowdComment([text, kind], lane, at) {
+  const cls = 'crowd-cmt' + kind.split(' ').filter(k => k === 'red' || k === 'gold').map(k => ' crowd-cmt--' + k).join('');
+  return crowdText(cls, text, { lane, size: kind.includes('big') ? '22px' : '18px', at: at + 's', d: CROWD_PACE.cross + 's' });
+}
+
+// Builds one run into `scene` and returns its timeline: when each guest comes in (vacancy ticks) and when the band leaves
+function buildCrowdScene(scene) {
+  const P = CROWD_PACE;
+  const rnd = crowdRandom(7);
+  const obi = crowdEl('div', 'crowd-obi');
+  for (let i = 0; i < 9; i++) {   // wet blots soak into the paper as the guests brush past
+    obi.append(crowdEl('span', 'crowd-blot', {
+      x: crowdPick(rnd, [-5, 90]) + '%', y: crowdPick(rnd, [-10, 60]) + '%', r: crowdPick(rnd, [40, 80]) + 'px', delay: crowdPick(rnd, P.wet) + 's'
+    }));
+  }
+  const passes = [];
+  CROWD_ART.forEach((art, i) => {
+    const front = i % 3 !== 0;   // two of every three in the front row
+    const d  = crowdPick(rnd, front ? P.front : P.back);
+    const at = P.crowdAt + (i / CROWD_ART.length) * P.spread + rnd() * 0.15;
+    passes.push(at + d * 0.12);   // the moment it shows at the left edge, under the vacancy tab
+    obi.append(crowdWalker(art, {
+      s: crowdPick(rnd, front ? [140, 165] : [105, 122]) + 'px', z: front ? 3 : 1, o: front ? (i % 2 ? 1 : 0.82) : 0.5,
+      d: d + 's', at: at + 's', bob: crowdPick(rnd, [0.2, 0.32]) + 's'
+    }));
+  });
+  passes.sort((a, b) => a - b);
+  // comments wait for "เต็ม!"; the latecomer waits out the comments; the band leaves once he is through
+  const starts = CROWD_COMMENTS.map((_, i) => passes[passes.length - 1] + P.afterFull + i * P.gap);
+  const lateAt = starts[starts.length - 1] + P.breath;
+  const out = lateAt + P.lateRun + 0.2;
+  const late = crowdWalker(CROWD_LATE_ART, { s: '96px', z: 3, o: 1, d: P.lateRun + 's', at: lateAt + 's', 'trip-at': lateAt + P.tripAt + 's' });
+  late.classList.add('crowd-walker--late');
+  obi.append(late);
+
+  const rain = crowdEl('div', 'crowd-rain');
+  for (let i = 0; i < 60; i++) {
+    rain.append(crowdEl('span', 'crowd-drop', {
+      x: rnd() * 100 + '%', len: crowdPick(rnd, [30, 80]) + 'px', o: crowdPick(rnd, [0.3, 0.8]), d: crowdPick(rnd, [0.6, 1.0]) + 's', delay: -rnd() * 2 + 's'
+    }));
+  }
+  const drips = [];
+  for (let i = 0; i < 10; i++) {
+    drips.push(crowdEl('span', 'crowd-drip', { x: crowdPick(rnd, [5, 95]) + '%', delay: crowdPick(rnd, P.wet) + 's', n: 3 + Math.floor(rnd() * 3) }));
+  }
+  const danmaku = crowdEl('div', 'crowd-danmaku');
+  CROWD_COMMENTS.forEach((c, i) => danmaku.append(crowdComment(c, CROWD_LANES[i], starts[i])));
+  danmaku.append(crowdComment(CROWD_LATE_LINE, CROWD_LATE_LANE, lateAt + P.lineLag));
+  const beads = [];
+  for (let i = 0; i < 7; i++) {   // water on the "lens"
+    beads.push(crowdEl('span', 'crowd-bead', { x: crowdPick(rnd, [5, 85]) + '%', y: crowdPick(rnd, [8, 80]) + '%', r: crowdPick(rnd, [14, 30]) + 'px', at: crowdPick(rnd, P.wet) + 's' }));
+  }
+  const vacancy = crowdEl('div', 'crowd-vacancy');
+  vacancy.append(thaiBreakable('ห้องว่าง'), document.createElement('b'));
+
+  scene.replaceChildren(crowdEl('div', 'crowd-dim'), rain, obi, ...drips, danmaku,
+    ...CROWD_SFX.map(crowdSfx), crowdSfx([...CROWD_TRIP_SFX, lateAt + P.tripAt, P.tripHold, false]), ...beads, vacancy);
+  return { passes, out };
+}
+
+function tickCrowdVacancy(left) {
+  const box = document.querySelector('#crowd-scene .crowd-vacancy');
+  const num = box.querySelector('b');
+  if (left) num.textContent = left;
+  else num.replaceChildren(thaiBreakable('เต็ม!'));
+  box.classList.toggle('full', left === 0);
+  box.classList.remove('tick');
+  void box.offsetWidth;
+  box.classList.add('tick');
+}
+
+function playCrowdIntro(onDone) {
+  if (!motionOn()) { onDone(); return; }   // reduced motion: no animation — the E2 card tells the same moment in words
+  const P = CROWD_PACE;
+  const overlay = document.getElementById('crowd-intro');
+  _crowdDone = onDone;
+  overlay.classList.remove('playing', 'ending', 'leaving');
+  overlay.classList.add('open');
+  const { passes, out } = buildCrowdScene(document.getElementById('crowd-scene'));
+  // distances depend on the screen, so they are measured now, not guessed
+  const w = overlay.clientWidth;
+  overlay.style.setProperty('--stage-w', w + 'px');
+  overlay.style.setProperty('--stage-h', overlay.clientHeight + 'px');
+  overlay.querySelectorAll('.crowd-walker').forEach(n => n.style.setProperty('--run', `calc(${w}px + 100%)`));
+  [['out', out], ['dim-at', P.dimAt], ['obi-at', P.obiAt], ['vac-at', P.vacAt]].forEach(([k, v]) => overlay.style.setProperty('--' + k, v + 's'));
+  tickCrowdVacancy(passes.length);
+  void overlay.offsetWidth;   // start every keyframe from zero
+  overlay.classList.add('playing');
+  _crowdTimers = [
+    ...passes.map((t, i) => setTimeout(() => tickCrowdVacancy(passes.length - 1 - i), t * 1000)),
+    setTimeout(() => overlay.classList.add('ending'), out * 1000),
+    setTimeout(finishCrowdIntro, (out + P.page) * 1000)
+  ];
+}
+
+// natural end: the E2 card is put up underneath, then the overlay fades away over it
+function finishCrowdIntro() {
+  const overlay = document.getElementById('crowd-intro');
+  runCrowdDone();
+  overlay.classList.add('leaving');
+  _crowdTimers.push(setTimeout(closeCrowdIntro, CROWD_PACE.fade * 1000));
+}
+
+// SKIP ▸▸ — everything stops and disappears at once, then the E2 card
+function skipCrowdIntro() {
+  if (!_crowdDone) return;
+  closeCrowdIntro();
+  runCrowdDone();
+}
+
+function closeCrowdIntro() {
+  _crowdTimers.forEach(clearTimeout);
+  _crowdTimers = [];
+  const overlay = document.getElementById('crowd-intro');
+  overlay.classList.remove('open', 'playing', 'ending', 'leaving');
+  document.getElementById('crowd-scene').replaceChildren();
+}
+
+function runCrowdDone() {
+  if (!_crowdDone) throw new Error('[Ryokan] crowd intro finished twice');
+  const done = _crowdDone;
+  _crowdDone = null;
+  done();
 }
 
 // ── LOADING ───────────────────────────────────────────────────

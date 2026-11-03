@@ -182,6 +182,11 @@ function validateQuestions() {
     if (!c || !c.number || !c.title) throw new Error(`[Ryokan] QUESTIONS.chapters.${key} needs number and title`);
   }
   [...house, ...yokai].forEach(q => validateNarration(q.id + '.lead', q.lead));
+  [...house, ...yokai].forEach(q => { if (q.weather !== undefined && q.weather !== 'rain') throw new Error(`[Ryokan] ${q.id}: weather must be 'rain' or absent`); });
+  // intro = a scene played between the lead narration and the card · only the E2 crowd exists
+  [...house, ...yokai].forEach(q => { if (q.intro !== undefined && q.intro !== 'crowd') throw new Error(`[Ryokan] ${q.id}: intro must be 'crowd' or absent`); });
+  // keyScene = plays as a visual-novel scene over its own art (index.html showKeyScene)
+  [...house, ...yokai].forEach(q => { if (q.keyScene !== undefined) validateKeyScene(q); });
   validateNarration('outro', outro);
   validateNarration('bento.afterArrange', yokai[0].afterArrange);
   if (house.length !== 5) throw new Error('[Ryokan] QUESTIONS.house must have 5 questions');
@@ -190,6 +195,13 @@ function validateQuestions() {
 
   for (const q of house) {
     if (q.doors !== undefined && q.doors !== true) throw new Error(`[Ryokan] ${q.id}: doors must be true or absent`);
+    // the question is the part after the last " — " (the quiz card shows it as the red last paragraph)
+    if (!q.text.includes(' — ')) throw new Error(`[Ryokan] ${q.id}: text needs " — " before its question`);
+    // pictures: all four or none (one picture alone would pull the eye), never on a doors question
+    const pics = q.choices.filter(c => c.image !== undefined);
+    if (pics.length && (pics.length !== q.choices.length || q.doors || !pics.every(c => isText(c.image)))) {
+      throw new Error(`[Ryokan] ${q.id}: image must be a path on all 4 choices or on none (and not with doors)`);
+    }
     const houses = q.choices.map(c => c.house).sort().join(',');
     if (houses !== 'blue,green,purple,yellow') {
       throw new Error(`[Ryokan] ${q.id}: choices must cover all 4 houses once`);
@@ -209,6 +221,23 @@ function validateQuestions() {
       if (q.axis !== 'EI') throw new Error(`[Ryokan] ${q.id}: must have axis 'EI'`);
       validateChoiceSet(q.id, 'EI', q.choices);
     }
+  });
+}
+
+// keyScene: { art: path, kanji: text, fx: 'dawn' | 'fade', boil?: true } · the dialogue box only knows plain
+// lines — lead pages must be strings / arrays of strings (no { slow } / { reply } / { say }), every quote closed —
+// and the doll flow can't run inside it
+function validateKeyScene(q) {
+  const fail = msg => { throw new Error(`[Ryokan] ${q.id}.keyScene: ${msg}`); };
+  const k = q.keyScene;
+  if (!k || !isText(k.art) || !isText(k.kanji)) fail('needs art (path) and kanji');
+  if (k.fx !== 'dawn' && k.fx !== 'fade') fail(`fx must be 'dawn' or 'fade'`);
+  if (k.boil !== undefined && k.boil !== true) fail('boil must be true or absent');
+  if (q.doll || q.doors || q.intro) fail('cannot combine with doll / doors / intro');
+  const lines = [...q.lead.flatMap(p => (Array.isArray(p) ? p : [p])), q.text];
+  lines.forEach(l => {
+    if (typeof l !== 'string') fail(`lead line ${JSON.stringify(l)} has no VN form — plain strings only`);
+    if (((l.match(/["“”]/g) || []).length) % 2) fail(`unclosed quote in "${l.slice(0, 30)}…"`);
   });
 }
 

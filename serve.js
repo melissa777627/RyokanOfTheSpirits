@@ -1,13 +1,15 @@
 // serve.js — static server + live reload via SSE
-// Usage: node serve.js
-// Then open http://localhost:3000
+// Usage: node serve.js                → http://localhost:3000
+//        PORT=8000 node serve.js      → http://localhost:8000
+//        LIVERELOAD=0 node serve.js   → static only, no auto-refresh
 
 const http = require('http');
 const fs   = require('fs');
 const path = require('path');
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
+const LIVE = process.env.LIVERELOAD !== '0';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -26,7 +28,7 @@ const MIME = {
 let clients = [];
 
 // Watch entire project folder for changes
-fs.watch(ROOT, { recursive: true }, (event, filename) => {
+if (LIVE) fs.watch(ROOT, { recursive: true }, (event, filename) => {
   if (!filename) return;
   if (filename.includes('node_modules')) return;
   console.log(`[reload] ${filename}`);
@@ -75,7 +77,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': mime });
 
     // Inject live-reload script just before </body>
-    if (ext === '.html') {
+    if (LIVE && ext === '.html') {
       const html = data.toString().replace('</body>', INJECT + '</body>');
       res.end(html);
     } else {
@@ -87,5 +89,5 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`\n  Ryokan of The Spirits`);
   console.log(`  http://localhost:${PORT}\n`);
-  console.log(`  Watching for changes...`);
+  console.log(LIVE ? `  Watching for changes...` : `  Live reload off`);
 });

@@ -85,6 +85,8 @@ After any task that changes design or structure, update immediately:
   --surface-lowest:     #EFE0C0;          /* floating cards, choice buttons */
   --on-surface:         #1A120A;          /* body text — NEVER use pure black */
   --outline-variant:    rgba(26,18,10,0.15); /* ghost border (a11y only) */
+  --ink-enji:           #9F353A;          /* 臙脂 — Next fuda, event noren (via --cta) */
+  --sel:                var(--primary);   /* selected state (was --accent-orange) */
 }
 ```
 
@@ -108,9 +110,10 @@ Sarabun            → ตัวไทยของ body (fallback ในตั�
 - **No sharp corners** — everything rounded.
 
 ### Button Styles (Quick Reference)
-- **Primary CTA:** gradient `--primary` → `--primary-container`, `border-radius: 3rem` (pill), scale 1.02 on hover
+- **Primary CTA:** gradient `--primary` → `--primary-container`, `border-radius: 3rem` (pill), scale 1.02 on hover — landing only
+- **Next (お札 fuda):** หน้าคำถาม — กระดาษ `--washi-grain`, ตรา 次, กรอบ `--cta` สองชั้นเมื่อกดได้, ชิดขวา ≤280px
 - **Secondary:** ghost border, `--secondary` text, `border-radius: 3rem`
-- **Choice:** `--surface-lowest` bg, ghost border, left-aligned, `border-radius: 1.5rem`
+- **Choice:** `--surface-lowest` bg, ghost border, left-aligned, `border-radius: 1.5rem`, radio ○ → ✓ สี `--sel`
 - **FAB:** `--primary` circle, 44–48px (BGM) · เซียมซีเป็นกล่องในหน้า result ไม่ใช่ FAB
 
 ---
@@ -131,7 +134,8 @@ view-landing  →  view-gender  →  view-quiz (Stage 1 · E1–E5)
 |---|---|---|
 | `view-landing` | Landing Page | Art fade hero + paper stamp button + lorebook grid |
 | `view-gender` | Event 0 · Gender | Mirror + 3 gender card buttons |
-| `view-quiz` | Quiz (Stage 1 & 2 shared) | Progress bar + scene label + story box + 4 choices |
+| `view-quiz` | Quiz (Stage 1 & 2 shared) | ด้ายแดง 11 ปม + ผ้าม่านชื่ออีเวนต์ + การ์ดเรื่อง (ข้อความค่อยๆ ขึ้น) + รายการตัวเลือก ○→✓ + ปุ่มยันต์ 次 · E2 มีฉากแขกกรูก่อน (`#crowd-intro`) · E7 ฝน |
+| `view-key` | E5 / E10 Key Scene | ม้วนกระดาษชื่อฉาก → ภาพอีเวนต์เต็มจอ + กล่องบทแบบ VN (LOG/HIDE) → ตัวเลือกเหนือกล่อง (ยืมจาก view-quiz) |
 | `view-bento` | Bento Mini-Game | (ก่อนเข้า view: narration บทเชื่อมฟ้าสาง → ฉากเบนโตะหน้าแยก) → Intro card → pop-up Q (prompt อย่างเดียว) → drag & drop food → Continue → บทพูดของแขก |
 | `view-doll` | E7 Teru Teru Bozu | Intro card → วาดหน้า (ซูมหัว · สีฟิกซ์ + วงล้อสี, 3 ความหนา, undo/clear) → Next → แต่งตัว (แท็บ Ribbon/Hat/Flower/Charm + ชั้นวางแบบ Bento, undo) → Done reveal — cosmetic, ไม่มีผลคะแนน |
 | `view-loading` | Loading Screen | Kanji cycle + spirit orb (3–4 sec auto-advance) |
@@ -333,6 +337,11 @@ Result page มีปุ่มสลับ male ↔ female version ตลอด�
 - [ ] รูปตุ๊กตาไล่ฝนประจำ Yokai (`assets/ui/doll/{name}_teru.png`) — มีแล้ว 11 · ยังขาด Tenjin Ryuu Jorogumo Raijin Fuujin
 - [x] BG เมฆ `assets/ui/quiz/cloud_bg.png` ทุกอีเวนต์คำถาม (E3 เลิกใช้ภาพโคมไฟ เหลือแค่ glass)
 - [ ] การ์ดช้อยยังไม่มีรูป
+- [x] ย้ายงานแล็บเข้าเกมจริง เฟส 1 (2026-11-03): หน้าคำถามใหม่ — ด้ายแดง 11 ปม, ผ้าม่านชื่ออีเวนต์, ข้อความค่อยๆ ขึ้น, ตัวเลือกแบบ ○→✓, ปุ่มยันต์ 次 + ตราซากุระ, สีแดงแทนส้ม, รูปของหาย E1 (เงา → กางออก + เส้นยึกยือ)
+- [x] เฟส 2 ประตู E4 ใหม่ (เปิดทีละบาน, บานที่ฟังแล้วจาง, ข้อความค่อยๆ ได้ยิน) · เฟส 4 ฝน E7 · เฟส 5 ฉากแขกกรู E2 + SKIP ทุกคน (2026-11-03)
+- [x] เฟส 3 E5/E10 แบบ VN (`#view-key`): ม้วนกระดาษ, กล่องบรรยาย/คำพูด "???", LOG/HIDE, แสงฟ้าสาง/หมอก, ภาพ E10 + เส้นสั่น (2026-11-03)
+- [ ] ภาพฉาก E5 `assets/ui/event5_porch/BG.PNG` (750×1334) — ตอนนี้เป็นช่องรอวาด
+- [ ] ข้อความร่างรออนุมัติ: คอมเมนต์ฉากแขกกรู 6 อัน, ตึง/โครม/ตุ้บ, คันจิ 暁 / 最後の灯 · export เงาโยไคไฟล์เล็กแทนรูปเต็ม (~5MB)
 - [x] หน้า result ใหม่ (2026-10-27): บับเบิ้ลแตะคุย + การ์ดปัด 3 ใบ + คู่ที่เกือบได้บอกเหตุผล + ตุ๊กตาแปะ · เลิกบทพูดหลัง loading (memory/near)
 - [x] บับเบิ้ล `lines` ครบ 16 ตัว (8 ตัวหลัง Yumekui Ryuu Shinigami Tanuki Ningyo Jorogumo Hebi Raijin อนุมัติ 2026-10-27)
 - [x] การ์ด 縁 `why`/`whyLead` + 共 `life` ครบ 16 ตัว · การ์ด 心 `HOUSE_HEART` ครบ 4 บ้าน (2026-10-27)

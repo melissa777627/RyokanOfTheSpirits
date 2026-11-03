@@ -35,7 +35,7 @@ view-landing → view-gender → view-quiz (Stage 1 · e1–e5)
                                    ↓  calcHouse()
                             view-bento (intro → pop-up Q → drag & drop → afterArrange)
                                    ↓
-                            view-quiz (Stage 2 · e6–e10)
+                            view-quiz (Stage 2 · e6–e10)   ·   E5 / E10 → view-key (visual-novel key scene)
                                    ↓  outro → calcYokai()
                             view-loading (3.5s kanji cycle)
                                    ↓
@@ -164,10 +164,26 @@ Full guide → `assets/README.md`.
 |---|---|
 | `showNarration(pages, onDone)` / `advanceNarration()` | Narration overlay for `lead` / `afterArrange` / `outro` (typewriter, tap) |
 | `currentQuestion()` | `QUESTIONS.house` or `QUESTIONS.yokai` item at `state.currentQ` |
-| `loadQuestion()` → `renderQuestion(q, sceneShown)` | Shows `q.lead` first (+ `q.text` as narration for the doll question E7), then renders scene + choices (Stage 2 via `getStage2Set`) |
-| `confirmAnswer()` | Records answer; after E5 → `calcHouse()` + bento; after E10 → outro → `calcYokai()` + loading |
-| `journeyStep()` | Progress step 1–11 |
-| `buildChoiceDoors(btn)` / `updateQuizNext(wrap)` | `q.doors` (E4): two fusuma panels over each choice card — first tap opens, tap after `.doors-ready` selects; Next needs a choice and every door open |
+| `loadQuestion()` → `renderQuestion(q, sceneShown)` | Shows `q.lead` first (+ `q.text` as narration for the doll question E7), then the quiz page: thread, noren (`EVENT nn · norenName(q)`), story card (`storyParts()` → paragraphs + red question, revealed by `revealInk()`), choices (Stage 2 via `getStage2Set`) that rise once the story has arrived; tap the body = show all |
+| `storyParts(q, set, sceneShown)` | `{ paras, prompt }` — Stage 1 splits `q.text` at the last `" — "`; Stage 2 = `q.text` lines + `set.prompt`; sceneShown → prompt only |
+| `inkParagraph(text, cls)` / `revealInk(inks, done)` | Story phrases as `.ink` spans → revealed one by one with `INK` pacing; returns finish-now; reduced motion = all at once |
+| `buildChoice(q, c, i, wrap)` | One card: `.choice-radio` · `.choice-pic` (when `c.image`) · `.choice-text` · doors; tap selects (doors: first tap opens) |
+| `updateQuizNext(wrap)` → `setNextWaiting(label)` / `setNextReady()` | The Next fuda says what is missing: doors n/4 → pick → ไปต่อ (pop + idle nudge after 4s) |
+| `sealAnswer()` → `confirmAnswer()` | Next pressed: sakura seal stamps onto the picked ○, 0.85s later `confirmAnswer()` records it; after E5 → `calcHouse()` + bento; after E10 → outro → `calcYokai()` + loading |
+| `journeyStep()` / `renderThread(el, step)` | Progress step 1–11 / builds the red-thread knots (gender view = step 0) |
+| `bringChoicesIntoView(wrap)` / `armQuizIdle(fn, ms)` / `motionOn()` | Scroll so the first choice clears the fuda · one idle-nudge timer · reduced-motion check |
+| `showKeyScene(q)` | loadQuestion branch for `q.keyScene` (E5/E10): art, fx, thread, scroll card → `startKeyLines()` in `#view-key` |
+| `keyLines(pages)` | lead + scene → `[{ text, speech }]`; quoted parts become speech, quote marks dropped |
+| `advanceKeyScene()` | view tap: skip card / unhide / finish line / next line / `showKeyChoices()` |
+| `showKeyChoices()` | prompt in the box; borrows `#quiz-choices` and the fuda wrap into the key view; `buildChoice` per choice — `sealAnswer` / `confirmAnswer` unchanged |
+| `openKeyLog` / `closeKeyLog` / `hideKeyBox` | LOG sheet (narration vs speech) / HIDE |
+| `endKeyScene()` | stops timers, returns the borrowed pieces to `#view-quiz`, resets box/log/dim; called in `loadQuestion()` and `showKeyScene()` |
+| `eventNumber()` | E1–E10 numbering for the current question |
+| `loadQuestion()` → `showQuestionCard(q)` | After the lead narration: `q.intro === 'crowd'` plays `playCrowdIntro` first; doll order; then `renderQuestion` |
+| `buildChoiceDoors()` / `openDoor(btn, wrap)` / `shutOtherDoors(wrap, keep)` | E4 doors: two fusuma panels per card · first tap slides it open (`.seen` after `DOOR_SLIDE_MS`), others shut · only the listened-to and picked doors stay open · Next counts doors seen |
+| `setQuizWeather(weather)` | Shows/hides `#quiz-rain`; builds 90 drops on first rain (`q.weather`) |
+| `playCrowdIntro(onDone)` → `buildCrowdScene(scene)` / `tickCrowdVacancy(left)` | E2 crowd intro (`q.intro === 'crowd'`): builds the seeded scene, measures `--stage-w/h`/`--run`, schedules vacancy ticks; at the end `finishCrowdIntro()` shows the card, then fades |
+| `skipCrowdIntro()` / `closeCrowdIntro()` / `runCrowdDone()` | SKIP: clear timers, hide overlay, card once (throws if run twice) |
 | `renderResult()` | Clears the old page's timers, then builds view-result: hero (name, kanji · title, role + MBTI words, art or kanji, talk bubble, gender switch) → wooden topic tags + deck of washi cards (心 heart · 縁 why · 共 life) → tiles (似 alike · 相 match) → near-miss banner (fogged glass) + dolls with the omikuji box → share envelope + play again → omikuji slip modal; Thai text via `fillThai()`; then wires each part |
 | `deckCards(r)` / `deckCardHTML(card, i, cards)` / `deckTexts(cards)` | Deck card list in story order (no `why` / no `life` = card left out; `why` without `whyLead` = on the face, nothing to unfold) → markup (face = key line only; pairs / reading / invite fold behind "อ่านต่อ"; foot = toggle + "ถัดไป ›") → its Thai strings (+ `TAB_LABEL`) |
 | `wireResultDeck(view)` | Tags follow the snapped card (tap a tag = go there; a change runs the breeze); deck height follows the card on screen; tap the current card = fold/unfold; "ถัดไป ›" = next card; swiping away folds an open card; first view: a small sideways nudge |
@@ -204,7 +220,7 @@ Full guide → `assets/README.md`.
 | 1 | index.html shell + CSS + fonts | ✅ Done |
 | 2 | Landing page | ✅ Done |
 | 3 | Gender selection | ⬜ |
-| 4 | Quiz view + question loader | ⬜ |
+| 4 | Quiz view + question loader | ✅ เฟส 1 หน้าคำถามใหม่ (2026-11-03) · เฟส 2–5 รอ |
 | 5 | Bento mini-game | ⬜ |
 | 6 | Loading screen | ⬜ |
 | 7 | Result page | ✅ (2026-11-03 จาก lab V30) · เหลือ Share to Story |

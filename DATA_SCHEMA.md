@@ -152,6 +152,7 @@ const QUESTIONS = {
       ]
     },
     // e2 … e5 — ทุกข้อมีครบ 4 บ้าน บ้านละ 1 ช้อย
+    // e3 มี blackout: true — ไฟดับ จุดไม้ขีดส่องอ่านช้อย (UI เท่านั้น ไม่มีผลคะแนน)
     // e4 มี doors: true — ช้อยซ่อนหลังประตูบานเลื่อน (UI เท่านั้น ไม่มีผลคะแนน)
   ],
 
@@ -210,8 +211,9 @@ const QUESTIONS = {
 - `yokai[0..2]` ต้องมี `sets.JP` และ `sets.TF` · `yokai[3..5]` ต้องมี `axis: 'EI'`
 - ถ้ามี `doll`: ต้องมีทั้ง `JP` และ `TF` ค่าเป็น `'before'` | `'after'`
 - ถ้ามี `doors` (house question): ต้องเป็น `true` เท่านั้น
+- ถ้ามี `blackout` (house question): ต้องเป็น `true` เท่านั้น · ห้ามใช้กับ `doors` (ทั้งคู่ซ่อนช้อย) · ไฟดับ ผู้เล่นจุดไม้ขีดส่องอ่านช้อย (UI เท่านั้น ไม่มีผลคะแนน) — ตอนนี้ e3
 - Stage 1: `text` ต้องมี `" — "` คั่นก่อนคำถาม (ส่วนหลังตัวสุดท้าย = คำถามสีแดงในการ์ด)
-- `keyScene` (ข้อใดก็ได้): `{ art: path, kanji: text, fx: 'dawn' | 'fade', boil?: true }` → เล่นใน `#view-key` แทน narration + การ์ด · กฎ (`validateKeyScene`): art/kanji เป็นข้อความไม่ว่าง · fx = dawn | fade · boil = true หรือไม่มี · ห้ามมี `doll` / `doors` / `intro` · lead เป็น string หรือ array ของ string เท่านั้น (ไม่มี slow/reply/say) · เครื่องหมาย " ต้องปิดครบ · บรรทัด = lead + ฉาก (Stage 1: ข้อความก่อน " — ", Stage 2: บรรทัดของ `q.text`) ส่วนในเครื่องหมายคำพูด = คำพูด · ตอนนี้ e5 (暁, dawn) และ e10 (最後の灯, fade, boil) — คันจิเป็นตัวชั่วคราว
+- `keyScene` (ข้อใดก็ได้): `{ art: path, kanji: text, fx: 'dawn' | 'fade' | 'lantern', boil?: true, lines?: [entries] }` · `lead` = หน้าบรรยายปกติก่อนเข้า VN · กล่อง VN = `lines` (string / `{ say, auto }` / `{ reply }` / `{ slow, breath }`) ตามด้วยย่อหน้าของ `q.text` · E9 ใช้ `lines` (ฉากเทศกาลโคม, `text: ''`) · E5/E10 ใช้ `q.text` → `lead` ยังเป็นหน้าบรรยายตามปกติ แล้วฉาก + ตัวเลือกเล่นใน `#view-key` แทนการ์ดคำถาม · กฎ (`validateKeyScene`): art/kanji เป็นข้อความไม่ว่าง · fx = dawn | fade · boil = true หรือไม่มี · ห้ามมี `doll` / `doors` / `intro` · lead เป็น string หรือ array ของ string เท่านั้น (ไม่มี slow/reply/say) · เครื่องหมาย " ต้องปิดครบ · บรรทัด = lead + ฉาก (Stage 1: ข้อความก่อน " — ", Stage 2: บรรทัดของ `q.text`) ส่วนในเครื่องหมายคำพูด = คำพูด · ตอนนี้ e5 (暁, dawn, boil) · e9 (満月, lantern, boil, ภาพร่วมกับ e10) · e10 (最後の灯, fade, boil) — คันจิเป็นตัวชั่วคราว
 - `weather` (ข้อใดก็ได้): `'rain'` เท่านั้น หรือไม่มี — ตอนนี้ e7 · หน้าคำถามโชว์ฝนหลังการ์ด
 - `intro` (ข้อใดก็ได้): `'crowd'` เท่านั้น หรือไม่มี — เล่นฉากหลังบทเชื่อม ก่อนการ์ดคำถาม · ตอนนี้ e2 (แขกภูตกรูเข้าเรียวกัง)
 - `image` (house question): มีครบทั้ง 4 ช้อยหรือไม่มีเลย (รูปเดียวจะดึงสายตา) · เป็น path · ห้ามใช้กับ `doors` — ตอนนี้ใช้ใน E1 (`bell` ม่วง · `omamori` ฟ้า · `pocketwatch` เหลือง · `notebook` เขียว)
@@ -359,6 +361,8 @@ view-doll = intro card → วาดหน้า (ซูมหัว) → Next �
 ---
 
 ## 7. บทเชื่อมฉาก (Narration)
+
+> **ข้อยกเว้น:** `bento.lead` (เช้าวันแรก "แดดแรกลอดชายคา…" ถึง "…แล้วข้าจะไป") ไม่ได้เล่นในหน้าบรรยาย แต่เล่นต่อในกล่อง VN ของ E5 ทันทีหลังตอบ E5 (`continueKeyScene`) แล้วค่อย CHAPTER 02 → `bento.text` เป็นหน้าบรรยาย → view-bento · กล่อง VN รองรับ string / array / `{ reply }` — `{ slow }` / `{ say }` ไม่มีรูปแบบ VN (throw) · ข้อนี้ต้องให้ E5 เป็น key scene (ไม่ใช่ → throw)
 
 | ที่อยู่ในข้อมูล | ใช้ตอนไหน |
 |---|---|

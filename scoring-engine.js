@@ -195,6 +195,9 @@ function validateQuestions() {
 
   for (const q of house) {
     if (q.doors !== undefined && q.doors !== true) throw new Error(`[Ryokan] ${q.id}: doors must be true or absent`);
+    // blackout = the choices are read by match light (E3) · both hide the choices, so never with doors
+    if (q.blackout !== undefined && q.blackout !== true) throw new Error(`[Ryokan] ${q.id}: blackout must be true or absent`);
+    if (q.blackout && q.doors) throw new Error(`[Ryokan] ${q.id}: blackout cannot combine with doors`);
     // the question is the part after the last " — " (the quiz card shows it as the red last paragraph)
     if (!q.text.includes(' — ')) throw new Error(`[Ryokan] ${q.id}: text needs " — " before its question`);
     // pictures: all four or none (one picture alone would pull the eye), never on a doors question
@@ -231,13 +234,18 @@ function validateKeyScene(q) {
   const fail = msg => { throw new Error(`[Ryokan] ${q.id}.keyScene: ${msg}`); };
   const k = q.keyScene;
   if (!k || !isText(k.art) || !isText(k.kanji)) fail('needs art (path) and kanji');
-  if (k.fx !== 'dawn' && k.fx !== 'fade') fail(`fx must be 'dawn' or 'fade'`);
+  if (!['dawn', 'fade', 'lantern'].includes(k.fx)) fail(`fx must be 'dawn', 'fade' or 'lantern'`);
   if (k.boil !== undefined && k.boil !== true) fail('boil must be true or absent');
+  if (k.lines !== undefined && !Array.isArray(k.lines)) fail('lines must be an array (or absent)');
   if (q.doll || q.doors || q.intro) fail('cannot combine with doll / doors / intro');
-  const lines = [...q.lead.flatMap(p => (Array.isArray(p) ? p : [p])), q.text];
-  lines.forEach(l => {
-    if (typeof l !== 'string') fail(`lead line ${JSON.stringify(l)} has no VN form — plain strings only`);
-    if (((l.match(/["“”]/g) || []).length) % 2) fail(`unclosed quote in "${l.slice(0, 30)}…"`);
+  // the VN box: keyScene.lines (string · { say, auto } · { reply } · { slow, breath }) then q.text
+  const quoted = l => { if (((l.match(/["“”]/g) || []).length) % 2) fail(`unclosed quote in "${l.slice(0, 30)}…"`); };
+  [...(k.lines || []), q.text].forEach(l => {
+    if (typeof l === 'string') { quoted(l); return; }
+    if (l && Array.isArray(l.reply) && l.reply.length && l.reply.every(isText)) return;
+    if (l && isText(l.say) && (l.auto === undefined || l.auto === true)) { quoted(l.say); return; }
+    if (l && Array.isArray(l.slow) && l.slow.length && l.slow.every(isText) && (l.breath === undefined || l.breath === true)) return;
+    fail(`line ${JSON.stringify(l)} has no VN form`);
   });
 }
 

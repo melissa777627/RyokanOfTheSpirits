@@ -163,6 +163,18 @@
       <button id="btn-quiz-next" class="cta" onclick="sealAnswer()" disabled><!-- setNextWaiting / setNextReady --></button>
     </div>
 
+    <!-- q.blackout (E3): lightning → the lights die → strike a match and read by its flame (startBlackout) -->
+    <div class="blackout" id="quiz-blackout" aria-hidden="true" hidden>
+      <div class="blackout-dark"></div>
+      <div class="blackout-warm"></div>
+      <div class="strike-flash"></div>
+      <svg class="strike-bolt"><path /></svg>
+      <p class="strike-boom" id="strike-boom"><!-- BLACKOUT_TEXT.boom via thaiBreakable --></p>
+      <div class="blackout-match"></div>
+      <div class="blackout-guide"></div>
+      <p class="blackout-hint" id="blackout-hint"></p>
+    </div>
+
   </div><!-- /view-quiz -->
 
   <!-- ════════════════════════════════════════
@@ -252,17 +264,29 @@
 
       <p class="bento-instruction">— Place your offering —</p>
 
-      <!-- Draggable food shelf — swipe sideways to scroll, drag up to place -->
-      <div class="item-shelf" id="bento-palette">
-        <div class="shelf-item" data-idx="0"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Onigiri.PNG')"></div><span class="shelf-item-label">おにぎり</span></div>
-        <div class="shelf-item" data-idx="1"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Karaage%20.PNG')"></div><span class="shelf-item-label">から揚げ</span></div>
-        <div class="shelf-item" data-idx="2"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Ebi%20tempura.PNG')"></div><span class="shelf-item-label">えびてんぷら</span></div>
-        <div class="shelf-item" data-idx="3"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Sashimi.PNG')"></div><span class="shelf-item-label">さしみ</span></div>
-        <div class="shelf-item" data-idx="4"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Saba.PNG')"></div><span class="shelf-item-label">さば</span></div>
-        <div class="shelf-item" data-idx="5"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Tamako.PNG')"></div><span class="shelf-item-label">たまこ</span></div>
-        <div class="shelf-item" data-idx="6"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Lemon.PNG')"></div><span class="shelf-item-label">レモン</span></div>
-        <div class="shelf-item" data-idx="7"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Oba%20leaf.PNG')"></div><span class="shelf-item-label">大葉</span></div>
-        <div class="shelf-item" data-idx="8"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Ume%20boshi.PNG')"></div><span class="shelf-item-label">うめぼし</span></div>
+      <!-- Draggable food shelf — two rows, swipe sideways to scroll, drag up to place.
+           The swipe hand shows once arranging starts and leaves at the first touch (showBentoShelfHint) -->
+      <div class="shelf-hint-wrap" id="bento-shelf-wrap">
+        <div class="item-shelf item-shelf--two-row" id="bento-palette">
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Onigiri.PNG')"></div><span class="shelf-item-label">おにぎり</span></div>
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Karaage%20.PNG')"></div><span class="shelf-item-label">から揚げ</span></div>
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Ebi%20tempura.PNG')"></div><span class="shelf-item-label">えびてんぷら</span></div>
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Hamburg.PNG')"></div><span class="shelf-item-label">ハンバーグ</span></div>
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Sashimi.PNG')"></div><span class="shelf-item-label">さしみ</span></div>
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Shake.PNG')"></div><span class="shelf-item-label">しゃけ</span></div>
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Saba.PNG')"></div><span class="shelf-item-label">さば</span></div>
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Tako%20wiener.PNG')"></div><span class="shelf-item-label">タコさんウインナー</span></div>
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Tamako.PNG')"></div><span class="shelf-item-label">たまこ</span></div>
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Shoronpo.PNG')"></div><span class="shelf-item-label">ショウロンポウ</span></div>
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Sakuramochi.PNG')"></div><span class="shelf-item-label">さくらもち</span></div>
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Lemon.PNG')"></div><span class="shelf-item-label">レモン</span></div>
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Oba%20leaf.PNG')"></div><span class="shelf-item-label">大葉</span></div>
+          <div class="shelf-item"><div class="shelf-item-img" style="background-image:url('assets/ui/food/Ume%20boshi.PNG')"></div><span class="shelf-item-label">うめぼし</span></div>
+        </div>
+        <svg class="shelf-hint-hand" viewBox="0 0 64 64" aria-hidden="true">
+          <path class="shelf-hint-arrows" d="M11 12 5 18l6 6M5 18h12M53 12l6 6-6 6M59 18H47"/>
+          <path d="M27 36V14a4 4 0 0 1 8 0v17l9 2a5 5 0 0 1 4 6l-3 14a6 6 0 0 1-6 5H31a6 6 0 0 1-5-3l-8-12a4 4 0 0 1 6-5z"/>
+        </svg>
       </div>
 
       <!-- Undo + Continue -->
@@ -275,18 +299,16 @@
 
     </div><!-- /bento-main -->
 
-    <!-- Question bottom sheet modal -->
+    <!-- Question bottom sheet — the quiz page's own pieces: washi story card · ○→✓ list · Next fuda 次 -->
     <div id="bento-q-modal" class="bento-q-modal">
       <div class="bento-q-modal-handle" aria-hidden="true"></div>
       <p class="bento-q-eyebrow">— The spirit asks —</p>
-      <div class="story-box bento-story-box">
-        <p id="bento-question-text"></p>
+      <div class="quiz-story bento-story">
+        <p class="quiz-prompt" id="bento-question-text"></p>
       </div>
-      <div class="bento-choices" id="bento-choices"></div>
-      <div class="bento-next-wrap" style="padding-bottom:env(safe-area-inset-bottom,24px)">
-        <button id="btn-bento-confirm" class="btn-gender-next" onclick="confirmBentoChoice()" disabled>
-          Confirm &nbsp;→
-        </button>
+      <div class="quiz-choices" id="bento-choices"><!-- showBentoQuestion() --></div>
+      <div class="quiz-next-wrap">
+        <button id="btn-bento-confirm" class="cta" onclick="sealBentoAnswer()" disabled><!-- setNextWaiting / setNextReady --></button>
       </div>
     </div>
 
@@ -562,6 +584,7 @@ function selectGender(gender, cardEl) {
 function confirmGender() {
   if (!_pendingGender) return;
   setPlayerGender(_pendingGender);
+  preloadCrowdArt();
   showChapter(QUESTIONS.chapters.house, () => {
     showView('quiz');
     loadQuestion();
@@ -769,17 +792,20 @@ function currentQuestion() {
 // Next pressed → the sakura seal stamps onto the chosen answer's ○ → a beat to see it → record + move on
 function sealAnswer() {
   if (!_pendingChoice) return;
+  stampSeal(document.getElementById('btn-quiz-next'), document.getElementById('quiz-choices'));
+  _sealTimer = setTimeout(confirmAnswer, motionOn() ? SEAL_BEAT_MS : 250);
+}
+
+// The fuda stays inked, the list locks, and the 🌸 seal lands on the picked answer's ○ (quiz + Bento sheet)
+function stampSeal(btn, wrap) {
   clearTimeout(_quizIdle);
-  const btn = document.getElementById('btn-quiz-next');
   btn.classList.remove('nudge');
   btn.classList.add('sent');
-  const wrap = document.getElementById('quiz-choices');
   wrap.classList.add('sealed');
   const seal = document.createElement('span');
   seal.className = 'answer-seal';
   seal.textContent = '🌸';
   wrap.querySelector('.choice-btn.selected .choice-radio').append(seal);
-  _sealTimer = setTimeout(confirmAnswer, motionOn() ? SEAL_BEAT_MS : 250);
 }
 
 function confirmAnswer() {
@@ -791,11 +817,14 @@ function confirmAnswer() {
     pickHouseAnswer(choice.house);
     if (state.currentQ < QUESTIONS.house.length) { loadQuestion(); return; }
     calcHouse();
-    // chapter + lead narration open over E5 — switching to bento first let it show through the fade-in
-    // The Bento scene plays as its own narration page before the intro card, so the pop-up shows only the prompt
+    // E5 is a key scene: the morning after (bento.lead, with the player's reply) plays on in the same VN box over
+    // the porch art; then CHAPTER 02 closes the night, and the Bento scene gets its own narration page before the
+    // intro card (so the pop-up shows only the prompt)
     const bento = QUESTIONS.yokai[0];
-    showChapter(QUESTIONS.chapters.yokai, () =>
-      showNarration([...bento.lead, bento.text], () => showView('bento')));
+    continueKeyScene(bento.lead, () => {
+      endKeyScene();
+      showChapter(QUESTIONS.chapters.yokai, () => showNarration([bento.text], () => showView('bento')));
+    });
     return;
   }
 
@@ -839,8 +868,9 @@ function renderThread(el, step) {
 function loadQuestion() {
   const q = currentQuestion();
   endKeyScene();   // a key scene borrowed the choice list + Next fuda — they go home before any quiz card
-  // key scenes (E5, E10) play as a visual-novel scene over their own art — lead, scene and choices in one view
-  if (q.keyScene) { showKeyScene(q); return; }
+  // key scenes (E5, E10): the lead (the bridge from the last event) stays a narration page like every other
+  // event, then the scene and choices play as a visual novel over their own art
+  if (q.keyScene) { showNarration(q.lead, () => showKeyScene(q)); return; }
   // The doll question's scene plays as narration (both sets), so its quiz card shows only the prompt
   const pages = q.doll ? [...q.lead, q.text] : q.lead;
   showNarration(pages, () => {
@@ -919,14 +949,13 @@ function armQuizIdle(fn, ms) {
 }
 
 // The Next fuda always says the one thing still missing: open every door (n/4) → pick → ไปต่อ
-function setNextWaiting(label) {
-  const btn = document.getElementById('btn-quiz-next');
+// btn = the quiz's #btn-quiz-next or the Bento sheet's #btn-bento-confirm
+function setNextWaiting(btn, label) {
   btn.disabled = true;
   btn.classList.remove('nudge', 'sent');
   btn.replaceChildren(nextKanji(), nextLabel(label));
 }
-function setNextReady() {
-  const btn = document.getElementById('btn-quiz-next');
+function setNextReady(btn) {
   const was = btn.disabled;
   btn.disabled = false;
   const arrow = document.createElement('span');
@@ -950,11 +979,18 @@ function nextLabel(text) {
   return l;
 }
 function updateQuizNext(wrap) {
+  const btn    = document.getElementById('btn-quiz-next');
   const total  = wrap.children.length;
   const unseen = wrap.querySelectorAll('.choice-btn:not(.seen)').length;   // doors not yet listened to
-  if (wrap.classList.contains('quiz-choices--doors') && unseen) { setNextWaiting(`${QUIZ_HINT.doors} · ${total - unseen}/${total}`); return; }
-  if (!_pendingChoice) { setNextWaiting(QUIZ_HINT.pick); return; }
-  setNextReady();
+  if (wrap.classList.contains('quiz-choices--doors') && unseen) { setNextWaiting(btn, `${QUIZ_HINT.doors} · ${total - unseen}/${total}`); return; }
+  if (!_pendingChoice) { setNextWaiting(btn, QUIZ_HINT.pick); return; }
+  setNextReady(btn);
+}
+
+// Picking a card on the quiz page (or a key scene, which borrows its list)
+function pickQuizChoice(c) {
+  _pendingChoice = c;
+  updateQuizNext(document.getElementById('quiz-choices'));
 }
 
 // Long story on a small phone: the choices can rise below the fold — scroll just enough to show the first one
@@ -978,9 +1014,7 @@ function renderQuestion(q, sceneShown) {
   const view = document.getElementById('view-quiz');
   view.classList.toggle('quiz-glass-scene', q.id === 'e3');
   setQuizWeather(q.weather);
-  view.classList.remove('quiz-black-in');
-  void view.offsetWidth;
-  if (q.id === 'e3') view.classList.add('quiz-black-in');
+  resetBlackout(q.blackout === true);   // E3: the strike lands with the story's first phrase
 
   // eventNum = story numbering E1–E10 (Bento has no event number)
   const eventNum = isStage2 ? 5 + state.currentQ : state.currentQ + 1;
@@ -1003,7 +1037,7 @@ function renderQuestion(q, sceneShown) {
   hint.replaceChildren(thaiBreakable(QUIZ_HINT.doorsHint));
   hint.classList.toggle('hidden', !q.doors);
   hint.classList.remove('in');
-  shuffled(set.choices).forEach((c, i) => wrap.append(buildChoice(q, c, i, wrap)));
+  shuffled(set.choices).forEach((c, i) => wrap.append(buildChoice(q, c, i, wrap, pickQuizChoice)));
   updateQuizNext(wrap);   // the fuda says what is missing from the start (doors 0/4, else "pick")
 
   // The choices rise only once the story has arrived — or the player taps anywhere to see it all
@@ -1018,13 +1052,14 @@ function renderQuestion(q, sceneShown) {
     wrap.classList.add('in');
     hint.classList.add('in');
     bringChoicesIntoView(wrap);
+    if (q.blackout) { killLights(wrap); return; }   // no idle glow — the lanterns are about to go dark
     armQuizIdle(() => wrap.classList.add('nudge'), CHOICE_NUDGE_MS);
   });
   body.addEventListener('click', finish);
 }
 
-// One answer card: radio ○ · (picture) · words · (doors). Picking one marks it and asks the fuda to update
-function buildChoice(q, c, i, wrap) {
+// One answer card: radio ○ · (picture) · words · (doors). Picking one marks it, then onPick(c) updates its fuda
+function buildChoice(q, c, i, wrap, onPick) {
   const btn = document.createElement('button');
   btn.className = 'choice-btn' + (c.image ? ' has-pic' : '');
   btn.style.setProperty('--i', i);
@@ -1056,13 +1091,13 @@ function buildChoice(q, c, i, wrap) {
     if (wrap.classList.contains('sealed')) return;
     if (q.doors && btn.classList.contains('closed')) { openDoor(btn, wrap); return; }
     if (q.doors && btn.classList.contains('opening')) return;   // still sliding — a quick double tap only opens
+    if (q.blackout && blackoutHolds(btn)) return;   // in the dark: only a card the flame reaches can be taken
     wrap.querySelectorAll('.choice-btn').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-pressed', 'false'); });
     btn.classList.add('selected');
     btn.setAttribute('aria-pressed', 'true');
     wrap.classList.add('has-pick');
     if (q.doors) shutOtherDoors(wrap, btn);
-    _pendingChoice = c;
-    updateQuizNext(wrap);
+    onPick(c);
   });
   return btn;
 }
@@ -1124,28 +1159,295 @@ function setQuizWeather(weather) {
   }
 }
 
+// ── BLACKOUT (E3 · q.blackout) — read the choices by match light ─────────
+// The strike lands with the story's first phrase (flash ×2, bolt, shake, เปรี้ยง) · once the choices have risen the
+// page's lights flicker on-off-on and die one part at a time · full dark · a swipe strikes a match (the first one
+// only sparks) and the player holds it by the foot of its stick:
+// · the flame burns MATCH_REACH above the finger, so the finger never covers what it lights
+// · a tap on a card the flame reaches takes it — the dark opens from that lantern and the normal pick runs
+// · a tap on a dark card brings the flame to it (also reaches cards the finger can't get under) · a drag never picks
+// · one finger only, captured once it drags · flame near the top / finger near the bottom → the page scrolls itself
+// Flashes stay under 3 a second · reduced motion: no flash / bolt / shake / flicker — the dark and the match stay
+const MATCH_LEN   = 64;                   // px — the stick, finger to head (= --match-len)
+const MATCH_REACH = MATCH_LEN + 6;        // the flame's centre sits just above the head (.blackout-match::before)
+const MATCH_TILT  = 10 * Math.PI / 180;   // the stick leans right, the way a thumb holds it
+const BLACKOUT = {
+  light: 120,                    // px — flame light radius (clear inside 55% of it) · that clear core is also the reach for taking a card
+  strikeAt: INK.start,           // with the first phrase, เปรี้ยง!
+  riseMs: 900,                   // the choices finish rising before the lights go
+  flicker: [0, 100, 250, 320],   // out-on-out-on, then each part dies in turn
+  dieMs: 600, partMs: 160,
+  darkMs: 500,                   // = .blackout-dark opacity transition
+  swipe: 60, drag: 8, glideMs: 220,
+  edgeTop: 36, edgeFoot: 56,     // px — scroll zones: flame near the top, finger near the bottom
+  lightsBackMs: 500,             // the page's lights switch back on, under the opening dark
+  liftMs: 2600                   // the dark opens from the lantern, then the layer goes
+};
+const BLACKOUT_TEXT = {
+  boom:    'เปรี้ยง!',
+  strike:  '— ปัดนิ้วเพื่อจุดไม้ขีด —',
+  misfire: '— ฟึ่บ… ไม่ติด ลองอีกที —',
+  hold:    '— จับก้านไม้ขีดลากไปส่อง · แตะช้อยที่ไฟส่องถึงเพื่อเลือก —'
+};
+// phase: off (not a blackout card) → light (strike, page still lit) → dying → strike (dark, no match) → lit → lifted
+const _bo = { phase: 'off', timers: [], tries: 0, id: null, from: null, dragged: false, struck: false, edge: 0, raf: 0, glide: 0, flame: [0, 0] };
+const boLater = (fn, ms) => { _bo.timers.push(setTimeout(fn, ms)); };
+const blackoutLayer = () => document.getElementById('quiz-blackout');
+
+// Every quiz card clears the last blackout · on = this card has one, so the strike is queued
+function resetBlackout(on) {
+  clearTimers(_bo.timers);
+  cancelAnimationFrame(_bo.raf);
+  cancelAnimationFrame(_bo.glide);
+  Object.assign(_bo, { phase: on ? 'light' : 'off', tries: 0, id: null, from: null, dragged: false, struck: false, edge: 0, raf: 0, glide: 0 });
+  const layer = blackoutLayer();
+  layer.hidden = !on;
+  layer.className = 'blackout';
+  layer.style.setProperty('--bo-light', BLACKOUT.light + 'px');
+  layer.style.setProperty('--match-len', MATCH_LEN + 'px');
+  layer.style.setProperty('--match-tilt', MATCH_TILT + 'rad');
+  document.getElementById('view-quiz').classList.remove('blackout-hold');
+  document.querySelectorAll('#quiz-body .lights-out').forEach(el => el.classList.remove('lights-out'));
+  blackoutHint('');
+  if (on) boLater(playStrike, BLACKOUT.strikeAt);
+}
+
+function blackoutHint(text) {
+  const el = document.getElementById('blackout-hint');
+  el.replaceChildren(text ? thaiBreakable(text) : '');
+  el.classList.toggle('in', Boolean(text));
+}
+
+// Jagged bolt from above the screen to its middle: midpoint displacement, plus one short fork off the upper half
+function boltPath(w, h) {
+  let pts = [[w * (0.35 + Math.random() * 0.3), -10], [w * (0.3 + Math.random() * 0.4), h * 0.62]];
+  for (let pass = 0, off = w * 0.18; pass < 5; pass++, off /= 2) {
+    const next = [pts[0]];
+    for (let i = 1; i < pts.length; i++) {
+      const [x1, y1] = pts[i - 1], [x2, y2] = pts[i];
+      next.push([(x1 + x2) / 2 + (Math.random() - 0.5) * off * 2, (y1 + y2) / 2], pts[i]);
+    }
+    pts = next;
+  }
+  const f = pts[Math.floor(pts.length * 0.35)];
+  const fork = `M${f[0]},${f[1]} l${(Math.random() < 0.5 ? -1 : 1) * w * 0.15},${h * 0.08} l${w * 0.02},${h * 0.06}`;
+  return 'M' + pts.map(p => p.join(',')).join(' L') + ' ' + fork;
+}
+
+function playStrike() {
+  if (!motionOn()) return;
+  const layer = blackoutLayer();
+  const path = layer.querySelector('.strike-bolt path');
+  const { width, height } = layer.getBoundingClientRect();
+  path.setAttribute('d', boltPath(width, height));
+  const len = path.getTotalLength();
+  path.style.strokeDasharray = len;
+  path.style.setProperty('--len', len);
+  document.getElementById('strike-boom').replaceChildren(thaiBreakable(BLACKOUT_TEXT.boom));
+  restartClass(layer, 'striking');
+  restartClass(document.getElementById('quiz-body'), 'strike-shake');
+}
+
+// The page's own lights flicker, die one part at a time top to bottom (noren → story → each lantern), then the dark comes down
+function killLights(wrap) {
+  _bo.phase = 'dying';
+  const parts = [document.querySelector('#view-quiz .noren-body'), document.getElementById('quiz-story'), ...wrap.children];
+  const motion = motionOn();
+  if (motion) BLACKOUT.flicker.forEach((ms, n) => boLater(() => parts.forEach(p => p.classList.toggle('lights-out', n % 2 === 0)), BLACKOUT.riseMs + ms));
+  const dieAt = BLACKOUT.riseMs + (motion ? BLACKOUT.dieMs : 0);
+  const step = motion ? BLACKOUT.partMs : 0;
+  parts.forEach((p, n) => boLater(() => p.classList.add('lights-out'), dieAt + n * step));
+  const darkAt = dieAt + parts.length * step + 100;
+  boLater(() => {
+    _bo.phase = 'strike';
+    blackoutLayer().classList.add('dark');
+    document.getElementById('view-quiz').classList.add('blackout-hold');   // touch-action: none — the swipe and the drag own the finger
+  }, darkAt);
+  boLater(() => { blackoutLayer().classList.add('guide'); blackoutHint(BLACKOUT_TEXT.strike); }, darkAt + BLACKOUT.darkMs);
+}
+
+// Point of an element / pointer in the layer's own box (the mobile column, fixed to the screen)
+function boRect(el) {
+  const l = blackoutLayer().getBoundingClientRect(), r = el.getBoundingClientRect();
+  return { left: r.left - l.left, top: r.top - l.top, right: r.right - l.left, bottom: r.bottom - l.top, width: r.width, height: r.height };
+}
+function boPos(e) {
+  const l = blackoutLayer().getBoundingClientRect();
+  return [e.clientX - l.left, e.clientY - l.top];
+}
+
+function boPointerDown(e) {
+  if (_bo.id !== null || (_bo.phase !== 'strike' && _bo.phase !== 'lit')) return;
+  _bo.id = e.pointerId;
+  _bo.from = boPos(e);
+  _bo.dragged = false;
+  _bo.struck = false;
+}
+function boPointerMove(e) {
+  if (e.pointerId !== _bo.id) return;
+  const p = boPos(e);
+  const dist = Math.hypot(p[0] - _bo.from[0], p[1] - _bo.from[1]);
+  if (!_bo.dragged && dist < BLACKOUT.drag) return;
+  // capture only once it is a drag — capturing on down would retarget a plain tap's click away from the card
+  if (!_bo.dragged) e.currentTarget.setPointerCapture(e.pointerId);
+  _bo.dragged = true;
+  // one strike per finger-down: a misfire waits for the next swipe
+  if (_bo.phase === 'strike') { if (!_bo.struck && dist >= BLACKOUT.swipe) strikeMatch(p); return; }
+  if (_bo.phase !== 'lit') return;
+  cancelAnimationFrame(_bo.glide);
+  placeMatch(p);
+  setBlackoutEdge(p);
+}
+function boPointerUp(e) {
+  if (e.pointerId !== _bo.id) return;
+  _bo.id = null;
+  _bo.edge = 0;
+}
+
+// One swipe = one strike · the first only sparks · the second lights the match where the finger is — keep dragging to read
+function strikeMatch(p) {
+  _bo.struck = true;
+  _bo.tries++;
+  matchSparks(p, _bo.tries === 1 ? 6 : 12);
+  if (_bo.tries === 1) { blackoutHint(BLACKOUT_TEXT.misfire); return; }
+  _bo.phase = 'lit';
+  const layer = blackoutLayer();
+  layer.classList.remove('guide');
+  layer.classList.add('lit');
+  placeMatch(p);
+  blackoutHint(BLACKOUT_TEXT.hold);
+}
+
+function matchSparks([x, y], n) {
+  const layer = blackoutLayer();
+  for (let i = 0; i < n; i++) {
+    const spark = document.createElement('i');
+    spark.className = 'blackout-spark';
+    spark.style.left = x + 'px';
+    spark.style.top = y + 'px';
+    spark.style.setProperty('--dx', (Math.random() - 0.5) * 50 + 'px');
+    spark.style.setProperty('--dy', (Math.random() - 0.7) * 40 + 'px');
+    layer.append(spark);
+    setTimeout(() => spark.remove(), 520);
+  }
+}
+
+const flameAbove = ([x, y]) => [x + Math.sin(MATCH_TILT) * MATCH_REACH, y - Math.cos(MATCH_TILT) * MATCH_REACH];
+const footBelow  = ([x, y]) => [x - Math.sin(MATCH_TILT) * MATCH_REACH, y + Math.cos(MATCH_TILT) * MATCH_REACH];
+
+// foot = where the finger holds the stick · the light follows the flame
+function placeMatch(foot) {
+  _bo.flame = flameAbove(foot);
+  const s = blackoutLayer().style;
+  s.setProperty('--fx', foot[0] + 'px');
+  s.setProperty('--fy', foot[1] + 'px');
+  s.setProperty('--mx', _bo.flame[0] + 'px');
+  s.setProperty('--my', _bo.flame[1] + 'px');
+}
+
+function glideFlameTo(target) {
+  cancelAnimationFrame(_bo.glide);
+  if (!motionOn()) { placeMatch(footBelow(target)); return; }
+  const start = _bo.flame.slice(), t0 = performance.now();
+  const step = now => {
+    const k = Math.min(1, (now - t0) / BLACKOUT.glideMs), ease = 1 - (1 - k) * (1 - k);
+    placeMatch(footBelow([start[0] + (target[0] - start[0]) * ease, start[1] + (target[1] - start[1]) * ease]));
+    if (k < 1) _bo.glide = requestAnimationFrame(step);
+  };
+  _bo.glide = requestAnimationFrame(step);
+}
+
+// Edge zones scroll the page under the fixed flame — faster the deeper the finger goes
+function setBlackoutEdge([, fy]) {
+  const h = blackoutLayer().getBoundingClientRect().height, flameY = fy - MATCH_REACH;
+  _bo.edge = flameY < BLACKOUT.edgeTop ? -Math.ceil((BLACKOUT.edgeTop - flameY) / 6)
+           : fy > h - BLACKOUT.edgeFoot ? Math.ceil((fy - (h - BLACKOUT.edgeFoot)) / 6) : 0;
+  if (_bo.edge && !_bo.raf) _bo.raf = requestAnimationFrame(blackoutScroll);
+}
+function blackoutScroll() {
+  if (!_bo.edge || _bo.phase !== 'lit') { _bo.raf = 0; return; }
+  window.scrollBy(0, _bo.edge);
+  _bo.raf = requestAnimationFrame(blackoutScroll);
+}
+
+// Does the flame's clear core touch the card?
+function flameReaches(btn) {
+  const r = boRect(btn), [x, y] = _bo.flame;
+  const dx = Math.max(r.left - x, 0, x - r.right), dy = Math.max(r.top - y, 0, y - r.bottom);
+  return Math.hypot(dx, dy) <= BLACKOUT.light * 0.55;
+}
+
+// A tap on a card during the blackout · true = the tap is used up here, false = let the normal pick run
+function blackoutHolds(btn) {
+  if (_bo.phase === 'off' || _bo.phase === 'lifted') return false;
+  if (_bo.phase !== 'lit' || _bo.dragged) return true;   // no match yet, or the end of a drag
+  if (flameReaches(btn)) { liftBlackout(btn); return false; }
+  const r = boRect(btn);
+  glideFlameTo([r.left + Math.min(70, r.width / 3), r.top + Math.min(r.height / 2, 40)]);
+  return true;
+}
+
+// The flame takes to the chosen lantern: the dark opens from its ○ and the page's lights come back
+function liftBlackout(btn) {
+  _bo.phase = 'lifted';
+  _bo.edge = 0;
+  cancelAnimationFrame(_bo.glide);
+  const layer = blackoutLayer(), radio = boRect(btn.querySelector('.choice-radio'));
+  layer.style.setProperty('--mx', radio.left + radio.width / 2 + 'px');
+  layer.style.setProperty('--my', radio.top + radio.height / 2 + 'px');
+  layer.classList.remove('dark', 'lit');
+  layer.classList.add('lifted');
+  document.getElementById('view-quiz').classList.remove('blackout-hold');
+  blackoutHint('');
+  const motion = motionOn();
+  // the lights come back while the dark is still opening, so the switch-on hides under it
+  boLater(() => document.querySelectorAll('#quiz-body .lights-out').forEach(el => el.classList.remove('lights-out')), motion ? BLACKOUT.lightsBackMs : 0);
+  boLater(() => { layer.hidden = true; }, motion ? BLACKOUT.liftMs : 0);
+}
+
+function wireBlackout() {
+  const view = document.getElementById('view-quiz');
+  view.addEventListener('pointerdown', boPointerDown);
+  view.addEventListener('pointermove', boPointerMove);
+  view.addEventListener('pointerup', boPointerUp);
+  view.addEventListener('pointercancel', boPointerUp);
+  // a long press would open the copy menu / magnifier and steal the drag
+  view.addEventListener('contextmenu', e => { if (_bo.phase === 'strike' || _bo.phase === 'lit') e.preventDefault(); });
+}
+wireBlackout();
+
 // ── KEY SCENE (E5, E10) — a visual-novel scene over the event's own art ─────
-// Flow: scroll title card → lead + scene line by line in the dialogue box (tap) → the question stays in the
+// Flow (after the lead's narration page): scroll title card → scene line by line in the dialogue box (tap) → the question stays in the
 // shrunken box and the choices rise above it. The choice phase reuses the quiz's own pieces: #quiz-choices
 // and the Next fuda are borrowed into this view (buildChoice / updateQuizNext / sealAnswer / confirmAnswer
 // work unchanged) and endKeyScene() puts them back before the next quiz card.
 const KEY_TYPE_MS = { narr: 24, speech: 38 };   // his words type a little slower than the narrator's
-const KEY_CARD_MS = 3200, KEY_CARD_REDUCED_MS = 1200, KEY_CARD_FADE_MS = 600, KEY_TAP_HINT_MS = 2500;
+const KEY_ENTER_MS = 1200;   // the view dissolves in first (--key-enter in style.css), then the scroll unrolls
+const KEY_CARD_MS = KEY_ENTER_MS + 3200, KEY_CARD_REDUCED_MS = 1200, KEY_CARD_FADE_MS = 600, KEY_TAP_HINT_MS = 2500;
 const KEY_ART_TODO = 'ภาพฉาก (รอวาด)';
-const _key = { q: null, set: null, prompt: '', lines: [], at: 0, phase: 'off', home: null,
-               cardTimer: null, typeTimer: null, hintTimer: null };
+const _key = { q: null, set: null, prompt: '', lines: [], at: 0, phase: 'off', home: null, onEnd: null, growFx: true,
+               finishLine: null, cardTimer: null, typeTimer: null, hintTimer: null, autoTimer: null };
+const KEY_WHO = { speech: '???', player: 'คุณ' };   // name tags (his name is lost in the mist)
 
 // 'EVENT 05' — story numbering E1–E10 (Bento has no event number), same as the quiz noren
 function eventNumber() { return state.stage === 2 ? 5 + state.currentQ : state.currentQ + 1; }
 
-// Lead pages + scene paragraphs → box lines. A page is a string ('\n' = next line) or an array of strings;
-// a quoted part is his speech and the quote marks go (the box itself shows who is talking).
-// validateQuestions() already rejects { slow } / { reply } / { say } entries in a key scene
+// Pages → box lines { text, kind: 'narr' | 'speech', auto?, slow? } or { reply: [...] }.
+// A page is a string ('\n' = next line) or an array of entries; a quoted part is his speech and the quote marks
+// go (the box itself shows who is talking). Same entry forms as the narration engine:
+// { reply } = the player picks a line to answer with (no score) · { say, auto } = flows on by itself ·
+// { slow, breath } = the moved line: phrases soak in one by one (breath = each phrase on its own line)
 function keyLines(pages) {
-  return pages.flatMap(page => (Array.isArray(page) ? page : page.split('\n'))).flatMap(line =>
-    (line.match(/["“][^"”]*["”]|[^"“”]+/g) || [])
-      .map(s => s.trim()).filter(Boolean)
-      .map(s => /^["“]/.test(s) ? { text: s.slice(1, -1).trim(), speech: true } : { text: s, speech: false }));
+  const split = line => (line.match(/["“][^"”]*["”]|[^"“”]+/g) || [])
+    .map(s => s.trim()).filter(Boolean)
+    .map(s => /^["“]/.test(s) ? { text: s.slice(1, -1).trim(), kind: 'speech' } : { text: s, kind: 'narr' });
+  return pages.flatMap(page => (Array.isArray(page) ? page : page.split('\n'))).flatMap(line => {
+    if (typeof line === 'string') return split(line);
+    if (Array.isArray(line.reply)) return [{ reply: line.reply }];
+    if (typeof line.say === 'string') { const parts = split(line.say); parts[parts.length - 1].auto = line.auto === true; return parts; }
+    if (Array.isArray(line.slow)) return [{ text: line.slow.join(line.breath ? '\n' : ' '), kind: 'narr', slow: true }];
+    throw new Error(`[Ryokan] key scene: ${JSON.stringify(line)} has no VN form`);
+  });
 }
 
 function showKeyScene(q) {
@@ -1154,7 +1456,8 @@ function showKeyScene(q) {
   if (isStage2) guardState(2);
   const set = isStage2 ? getStage2Set(q) : { prompt: '', choices: q.choices };
   const { paras, prompt } = storyParts(q, set, false);
-  Object.assign(_key, { q, set, prompt, lines: keyLines([...q.lead, ...paras]), at: 0, phase: 'card' });
+  // VN box = the scene's own entries (keyScene.lines, one page of entries — E9's festival) then its paragraphs (q.text — E5, E10)
+  Object.assign(_key, { q, set, prompt, lines: keyLines([...(q.keyScene.lines ? [q.keyScene.lines] : []), ...paras]), at: 0, phase: 'card', onEnd: null, growFx: true });
 
   showView('key');
   setKeyArt(q.keyScene);
@@ -1173,6 +1476,16 @@ function showKeyScene(q) {
   void card.offsetWidth;   // restart the unroll for the second key scene
   card.classList.add('playing');
   _key.cardTimer = setTimeout(startKeyLines, motionOn() ? KEY_CARD_MS : KEY_CARD_REDUCED_MS);
+}
+
+// After a key scene's answer the story can carry on in the same box over the same art (E5 → the morning
+// after, bento.lead) — the borrowed quiz pieces go home first; onEnd runs after the last line
+function continueKeyScene(pages, onEnd) {
+  if (!_key.q) throw new Error('[Ryokan] continueKeyScene: no key scene on screen');
+  endKeyScene();
+  Object.assign(_key, { lines: keyLines(pages), at: 0, phase: 'read', onEnd, growFx: false });
+  document.getElementById('key-hide-btn').hidden = false;
+  showKeyLine();
 }
 
 // Owner's art if the file loads · otherwise a striped slot that names the file to draw (no silent fallback)
@@ -1205,11 +1518,11 @@ function startKeyLines() {
   showKeyLine();
 }
 
-// narration: no name tag, ink-brown · his line: "???" tag (his name is lost in the mist), red rule, tail up
-function setKeySpeaker(speech) {
+// narration: no name tag, ink-brown · his line: "???" tag, red rule · the player's answer: "คุณ" tag, blue rule
+function setKeySpeaker(kind) {
   const box = document.getElementById('key-box');
-  box.classList.toggle('key-box--speech', speech);
-  box.classList.toggle('key-box--narr', !speech);
+  ['narr', 'speech', 'player'].forEach(k => box.classList.toggle('key-box--' + k, k === kind));
+  if (KEY_WHO[kind]) box.querySelector('.key-name').textContent = KEY_WHO[kind];
 }
 
 function showKeyLine() {
@@ -1217,11 +1530,19 @@ function showKeyLine() {
   clearTimeout(_key.hintTimer);
   document.getElementById('key-next-mark').classList.remove('on');
   document.getElementById('key-tap-hint').classList.remove('on');
-  setKeySpeaker(line.speech);
-  document.getElementById('key-fx').style.opacity = (_key.at + 1) / _key.lines.length;
-  // the whole line is laid out from the first frame (graphemes hidden) so typing never re-wraps it
+  clearTimeout(_key.autoTimer);
+  if (line.reply) { showKeyReplies(line.reply); return; }
+  setKeySpeaker(line.kind);
+  document.getElementById('key-fx').style.opacity = _key.growFx ? (_key.at + 1) / _key.lines.length : 1;
   const text = document.getElementById('key-text');
+  if (line.slow) {   // the moved line soaks in phrase by phrase, like the story card's ink
+    text.replaceChildren(inkParagraph(line.text));
+    _key.finishLine = revealInk([...text.querySelectorAll('.ink')], finishKeyLine);
+    return;
+  }
+  // the whole line is laid out from the first frame (graphemes hidden) so typing never re-wraps it
   text.replaceChildren(thaiBreakable(line.text, true));
+  _key.finishLine = finishKeyLine;
   const graphemes = [...text.querySelectorAll('.th-g')];
   graphemes.forEach(g => g.classList.add('narration-unrevealed'));
   if (!motionOn()) { finishKeyLine(); return; }
@@ -1229,16 +1550,19 @@ function showKeyLine() {
   _key.typeTimer = setInterval(() => {
     graphemes[i++].classList.remove('narration-unrevealed');
     if (i >= graphemes.length) finishKeyLine();
-  }, line.speech ? KEY_TYPE_MS.speech : KEY_TYPE_MS.narr);
+  }, line.kind === 'narr' ? KEY_TYPE_MS.narr : KEY_TYPE_MS.speech);
 }
 
 function finishKeyLine() {
   clearInterval(_key.typeTimer);
   _key.typeTimer = null;
+  _key.finishLine = null;
   document.querySelectorAll('#key-text .narration-unrevealed').forEach(g => g.classList.remove('narration-unrevealed'));
   document.getElementById('key-next-mark').classList.add('on');
   // the tap hint only shows if they hesitate
   _key.hintTimer = setTimeout(() => document.getElementById('key-tap-hint').classList.add('on'), KEY_TAP_HINT_MS);
+  // { say, auto }: a breath, then the next line comes by itself (a tap before that goes on at once)
+  if (_key.lines[_key.at].auto) _key.autoTimer = setTimeout(advanceKeyScene, NARRATION_AUTO_GAP_MS);
 }
 
 // The whole view is the tap target: card → skip it · hidden box → bring it back · typing → finish the line ·
@@ -1248,9 +1572,36 @@ function advanceKeyScene() {
   if (_key.phase === 'card') { startKeyLines(); return; }
   if (view.classList.contains('key-hide-ui')) { view.classList.remove('key-hide-ui'); return; }
   if (_key.phase !== 'read') return;
-  if (_key.typeTimer) { finishKeyLine(); return; }
+  if (_key.finishLine) { _key.finishLine(); return; }
   if (_key.at < _key.lines.length - 1) { _key.at++; showKeyLine(); return; }
+  if (_key.onEnd) { const done = _key.onEnd; _key.onEnd = null; _key.phase = 'off'; done(); return; }
   showKeyChoices();
+}
+
+// { reply }: his last line stays in the box, the answers rise above it (dating-sim style). A pick replaces the
+// entry with the player's own line, which then types out under the "คุณ" tag — no score, the story goes on
+function showKeyReplies(options) {
+  _key.phase = 'reply';
+  const menu = document.getElementById('key-menu');
+  const wrap = document.createElement('div');
+  wrap.className = 'narration-replies key-replies';
+  options.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'narration-reply-btn';
+    btn.append(thaiBreakable(text));
+    btn.style.animationDelay = (i * NARRATION_REPLY_STAGGER_MS) + 'ms';
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      wrap.remove();
+      document.getElementById('key-dim').classList.remove('on');
+      _key.lines[_key.at] = { text, kind: 'player' };
+      _key.phase = 'read';
+      showKeyLine();
+    });
+    wrap.append(btn);
+  });
+  menu.append(wrap);
+  document.getElementById('key-dim').classList.add('on');
 }
 
 // The question stays in the box (shrunk) · the quiz's own choice list rises into the stage above it
@@ -1277,8 +1628,8 @@ function showKeyChoices() {
   wrap.replaceChildren();
   wrap.className = 'quiz-choices';
   _pendingChoice = null;
-  setNextWaiting(QUIZ_HINT.pick);
-  shuffled(_key.set.choices).forEach((c, i) => wrap.append(buildChoice(_key.q, c, i, wrap)));
+  setNextWaiting(document.getElementById('btn-quiz-next'), QUIZ_HINT.pick);
+  shuffled(_key.set.choices).forEach((c, i) => wrap.append(buildChoice(_key.q, c, i, wrap, pickQuizChoice)));
   requestAnimationFrame(() => wrap.classList.add('in'));
   armQuizIdle(() => wrap.classList.add('nudge'), CHOICE_NUDGE_MS);
 }
@@ -1291,14 +1642,14 @@ function hideKeyBox(e) {
 // Log keeps the split: narration as plain ink paragraphs, his lines tagged "???" with a red rule
 function openKeyLog(e) {
   e.stopPropagation();
-  const shown = _key.phase === 'ask' ? _key.lines : _key.lines.slice(0, _key.at + 1);
+  const shown = (_key.phase === 'ask' ? _key.lines : _key.lines.slice(0, _key.at + 1)).filter(line => !line.reply);
   document.getElementById('key-log-lines').replaceChildren(...shown.map(line => {
     const p = document.createElement('p');
-    p.className = line.speech ? 'key-log-speech' : 'key-log-narr';
-    if (line.speech) {
+    p.className = 'key-log-' + line.kind;
+    if (KEY_WHO[line.kind]) {
       const who = document.createElement('span');
       who.className = 'key-log-who';
-      who.textContent = '???';
+      who.textContent = KEY_WHO[line.kind];
       p.append(who);
     }
     p.append(thaiBreakable(line.text));
@@ -1312,6 +1663,9 @@ function closeKeyLog() { document.getElementById('key-log').hidden = true; }
 // Called before every key scene and from loadQuestion(), so the next quiz card always has its own pieces
 function endKeyScene() {
   clearTimeout(_key.cardTimer);
+  clearTimeout(_key.autoTimer);
+  clearTimeout(_inkTimer);
+  _key.finishLine = null;
   clearInterval(_key.typeTimer);
   clearTimeout(_key.hintTimer);
   _key.typeTimer = null;
@@ -1323,7 +1677,8 @@ function endKeyScene() {
     _key.home = null;
   }
   document.getElementById('view-key').classList.remove('key-hide-ui');
-  document.getElementById('key-box').classList.remove('key-box--asking', 'key-box--speech', 'key-box--narr');
+  document.getElementById('key-box').classList.remove('key-box--asking', 'key-box--speech', 'key-box--narr', 'key-box--player');
+  document.getElementById('key-menu').querySelector('.key-replies')?.remove();
   document.getElementById('key-text').replaceChildren();
   document.getElementById('key-dim').classList.remove('on');
   document.getElementById('key-log').hidden = true;
@@ -1394,6 +1749,7 @@ function initBento() {
   _bentoPendingChoice = null;
   _bentoPhase         = 'question';
   bentoShelf.clear();
+  document.getElementById('bento-shelf-wrap').classList.remove('hinting');
   resetSceneIntro('bento-intro', 'bento-main');
   showSceneIntro('bento-intro');
 }
@@ -1409,7 +1765,29 @@ function confirmBentoChoice() {
   _bentoPendingChoice = null;
   _bentoPhase = 'arrange';
   updateBentoButtons(bentoShelf.count());
+  showBentoShelfHint();
 }
+
+// Swipe hand over the shelf (swipes twice, then fades — style.css shelfHint) · gone at the first scroll or touch
+function showBentoShelfHint() {
+  const wrap  = document.getElementById('bento-shelf-wrap');
+  const shelf = document.getElementById('bento-palette');
+  const stop  = () => {
+    wrap.classList.remove('hinting');
+    shelf.removeEventListener('scroll', stop);
+    shelf.removeEventListener('pointerdown', stop);
+  };
+  shelf.addEventListener('scroll', stop);
+  shelf.addEventListener('pointerdown', stop);
+  wrap.classList.add('hinting');
+}
+
+// Right edge fades out while more food lies past it
+function markBentoShelfEnd() {
+  const shelf = document.getElementById('bento-palette');
+  shelf.classList.toggle('at-end', shelf.scrollLeft + shelf.clientWidth >= shelf.scrollWidth - 2);
+}
+document.getElementById('bento-palette').addEventListener('scroll', markBentoShelfEnd);
 
 function onBentoContinue() {
   if (_bentoPhase !== 'arrange' || !bentoShelf.count()) return;
@@ -1417,50 +1795,48 @@ function onBentoContinue() {
   showNarration(QUESTIONS.yokai[0].afterArrange, () => fadeToView('quiz', loadQuestion));
 }
 
+// Same cards and fuda as the quiz page (buildChoice / setNext* / stampSeal), in the bottom sheet
 function showBentoQuestion() {
   _bentoPendingChoice = null;
   const q   = QUESTIONS.yokai[0];
   const set = getStage2Set(q);
   document.getElementById('bento-question-text').replaceChildren(thaiBreakable(set.prompt));
 
+  const btn  = document.getElementById('btn-bento-confirm');
   const wrap = document.getElementById('bento-choices');
-  wrap.innerHTML = '';
-  shuffled(set.choices).forEach(c => {
-    const btn = document.createElement('button');
-    btn.className = 'bento-choice-btn';
+  wrap.replaceChildren();
+  wrap.className = 'quiz-choices';
+  setNextWaiting(btn, QUIZ_HINT.pick);
+  shuffled(set.choices).forEach((c, i) => wrap.append(buildChoice(q, c, i, wrap, pick => {
+    _bentoPendingChoice = pick;
+    setNextReady(btn);
+  })));
 
-    const img = document.createElement('div');
-    img.className = 'bento-choice-img';
-    const txt = document.createElement('span');
-    txt.className = 'bento-choice-text';
-    txt.append(thaiBreakable(c.text));
-    btn.appendChild(img);
-    btn.appendChild(txt);
-
-    btn.addEventListener('click', () => {
-      wrap.querySelectorAll('.bento-choice-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      _bentoPendingChoice = c;
-      document.getElementById('btn-bento-confirm').disabled = false;
-    });
-    wrap.appendChild(btn);
-  });
-
-  document.getElementById('btn-bento-confirm').disabled = true;
   document.getElementById('bento-q-modal').classList.add('open');
+  requestAnimationFrame(() => wrap.classList.add('in'));
+}
+
+function sealBentoAnswer() {
+  if (!_bentoPendingChoice) return;
+  stampSeal(document.getElementById('btn-bento-confirm'), document.getElementById('bento-choices'));
+  setTimeout(confirmBentoChoice, motionOn() ? SEAL_BEAT_MS : 250);
 }
 
 // ── ITEM SHELF — sideways shelf you drag items from onto a drop zone (Bento food, Doll accessories) ──
 // One finger at a time. A press becomes a drag only after it moves (a sideways swipe scrolls the
 // shelf instead — touch-action: pan-x). Every way a drag can end goes through end().
 // The mouse wheel scrolls the shelf sideways (PC has no swipe). Placed copies are kept in order for undo().
+// A placed copy can be dragged again: dropped inside the zone it moves there (on top of the rest),
+// dropped outside it is taken off. Moving is not an undo step.
 const SHELF_DRAG_START_PX = 6;
 
 // cfg: { shelf, view, zone, layer, placedClass, onChange } — ghost lives inside view, so it can never outlive it
 function initItemShelf(cfg) {
-  const drag   = { pointerId: null, item: null, ghost: null, startX: 0, startY: 0 };
-  const placed = [];
-  const { shelf } = cfg;
+  // item = what dims while dragged · look = what the ghost copies · moving = the placed copy being moved (else null)
+  // captor = the element holding the pointer (shelf or layer)
+  const drag   = { pointerId: null, captor: null, item: null, look: null, moving: null, ghost: null, startX: 0, startY: 0 };
+  const placed = [];   // in placing order — undo() takes the last
+  const { shelf, layer } = cfg;
 
   // An item's look is its image (background) or its glyph (placeholder text) — copied onto ghost and placed copy
   function copyLook(from, to) {
@@ -1469,24 +1845,29 @@ function initItemShelf(cfg) {
   }
 
   function end() {
-    const { pointerId, item, ghost } = drag;
+    const { pointerId, captor, item, ghost } = drag;
     if (pointerId === null) return;
-    Object.assign(drag, { pointerId: null, item: null, ghost: null });
+    Object.assign(drag, { pointerId: null, captor: null, item: null, look: null, moving: null, ghost: null });
     if (ghost) ghost.remove();
-    item.classList.remove('shelf-item--lifted');
-    if (shelf.hasPointerCapture(pointerId)) shelf.releasePointerCapture(pointerId);
+    item.classList.remove('shelf-lifted');
+    if (captor.hasPointerCapture(pointerId)) captor.releasePointerCapture(pointerId);
+  }
+
+  function begin(e, captor, item, look, moving) {
+    if (drag.pointerId !== null) return;   // a second finger is ignored mid-drag
+    Object.assign(drag, { pointerId: e.pointerId, captor, item, look, moving, startX: e.clientX, startY: e.clientY });
+    captor.setPointerCapture(e.pointerId);
   }
 
   function startGhost() {
-    const img   = drag.item.querySelector('.shelf-item-img');
     const ghost = document.createElement('div');
     ghost.className = 'shelf-drag-ghost';
-    ghost.style.width = ghost.style.height = img.getBoundingClientRect().width + 'px';
-    ghost.style.fontSize = getComputedStyle(img).fontSize;
-    copyLook(img, ghost);
+    ghost.style.width = ghost.style.height = drag.look.getBoundingClientRect().width + 'px';
+    ghost.style.fontSize = getComputedStyle(drag.look).fontSize;
+    copyLook(drag.look, ghost);
     cfg.view.appendChild(ghost);
     drag.ghost = ghost;
-    drag.item.classList.add('shelf-item--lifted');
+    drag.item.classList.add('shelf-lifted');
   }
 
   function moveGhost(x, y) {
@@ -1495,41 +1876,60 @@ function initItemShelf(cfg) {
     drag.ghost.style.top  = (y - half) + 'px';
   }
 
-  function place(x, y) {
-    const dz = cfg.zone.getBoundingClientRect();
-    if (x < dz.left || x > dz.right || y < dz.top || y > dz.bottom) return;
-    const el = document.createElement('div');
-    el.className = cfg.placedClass;
-    el.style.left = ((x - dz.left) / dz.width  * 100).toFixed(1) + '%';
-    el.style.top  = ((y - dz.top)  / dz.height * 100).toFixed(1) + '%';
-    copyLook(drag.ghost, el);
-    cfg.layer.appendChild(el);
-    placed.push(el);
+  function remove(el) {
+    placed.splice(placed.indexOf(el), 1);
+    el.remove();
     cfg.onChange(placed.length);
   }
 
-  shelf.addEventListener('pointerdown', e => {
-    if (drag.pointerId !== null) return;   // a second finger is ignored mid-drag
-    const item = e.target.closest('.shelf-item');
-    if (!item) return;
-    Object.assign(drag, { pointerId: e.pointerId, item, startX: e.clientX, startY: e.clientY });
-    shelf.setPointerCapture(e.pointerId);
-  });
-  shelf.addEventListener('pointermove', e => {
+  function drop(x, y) {
+    const dz = cfg.zone.getBoundingClientRect();
+    const inside = x >= dz.left && x <= dz.right && y >= dz.top && y <= dz.bottom;
+    if (!inside) {
+      if (drag.moving) remove(drag.moving);
+      return;
+    }
+    const el = drag.moving || document.createElement('div');
+    if (!drag.moving) {
+      el.className = `${cfg.placedClass} shelf-placed`;
+      copyLook(drag.ghost, el);
+      placed.push(el);
+    }
+    el.style.left = ((x - dz.left) / dz.width  * 100).toFixed(1) + '%';
+    el.style.top  = ((y - dz.top)  / dz.height * 100).toFixed(1) + '%';
+    layer.appendChild(el);   // on top of the rest — a moved copy replays its landing pop
+    cfg.onChange(placed.length);
+  }
+
+  function onMove(e) {
     if (e.pointerId !== drag.pointerId) return;
     if (!drag.ghost) {
       if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < SHELF_DRAG_START_PX) return;
       startGhost();
     }
     moveGhost(e.clientX, e.clientY);
-  });
-  shelf.addEventListener('pointerup', e => {
+  }
+
+  function onUp(e) {
     if (e.pointerId !== drag.pointerId) return;
-    if (drag.ghost) place(e.clientX, e.clientY);
+    if (drag.ghost) drop(e.clientX, e.clientY);
     end();
+  }
+
+  shelf.addEventListener('pointerdown', e => {
+    const item = e.target.closest('.shelf-item');
+    if (item) begin(e, shelf, item, item.querySelector('.shelf-item-img'), null);
   });
-  shelf.addEventListener('pointercancel', end);
-  shelf.addEventListener('lostpointercapture', end);
+  layer.addEventListener('pointerdown', e => {
+    const el = e.target.closest('.shelf-placed');
+    if (el) begin(e, layer, el, el, el);
+  });
+  [shelf, layer].forEach(captor => {
+    captor.addEventListener('pointermove', onMove);
+    captor.addEventListener('pointerup', onUp);
+    captor.addEventListener('pointercancel', end);
+    captor.addEventListener('lostpointercapture', end);
+  });
   shelf.addEventListener('wheel', e => {
     if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;   // trackpad sideways swipe already scrolls
     e.preventDefault();
@@ -1539,12 +1939,9 @@ function initItemShelf(cfg) {
   return {
     end,
     count: () => placed.length,
-    placed: () => [...placed],
+    placed: () => [...layer.children],   // bottom to top, as stacked on screen
     undo() {
-      const el = placed.pop();
-      if (!el) return;
-      el.remove();
-      cfg.onChange(placed.length);
+      if (placed.length) remove(placed[placed.length - 1]);
     },
     clear() {
       end();
@@ -1938,7 +2335,7 @@ function closeDollWheel() {
 // Approved in lab/crowd-lab.html ("เดิม + ห้องเต็มก่อน"). loadQuestion() plays it after E2's lead narration,
 // before the E2 card. Times are seconds from the first knock.
 const CROWD_ART = ['tengu_m', 'nekomata_f', 'oni_m', 'tanuki_m', 'yukionna_f', 'inugami_m', 'shinigami_f', 'hebi_m',
-                   'raijin_m', 'fuujin_f', 'ningyo_f', 'oni_f'];   // busts streaming through (assets/yokai/*.png)
+                   'raijin_m', 'fuujin_f', 'ningyo_f', 'oni_f'];   // busts streaming through (assets/ui/crowd/*.png)
 const CROWD_LATE_ART = 'tanuki_m';
 // draft lines (owner may still rewrite) · kind: big = louder, red / gold = colour
 const CROWD_COMMENTS = [
@@ -1976,7 +2373,10 @@ function crowdEl(tag, className, vars) {
   if (vars) Object.entries(vars).forEach(([k, v]) => n.style.setProperty('--' + k, v));
   return n;
 }
-function crowdArtUrl(art) { return `assets/yokai/${art}.png`; }
+// 320px shape-only exports of the yokai art (~20KB each) — the full 1000px art would cost ~50MB of decoded images
+function crowdArtUrl(art) { return `assets/ui/crowd/${art}.png`; }
+// warm the cache when the journey starts, so E2's silhouettes never pop in late on a slow connection
+function preloadCrowdArt() { [...CROWD_ART, CROWD_LATE_ART].forEach(art => { new Image().src = crowdArtUrl(art); }); }
 // a silhouette bust: the art only shapes it (CSS mask) — fail loudly if the file is missing (it would just vanish)
 function crowdWalker(art, vars) {
   const probe = new Image();

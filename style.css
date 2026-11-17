@@ -43,6 +43,9 @@
   --wood-cedar-dark:   color-mix(in srgb, var(--ink-brown) 80%, var(--on-surface));
   --wood-hinoki:       color-mix(in srgb, var(--surface-lowest) 85%, var(--accent-orange));  /* pale wood: gender-switch track, omikuji stick */
   --gold:              color-mix(in srgb, var(--accent-orange) 55%, var(--surface-lowest)); /* gilded kanji on the chosen tag */
+  /* goldfish water — the scooping tub and the fish bowl (game + result keepsake) */
+  --gf-water-hi:       color-mix(in srgb, var(--secondary) 26%, var(--bg));
+  --gf-water-lo:       color-mix(in srgb, var(--secondary) 58%, var(--bg));
   /* Thai fallbacks after each Latin/JP font — the browser uses them only for Thai glyphs */
   --font-display:      'Kaisei Decol', 'Noto Serif Thai', Georgia, serif;
   --font-body:         'M PLUS Rounded 1c', 'Sarabun', Arial, sans-serif;
@@ -3133,6 +3136,13 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 .result-doll--theirs { width: 142px; right: -14px; bottom: 0; transform: rotate(4deg); }
 .result-doll--yours  { width: 136px; left: -12px; bottom: 18px; transform: rotate(-4deg); z-index: 1; }
 .result-doll--yours:only-child { left: 50%; margin-left: -68px; }
+/* goldfish keepsake at the dolls' feet — only when they went scooping after E9 · tap: the fish dart */
+.result-dolls:has(.result-bowl) { margin-bottom: 16px; }   /* room under the bowl before the share button */
+.result-bowl { position: absolute; left: 50%; bottom: -28px; width: 72px; margin-left: -36px; z-index: 2; padding: 0; border: 0; cursor: pointer;
+  filter: url(#doll-boil) drop-shadow(0 6px 8px color-mix(in srgb, var(--on-surface) 14%, transparent)); -webkit-tap-highlight-color: transparent; }
+.result-bowl:focus-visible { outline: 2px solid var(--secondary); outline-offset: 3px; }
+.result-bowl.startle { animation: gfBump 0.35s ease-out; }
+.result-bowl.startle .gf-tail { animation-duration: 0.12s; }
 /* omikuji box — a wooden can with a red label; it gives a little shake now and then · tap: shakes, the stick pops up */
 .result-kuji-box {
   position: relative;
@@ -4347,6 +4357,19 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   .key-sprite.hop { animation: keySpriteHop 0.4s ease-out; }
 }
 @keyframes keySpriteHop { 40% { translate: 0 -12px; } }
+@keyframes keySpritePop { from { opacity: 0; transform: translate(-50%, 28%) scale(0.72); } }
+@media (prefers-reduced-motion: no-preference) {
+  .key-sprite.on.pop { animation: keySpritePop 0.45s cubic-bezier(.3,1.5,.5,1) both; }   /* bounceKeySprite drops .pop for the hops */
+}
+/* goldfish: comic-panel swipe from the festival to the stall (showKeyStall → playKeySwipe) — the washi page shows
+   between the zoomed-out panels; each panel has an ink frame like a manga page */
+.key-swipe { position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: var(--washi-grain), var(--bg); }
+.key-swipe-zoom { position: absolute; inset: 0; }
+.key-swipe-track { position: absolute; top: 0; left: 0; height: 100%; width: calc(200% + var(--gutter)); display: flex; gap: var(--gutter); }
+.key-swipe-panel { flex: 1; border-radius: 6px; background: center / cover no-repeat var(--surface-low);
+  box-shadow: inset 0 0 0 3px var(--on-surface), 0 6px 18px color-mix(in srgb, var(--on-surface) 18%, transparent); }
+.key-box-wrap { transition: opacity 0.3s; }
+#view-key.key-swiping .key-box-wrap { opacity: 0; pointer-events: none; }
 .key-fx--stall { background: linear-gradient(transparent 55%, color-mix(in srgb, var(--on-surface) 35%, transparent)); }
 .key-box--uncle { font-size: var(--fs-voice); background: var(--washi-grain), color-mix(in srgb, var(--bg) 96%, transparent);
   box-shadow: var(--shadow-float), inset 4px 0 0 var(--wood-walnut); }
@@ -4358,8 +4381,6 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   --gf-night:    color-mix(in srgb, var(--on-surface) 88%, var(--secondary));
   --gf-wood:     color-mix(in srgb, var(--ink-brown) 78%, var(--bg));
   --gf-wood-dk:  color-mix(in srgb, var(--ink-brown) 82%, var(--on-surface));
-  --gf-water-hi: color-mix(in srgb, var(--secondary) 26%, var(--bg));
-  --gf-water-lo: color-mix(in srgb, var(--secondary) 58%, var(--bg));
   --gf-gold:     color-mix(in srgb, var(--ink-gold) 55%, var(--bg));
   background: var(--gf-night);
 }
@@ -4464,17 +4485,23 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
 .gf-say span.in { animation: gfSayIn 0.4s ease-out; }
 @keyframes gfSayIn { from { opacity: 0; transform: translateY(1cqw); } }
 .gf-stage:not(.playing) .gf-say { opacity: 0; }
-.gf-bowl { right: 6cqw; bottom: 6cqw; width: 27cqw; aspect-ratio: 1; border-radius: 50%; background: var(--bg);
+/* Fish bowl — the game's catch bowl (.gf-bowl) and the result keepsake (.result-bowl) · its own size container:
+   everything inside is in the bowl's cqw, so it scales with whatever width the bowl is given */
+.fish-bowl { aspect-ratio: 1; border-radius: 50%; background: var(--bg); container-type: size; box-shadow: inset 0 0 0 1px var(--outline-variant); }
+.fish-bowl-water { position: absolute; inset: 10%; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 40% 35%, var(--gf-water-hi), var(--gf-water-lo)); }
+.fish-bowl .gf-mini { left: 50%; top: 50%; --art: 28cqw; transform: rotate(var(--a)) translateX(var(--r)) rotate(90deg); animation: none; }
+.fish-bowl .gf-mini.gf-fish--small { --art: 20cqw; }
+.fish-bowl .gf-mini.gf-fish--big { --art: 35cqw; }
+@media (prefers-reduced-motion: no-preference) {
+  .fish-bowl .gf-mini { animation: gfOrbit var(--dur) linear infinite; }
+}
+@keyframes gfOrbit { from { transform: rotate(var(--a)) translateX(var(--r)) rotate(90deg); } to { transform: rotate(calc(var(--a) + 360deg)) translateX(var(--r)) rotate(90deg); } }
+.fish-bowl-count { position: absolute; right: -7cqw; top: -7cqw; min-width: 33cqw; height: 33cqw; padding: 0 7cqw; border-radius: 18cqw; display: grid; place-items: center;
+  background: var(--primary); color: var(--bg); font-family: var(--font-display); font-size: 17cqw; }
+@keyframes gfBump { 40% { transform: scale(1.1); } }
+.gf-bowl { right: 6cqw; bottom: 6cqw; width: 27cqw;
   box-shadow: 0 2cqw 5cqw color-mix(in srgb, var(--on-surface) 22%, transparent), inset 0 0 0 1px var(--outline-variant); }
 .gf-bowl.bump { animation: gfBump 0.35s ease-out; }
-@keyframes gfBump { 40% { transform: scale(1.1); } }
-.gf-bowl-water { position: absolute; inset: 10%; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 40% 35%, var(--gf-water-hi), var(--gf-water-lo)); }
-.gf-mini { left: 50%; top: 50%; --art: 7.5cqw; animation: gfOrbit var(--dur) linear infinite; animation-delay: var(--delay); }
-.gf-mini.gf-fish--small { --art: 5.5cqw; }
-.gf-mini.gf-fish--big { --art: 9.5cqw; }
-@keyframes gfOrbit { from { transform: rotate(0deg) translateX(var(--r)) rotate(90deg); } to { transform: rotate(360deg) translateX(var(--r)) rotate(90deg); } }
-.gf-count { position: absolute; right: -2cqw; top: -2cqw; min-width: 9cqw; height: 9cqw; padding: 0 2cqw; border-radius: 5cqw; display: grid; place-items: center;
-  background: var(--primary); color: var(--bg); font-family: var(--font-display); font-size: 4.6cqw; }
 .gf-spares { left: 7cqw; bottom: 19cqw; display: flex; align-items: center; }
 .gf-spare { width: 14cqw; margin: -3cqw -2.5cqw -4cqw -2cqw; }
 .gf-spare.used { opacity: 0.45; }
@@ -4514,5 +4541,4 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   background: var(--washi-grain), var(--bg); color: var(--on-surface); }
 .gf-uncle-say::before { content: ''; position: absolute; left: -1.8cqw; top: 50%; margin-top: -1.8cqw; border: 1.8cqw solid transparent; border-left: 0; border-right-color: var(--bg); }
 .gf-uncle-say b { display: block; font-family: var(--font-kanji); font-size: 2.8cqw; color: var(--wood-walnut); }
-.gf-go { padding: 2.6cqw 9cqw; border-radius: 3rem; font-size: 4.2cqw; font-weight: 700; color: var(--bg);
-  background: linear-gradient(135deg, var(--primary), var(--primary-container)); }
+.gf-cta { width: min(60cqw, 240px); margin-top: 1cqw; }   /* the quiz pages' fuda, a little narrower on the stall's cards */

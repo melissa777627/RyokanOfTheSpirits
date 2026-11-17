@@ -423,7 +423,7 @@
       <div class="gf-water" id="gf-water"><div class="gf-shimmer"></div></div>
       <div class="gf-title"><small>金魚すくい</small><span id="gf-title"></span></div>
       <p class="gf-say" aria-live="polite"><b>???</b><span id="gf-say"></span></p>
-      <div class="gf-bowl" id="gf-bowl" aria-hidden="true"><div class="gf-bowl-water" id="gf-bowl-water"></div><span class="gf-count" id="gf-count">0</span></div>
+      <div class="fish-bowl gf-bowl" id="gf-bowl" aria-hidden="true"><div class="fish-bowl-water" id="gf-bowl-water"></div><span class="fish-bowl-count" id="gf-count">0</span></div>
       <div class="gf-spares" id="gf-spares" aria-hidden="true"></div>
       <button type="button" class="gf-done" data-gf="done" id="gf-done"></button>
       <div class="gf-poi" id="gf-poi" aria-hidden="true"></div>
@@ -887,13 +887,13 @@ function confirmAnswer() {
 // the uncle welcomes them → view-goldfish → next · walk on → next (E10). Cosmetic: state.goldfish only
 function inviteGoldfish(next) {
   const g = QUESTIONS.goldfish;
+  preloadGoldfishStall();
   continueKeyScene(g.invite, pick => {
     if (pick !== 0) { state.goldfish = null; next(); return; }
-    showKeyStall();
-    continueKeyScene(g.welcome, () => {
+    showKeyStall(() => continueKeyScene(g.welcome, () => {
       endKeyScene();
       startGoldfish(next);
-    });
+    }));
   });
 }
 
@@ -1529,7 +1529,7 @@ function showKeyScene(q) {
 
   showView('key');
   setKeyArt(q.keyScene);
-  document.getElementById('key-sprite').classList.remove('on');   // the goldfish uncle only stands in his own stall
+  document.getElementById('key-sprite').classList.remove('on', 'pop');   // the goldfish uncle only stands in his own stall
   const fx = document.getElementById('key-fx');
   fx.className = 'key-fx key-fx--' + q.keyScene.fx;
   fx.style.opacity = 0;
@@ -1694,19 +1694,68 @@ function showKeyOptions(options, onPick) {
   document.getElementById('key-dim').classList.add('on');
 }
 
-// Goldfish: the festival street fades to the stall seen from above, and the uncle pops up in front of it
+// Goldfish: a comic-panel swipe (music-video style) from the festival street to the stall seen from above —
+// the page zooms out so both panels show, slides sideways, zooms back in — then the uncle pops up and
+// onReady runs (his welcome). The box hides while the panels move. Reduced motion: a plain cut
 const GOLDFISH_STALL = { art: 'assets/ui/goldfish/bg.png', fx: 'stall' };
-function showKeyStall() {
+const KEY_SWIPE_MS = 1500;
+const KEY_SWIPE_GUTTER = 26;   // px of washi page between the two panels
+const KEY_SPRITE_POP_MS = 450;
+function preloadGoldfishStall() {
+  [GOLDFISH_STALL.art, GF_ART + 'uncle.png'].forEach(src => { new Image().src = src; });
+}
+function showKeyStall(onReady) {
   if (!_key.q) throw new Error('[Ryokan] showKeyStall: no key scene on screen');
-  setKeyArt(GOLDFISH_STALL);
-  const art = document.getElementById('key-art');
-  if (motionOn()) art.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 900, easing: 'ease-out' });
-  document.getElementById('key-fx').className = 'key-fx key-fx--' + GOLDFISH_STALL.fx;
-  document.getElementById('key-sprite').classList.add('on');
+  const view = document.getElementById('view-key');
+  const from = document.getElementById('key-art').style.backgroundImage;   // the festival street, before it is swapped
+  setKeyArt(GOLDFISH_STALL);   // the stall goes in under the swipe
+
+  const land = () => {
+    document.getElementById('key-fx').className = 'key-fx key-fx--' + GOLDFISH_STALL.fx;
+    document.getElementById('key-sprite').classList.add('on', 'pop');
+    setTimeout(() => { view.classList.remove('key-swiping'); onReady(); }, motionOn() ? KEY_SPRITE_POP_MS : 0);
+  };
+  if (!motionOn()) { land(); return; }
+
+  view.classList.add('key-swiping');
+  // the stall panel slides in only once its picture is there (preloaded at the invite, so usually at once)
+  const go = () => playKeySwipe(view, from, `url('${GOLDFISH_STALL.art}')`, land);
+  const stall = new Image();
+  stall.src = GOLDFISH_STALL.art;
+  if (stall.complete) { go(); return; }
+  stall.onload = go;
+  stall.onerror = () => { console.warn('[Ryokan] stall art did not load for the swipe:', GOLDFISH_STALL.art); go(); };
+}
+function playKeySwipe(view, fromImage, toImage, onDone) {
+  const swipe = document.createElement('div');
+  swipe.className = 'key-swipe';
+  swipe.setAttribute('aria-hidden', 'true');
+  swipe.innerHTML = '<div class="key-swipe-zoom"><div class="key-swipe-track"><div class="key-swipe-panel"></div><div class="key-swipe-panel"></div></div></div>';
+  const [a, b] = swipe.querySelectorAll('.key-swipe-panel');
+  a.style.backgroundImage = fromImage;
+  b.style.backgroundImage = toImage;
+  document.getElementById('key-fx').after(swipe);
+  const opts = { duration: KEY_SWIPE_MS, fill: 'forwards' };
+  swipe.querySelector('.key-swipe-zoom').animate([
+    { transform: 'scale(1)',    offset: 0,    easing: 'cubic-bezier(.5,0,.3,1)' },
+    { transform: 'scale(0.82)', offset: 0.24 },
+    { transform: 'scale(0.82)', offset: 0.76, easing: 'cubic-bezier(.5,0,.3,1)' },
+    { transform: 'scale(1)',    offset: 1 }
+  ], opts);
+  const track = swipe.querySelector('.key-swipe-track');
+  track.style.setProperty('--gutter', KEY_SWIPE_GUTTER + 'px');
+  const end = `translateX(calc(-50% - ${KEY_SWIPE_GUTTER / 2}px))`;   // one panel + the gutter
+  track.animate([
+    { transform: 'translateX(0)', offset: 0 },
+    { transform: 'translateX(0)', offset: 0.22, easing: 'cubic-bezier(.65,0,.25,1)' },
+    { transform: `translateX(calc(-52% - ${KEY_SWIPE_GUTTER / 2}px))`, offset: 0.68, easing: 'ease-in-out' },   // a small overshoot
+    { transform: end, offset: 0.8 },
+    { transform: end, offset: 1 }
+  ], opts).onfinish = () => { swipe.remove(); onDone(); };
 }
 function bounceKeySprite() {
   const sprite = document.getElementById('key-sprite');
-  sprite.classList.remove('hop');
+  sprite.classList.remove('hop', 'pop');
   void sprite.offsetWidth;
   sprite.classList.add('hop');
 }
@@ -1828,6 +1877,11 @@ function gfFishHTML(kind) {
   const art = GF_ART + GF_KINDS[kind].art;
   return `<span class="gf-shape"><img class="gf-tail" src="${art}_tail.png" alt=""><img src="${art}_body.png" alt=""></span>`;
 }
+// The quiz pages' fuda (お札) button on the stall's cards: 掬 start scooping · 次 carry on
+function gfFudaHTML(kanji, action) {
+  return `<button type="button" class="cta gf-cta" data-gf="${action}"><span class="cta-kanji" aria-hidden="true">${kanji}</span>` +
+         `<span class="cta-label"></span><span class="cta-arrow" aria-hidden="true">→</span></button>`;
+}
 function gfPoiHTML() {
   return '<div class="gf-poi-art">' + ['paper', 'crack1', 'crack2', 'torn'].map(n =>
     `<img class="gf-pp gf-pp-${n}" src="${GF_ART}poi_${n}.png" alt="">`).join('') +
@@ -1859,7 +1913,7 @@ function gfShowHowto() {
   const h = QUESTIONS.goldfish.howto;
   const card = gfEl('howto');
   card.innerHTML = `<span class="gf-kanji">遊び方</span><h3 class="gf-h"></h3><div class="gf-card"><ol class="gf-steps"></ol><div class="gf-legend"></div></div>
-    <button type="button" class="gf-go" data-gf="play"></button>`;
+    ${gfFudaHTML('掬', 'play')}`;
   card.querySelector('.gf-h').append(thaiBreakable(h.title));
   const steps = card.querySelector('.gf-steps');
   h.steps.forEach(([bold, rest], i) => {
@@ -1880,7 +1934,7 @@ function gfShowHowto() {
   warn.className = 'gf-warn';
   warn.append(thaiBreakable(h.warn));
   legend.append(warn);
-  card.querySelector('.gf-go').append(thaiBreakable(h.start));
+  card.querySelector('.gf-cta .cta-label').append(thaiBreakable(h.start));
   card.classList.add('on');
 }
 
@@ -2086,13 +2140,18 @@ function gfLand(kind, shown, x, y) {
   bowl.classList.add('bump');
   const water = gfEl('bowl-water');
   if (water.children.length >= GF.bowlMax) return;
+  water.append(makeBowlFish(kind));
+}
+
+// One small fish circling in a .fish-bowl (the game's bowl and the result keepsake) — sizes in the bowl's cqw
+function makeBowlFish(kind) {
   const mini = document.createElement('div');
   mini.className = 'gf-fish gf-mini gf-fish--' + kind;
   mini.innerHTML = gfFishHTML(kind);
-  mini.style.setProperty('--r', gfRand(2.5, 6.5).toFixed(1) + 'cqw');
+  mini.style.setProperty('--r', gfRand(9, 24).toFixed(1) + 'cqw');
   mini.style.setProperty('--dur', gfRand(5, 9).toFixed(1) + 's');
-  mini.style.setProperty('--delay', (-gfRand(0, 9)).toFixed(1) + 's');
-  water.append(mini);
+  mini.style.setProperty('--a', Math.round(gfRand(0, 360)) + 'deg');
+  return mini;
 }
 
 function gfFrame(t) {
@@ -2144,12 +2203,12 @@ function gfEnd() {
   card.innerHTML = `<span class="gf-kanji">金魚すくい</span><div class="gf-total">${_gf.count}<small></small></div>
     ${_gf.rare ? '<p class="gf-rare-got"></p>' : ''}
     <div class="gf-uncle"><span class="gf-uncle-face" aria-hidden="true"></span><p class="gf-uncle-say"><b></b><span></span></p></div>
-    <button type="button" class="gf-go" data-gf="next"></button>`;
+    ${gfFudaHTML('次', 'next')}`;
   card.querySelector('.gf-total small').append(thaiBreakable(e.unit));
   if (_gf.rare) card.querySelector('.gf-rare-got').append(thaiBreakable(e.rare));
   card.querySelector('.gf-uncle-say b').textContent = KEY_WHO.uncle;
   card.querySelector('.gf-uncle-say span').append(thaiBreakable(e.uncle.find(t => _gf.count >= t.min).text));
-  card.querySelector('.gf-go').append(thaiBreakable(e.next));
+  card.querySelector('.gf-cta .cta-label').append(thaiBreakable(e.next));
   card.classList.add('on');
 }
 
@@ -3586,9 +3645,10 @@ function renderResult() {
           <p class="result-near-why" data-th="near-none"></p>`}
         </article>
         <div class="result-dolls-row">
-          <div class="result-dolls" role="img" aria-label="ตุ๊กตาไล่ฝนของคุณ${yokaiDoll ? ` คู่กับของ ${r.name}` : ''}">
-            ${yokaiDoll ? `<div class="result-doll result-doll--theirs"><img src="${yokaiDoll}" alt=""></div>` : ''}
-            <div class="result-doll result-doll--yours"><img src="${state.dollImage}" alt=""></div>
+          <div class="result-dolls">
+            ${yokaiDoll ? `<div class="result-doll result-doll--theirs"><img src="${yokaiDoll}" alt="ตุ๊กตาไล่ฝนของ ${r.name}"></div>` : ''}
+            <div class="result-doll result-doll--yours"><img src="${state.dollImage}" alt="ตุ๊กตาไล่ฝนของคุณ"></div>
+            ${state.goldfish ? `<button class="fish-bowl result-bowl" aria-label="ปลาทองที่ตักได้ ${state.goldfish.count} ตัว"><span class="fish-bowl-water"></span><span class="fish-bowl-count" aria-hidden="true">${state.goldfish.count}</span></button>` : ''}
           </div>
           <button class="result-kuji-box" aria-haspopup="dialog" aria-controls="kuji-modal">
             <span class="result-kuji-stick" aria-hidden="true"></span><span class="result-kuji-can" aria-hidden="true"><span>御籤</span></span><span class="result-kuji-cap"></span>
@@ -3675,6 +3735,7 @@ function renderResult() {
   wireResultGender(view);
   if (near) wireNearFog(view);
   wireOmikuji(view);
+  if (state.goldfish) wireResultBowl(view);
   wireResultShare(view, r);
   wireResultAgain(view);
   startDollBoil();
@@ -4487,6 +4548,25 @@ function showToast(msg) {
 }
 
 // ── PLAY AGAIN — first tap warns the result will be gone, a second tap within 3 s really restarts ──
+// Goldfish keepsake (state.goldfish, after E9): the catch circles in a little bowl at the dolls' feet — the rare
+// one too if they got it · tap = the bowl bumps and their tails flick
+function wireResultBowl(view) {
+  const { count, rare } = state.goldfish;
+  if (!Number.isInteger(count) || count < 0 || typeof rare !== 'boolean' || (rare && count === 0)) {
+    throw new Error('[Ryokan] wireResultBowl: bad state.goldfish ' + JSON.stringify(state.goldfish));
+  }
+  const bowl = view.querySelector('.result-bowl');
+  const kinds = Array.from({ length: Math.min(count, GF.bowlMax) }, (_, i) => (rare && i === 0 ? 'rare' : 'red'));
+  bowl.querySelector('.fish-bowl-water').append(...kinds.map(makeBowlFish));
+  bowl.addEventListener('click', () => {
+    if (!motionOn()) return;
+    bowl.classList.remove('startle');
+    void bowl.offsetWidth;
+    bowl.classList.add('startle');
+  });
+  bowl.addEventListener('animationend', e => { if (e.target === bowl) bowl.classList.remove('startle'); });
+}
+
 function wireResultAgain(view) {
   const again = view.querySelector('.result-again');
   const label = again.innerHTML;
@@ -4964,6 +5044,8 @@ function devRandomResult() {
   for (const q of QUESTIONS.yokai) pickYokaiAnswer(q, any(getStage2Set(q).choices));
   calcYokai();
   state.dollImage = 'assets/ui/doll/teru_body.png';   // stands in for the drawn doll
+  const caught = Math.floor(Math.random() * 12);       // stands in for the goldfish scoop (sometimes walked on)
+  state.goldfish = Math.random() < 0.15 ? null : { count: caught, rare: caught > 0 && Math.random() < 0.4 };
   state.bentoSelected = [   // stands in for the arranged bento
     { image: 'assets/ui/food/Onigiri.PNG', x: 24, y: 36 }, { image: 'assets/ui/food/Tamako.PNG', x: 37, y: 58 }, { image: 'assets/ui/food/Shake.PNG', x: 23, y: 66 },
     { image: 'assets/ui/food/Ebi%20tempura.PNG', x: 60, y: 32 }, { image: 'assets/ui/food/Tako%20wiener.PNG', x: 75, y: 33 }, { image: 'assets/ui/food/Sakuramochi.PNG', x: 61, y: 65 }

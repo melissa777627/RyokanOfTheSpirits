@@ -4357,10 +4357,6 @@ button { font-family: var(--font-body); cursor: pointer; border: none; backgroun
   .key-sprite.hop { animation: keySpriteHop 0.4s ease-out; }
 }
 @keyframes keySpriteHop { 40% { translate: 0 -12px; } }
-@keyframes keySpritePop { from { opacity: 0; transform: translate(-50%, 28%) scale(0.72); } }
-@media (prefers-reduced-motion: no-preference) {
-  .key-sprite.on.pop { animation: keySpritePop 0.45s cubic-bezier(.3,1.5,.5,1) both; }   /* bounceKeySprite drops .pop for the hops */
-}
 /* goldfish: comic-panel swipe from the festival to the stall (showKeyStall → playKeySwipe) — the washi page shows
    between the zoomed-out panels; each panel has an ink frame like a manga page */
 .key-swipe { position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: var(--washi-grain), var(--bg); }

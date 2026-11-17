@@ -1529,7 +1529,7 @@ function showKeyScene(q) {
 
   showView('key');
   setKeyArt(q.keyScene);
-  document.getElementById('key-sprite').classList.remove('on', 'pop');   // the goldfish uncle only stands in his own stall
+  document.getElementById('key-sprite').classList.remove('on');   // the goldfish uncle only stands in his own stall
   const fx = document.getElementById('key-fx');
   fx.className = 'key-fx key-fx--' + q.keyScene.fx;
   fx.style.opacity = 0;
@@ -1700,7 +1700,6 @@ function showKeyOptions(options, onPick) {
 const GOLDFISH_STALL = { art: 'assets/ui/goldfish/bg.png', fx: 'stall' };
 const KEY_SWIPE_MS = 1500;
 const KEY_SWIPE_GUTTER = 26;   // px of washi page between the two panels
-const KEY_SPRITE_POP_MS = 450;
 function preloadGoldfishStall() {
   [GOLDFISH_STALL.art, GF_ART + 'uncle.png'].forEach(src => { new Image().src = src; });
 }
@@ -1712,8 +1711,10 @@ function showKeyStall(onReady) {
 
   const land = () => {
     document.getElementById('key-fx').className = 'key-fx key-fx--' + GOLDFISH_STALL.fx;
-    document.getElementById('key-sprite').classList.add('on', 'pop');
-    setTimeout(() => { view.classList.remove('key-swiping'); onReady(); }, motionOn() ? KEY_SPRITE_POP_MS : 0);
+    // the box comes back with him: his picture ends at the chest and the box hides that edge
+    document.getElementById('key-sprite').classList.add('on');
+    view.classList.remove('key-swiping');
+    onReady();
   };
   if (!motionOn()) { land(); return; }
 
@@ -1755,7 +1756,7 @@ function playKeySwipe(view, fromImage, toImage, onDone) {
 }
 function bounceKeySprite() {
   const sprite = document.getElementById('key-sprite');
-  sprite.classList.remove('hop', 'pop');
+  sprite.classList.remove('hop');
   void sprite.offsetWidth;
   sprite.classList.add('hop');
 }
@@ -2953,28 +2954,47 @@ function revealDoll(after) {
   setTimeout(() => fadeThrough(after), 6000);
 }
 
+// Done → export, then the reveal hands over to onDone. If the export fails, Done is pressable again and the
+// error is thrown (never a silently dead button)
 async function finishDoll() {
   if (_doll.step !== 'dress' || _doll.revealing) return;
+  const done = _doll.onDone;
+  if (typeof done !== 'function') throw new Error('finishDoll: view-doll was opened without startDoll(onDone)');
   _doll.revealing = true;
   dollShelf.end();
   deselectDollAcc();
-  const out = document.createElement('canvas');
-  out.width = out.height = 1000;
-  const ctx = out.getContext('2d');
-  ctx.drawImage(document.getElementById('doll-body'), 0, 0, 1000, 1000);
-  ctx.drawImage(document.getElementById('doll-canvas'), 0, 0);
-  await drawDollAccessories(ctx);
-  state.dollImage = out.toDataURL('image/png');
-  const done = _doll.onDone;
+  try {
+    const out = document.createElement('canvas');
+    out.width = out.height = 1000;
+    const ctx = out.getContext('2d');
+    ctx.drawImage(document.getElementById('doll-body'), 0, 0, 1000, 1000);
+    ctx.drawImage(document.getElementById('doll-canvas'), 0, 0);
+    await drawDollAccessories(ctx);
+    state.dollImage = out.toDataURL('image/png');
+  } catch (err) {
+    _doll.revealing = false;
+    throw err;
+  }
   _doll.onDone = null;
   revealDoll(done);
+}
+
+// Resolves once the image has loaded (now or already); a broken image rejects with its src
+function dollImageReady(img) {
+  if (img.complete) {
+    return img.naturalWidth ? Promise.resolve() : Promise.reject(new Error(`Doll accessory failed to load: ${img.src}`));
+  }
+  return new Promise((resolve, reject) => {
+    img.addEventListener('load', resolve, { once: true });
+    img.addEventListener('error', () => reject(new Error(`Doll accessory failed to load: ${img.src}`)), { once: true });
+  });
 }
 
 // Placed accessories → the 1000px export, bottom to top, at the spot, size and turn they show on screen
 // (frame = 1000px canvas). Waits for a just-swapped colour to finish loading; a broken image throws.
 async function drawDollAccessories(ctx) {
   const placed = dollShelf.placed();
-  await Promise.all(placed.map(el => el.querySelector('img').decode()));
+  await Promise.all(placed.map(el => dollImageReady(el.querySelector('img'))));
   for (const el of placed) {
     const w = parseFloat(el.style.width) * 10, h = parseFloat(el.style.height) * 10;
     ctx.save();

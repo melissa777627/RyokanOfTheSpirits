@@ -35,7 +35,8 @@ view-landing → view-gender → view-quiz (Stage 1 · e1–e5)
                                    ↓  calcHouse()
                             view-bento (intro → pop-up Q → drag & drop → afterArrange)
                                    ↓
-                            view-quiz (Stage 2 · e6–e10)   ·   E5 / E10 → view-key (visual-novel key scene)
+                            view-quiz (Stage 2 · e6–e10)   ·   E5 / E9 / E10 → view-key (visual-novel key scene)
+                                   │  after E9: invite in the VN box → (play) uncle welcome → view-goldfish → E10
                                    ↓  outro → calcYokai()
                             view-loading (3.5s kanji cycle)
                                    ↓
@@ -92,7 +93,9 @@ state.winningYokai      // set by calcYokai()
 
 state.stage             // 1 | 2
 state.currentQ          // 0-based index within current stage (stage 2: 0 = Bento)
-state.bentoSelected     // cosmetic only — array of food emoji
+state.bentoSelected     // cosmetic only — [{ image, x, y }] foods as % of the bento box, read at Continue (share picture)
+state.dollImage         // cosmetic only — PNG dataURL of the E7 doll
+state.goldfish          // cosmetic only — { count, rare } after E9 · null = walked on
 ```
 
 Full state init → `scoring-engine.js` `createInitialState()`.
@@ -173,11 +176,20 @@ Full guide → `assets/README.md`.
 | `journeyStep()` / `renderThread(el, step)` | Progress step 1–11 / builds the red-thread knots (gender view = step 0) |
 | `bringChoicesIntoView(wrap)` / `armQuizIdle(fn, ms)` / `motionOn()` | Scroll so the first choice clears the fuda · one idle-nudge timer · reduced-motion check |
 | `showKeyScene(q)` | loadQuestion branch for `q.keyScene` (E5/E9/E10, after the lead narration) — box lines = `keyScene.lines` + `q.text`: art, fx, thread, scroll card → `startKeyLines()` in `#view-key` |
-| `keyLines(pages)` | pages → `[{ text, kind: narr|speech|player, auto?, slow? } | { reply }]`; quoted parts become speech; `{ say, auto }` flows on, `{ slow }` soaks in via `revealInk`; other forms throw |
+| `keyLines(pages)` | pages → `[{ text, kind: narr|speech|player|uncle, auto?, slow? } | { reply } | { branch }]`; `{ uncle: text }` = the goldfish uncle's line; quoted parts become speech; `{ say, auto }` flows on, `{ slow }` soaks in via `revealInk`; other forms throw |
 | `advanceKeyScene()` | view tap: skip card / unhide / finish line / next line / `showKeyChoices()` |
 | `showKeyChoices()` | prompt in the box; borrows `#quiz-choices` and the fuda wrap into the key view; `buildChoice` per choice — `sealAnswer` / `confirmAnswer` unchanged |
 | `continueKeyScene(pages, onEnd)` | After a key scene's answer: returns the borrowed quiz pieces, then plays `pages` in the same box over the same art (fx stays full); `onEnd` after the last line — used for E5 → `bento.lead` → CHAPTER 02 |
 | `showKeyReplies(options)` | `{ reply }` line: answers rise above the box (`.narration-reply-btn`); a pick becomes a player line ("คุณ" tag) and types out — no score |
+| `showKeyOptions(options, onPick)` | Shared by replies and branches: the answer buttons above the box + dim |
+| `showKeyBranch(options)` | `{ branch }` line (last line of its pages): a pick calls `_key.onEnd(index)` — throws without onEnd |
+| `KEY_WHO` / `KEY_SPEAKERS` | Box name tags: narr · speech "???" · player "คุณ" · uncle "ลุงร้านปลา" (`{ uncle }` entry → walnut tag, `#key-sprite` hops; quiet/dim while others talk) |
+| `inviteGoldfish(next)` | After E9's answer (`q.minigame === 'goldfish'`): `continueKeyScene(goldfish.invite)` → branch 1 = `state.goldfish = null`, next · branch 0 = `showKeyStall()` → `goldfish.welcome` → `endKeyScene()` → `startGoldfish(next)` |
+| `showKeyStall()` / `bounceKeySprite()` | Key art fades to `GOLDFISH_STALL` (`assets/ui/goldfish/bg.png`, fx `stall`), uncle sprite on · hop on each uncle line · `showKeyScene` turns the sprite off |
+| `startGoldfish(onDone)` → `gfShowHowto()` → `gfPlay()` → `gfEnd()` → `gfFinish()` | view-goldfish (`_gf` state, tuning in `GF` / `GF_KINDS`, art in `GF_ART`): how-to card → scoop (2 pois, no timer, `gen` counter kills stale timers) → both pois torn or "พอแล้ว" → end card (count, rare, uncle tier line from `goldfish.end.uncle`) → sets `state.goldfish = { count, rare }` → ไปต่อ = onDone (throws if state or onDone missing) |
+| `gfFrame` / `gfStepFish` / `gfStartle` / `gfSpawn` | rAF loop: fish wander (speed per kind), flee from a fast or nearby poi, rare fish swims in after `GF.rareAtS` s · `gfFishOnPaper` = fish under the ring · units = `stage.clientWidth / 100` (stage is 9:16, `container-type: size`) |
+| `gfPlacePoi` / `gfPlunge` / `gfLift` / `gfShowWear` / `gfTear` / `gfCatch` / `gfLand` | Poi: finger holds the handle (`GF.grip` offset) · in water the paper soaks (`soakPerS`, rushing soaks more) · gold glow once settled under a fish · lift = catch (heavy fish wear the paper more) · wear stages d1/d2/d3 → torn · caught fish flops and arcs into the bowl |
+| `wireGoldfish()` | Once at load: pointer down/move/up/cancel on `#gf-stage` (one pointerId, capture, cancel = lift without scoop, no context menu) · clicks `[data-gf=play|done|next]` |
 | `openKeyLog` / `closeKeyLog` / `hideKeyBox` | LOG sheet (narration vs speech) / HIDE |
 | `endKeyScene()` | stops timers, returns the borrowed pieces to `#view-quiz`, resets box/log/dim; called in `loadQuestion()` and `showKeyScene()` |
 | `eventNumber()` | E1–E10 numbering for the current question |
@@ -186,7 +198,7 @@ Full guide → `assets/README.md`.
 | `setQuizWeather(weather)` | Shows/hides `#quiz-rain`; builds 90 drops on first rain (`q.weather`) |
 | `resetBlackout(on)` → `playStrike()` → `killLights(wrap)` | E3 (`q.blackout`), state in `_bo`, timings in `BLACKOUT`, hints in `BLACKOUT_TEXT` · every quiz card resets `#quiz-blackout`; on = strike with the first phrase · after the choices rise the page's lights flicker and die part by part, then full dark |
 | `boPointerDown/Move/Up` → `strikeMatch(p)` / `placeMatch(foot)` / `setBlackoutEdge(p)` | Wired once on `#view-quiz` (`wireBlackout`) · one strike per finger-down (first only sparks) · the finger holds the stick's foot, flame `MATCH_REACH` above · edge zones auto-scroll the window · one pointer, captured only once it drags |
-| `blackoutHolds(btn)` → `liftBlackout(btn)` / `glideFlameTo(target)` | Called by `buildChoice` on a tap in the dark: card in the flame's clear core → lift (dark opens from its ○) and the normal pick runs · dark card → the flame glides to it, no pick · end of a drag → nothing |
+| `blackoutHolds(btn)` → `liftBlackout()` / `glideFlameTo(target)` | Called by `buildChoice` on a tap in the dark: card in the flame's clear core → lift (the light widens from the flame where it is, the dark / glow / match fade together, the page's lights ease back via `.lights-back`, 1.6s) and the normal pick runs · dark card → the flame glides to it, no pick · end of a drag → nothing |
 | `playCrowdIntro(onDone)` → `buildCrowdScene(scene)` / `tickCrowdVacancy(left)` | E2 crowd intro (`q.intro === 'crowd'`): builds the seeded scene, measures `--stage-w/h`/`--run`, schedules vacancy ticks; at the end `finishCrowdIntro()` shows the card, then fades |
 | `crowdArtUrl(art)` / `preloadCrowdArt()` | Crowd silhouettes from `assets/ui/crowd/` (320px shapes) · preloaded in `confirmGender()` |
 | `skipCrowdIntro()` / `closeCrowdIntro()` / `runCrowdDone()` | SKIP: clear timers, hide overlay, card once (throws if run twice) |
@@ -195,8 +207,11 @@ Full guide → `assets/README.md`.
 | `wireResultDeck(view)` | Tags follow the snapped card (tap a tag = go there; a change runs the breeze); deck height follows the card on screen; tap the current card = fold/unfold; "ถัดไป ›" = next card; swiping away folds an open card; first view: a small sideways nudge |
 | `wireResultGender(view)` | Gender switch: the knob slides across, then `blindsThrough(toggleResultGender)` after 380ms |
 | `wireNearFog(view)` | Near-miss fogged glass (canvas): finger wipes, half cleared → lifts and sets `state.nearCleared`; swipe-hand demo when first in view; Enter/Space lifts it; already cleared = no glass |
-| `wireOmikuji(view)` | Omikuji box shakes → slip modal (asks single/taken, then lift + flip to a fortune from `OMIKUJI`); Esc / ✕ / outside tap closes, focus returns to the box |
-| `wireResultShare(view, r)` / `showToast(msg)` | Share: `navigator.share` (title, line, link); without it the line + link go to the clipboard with a toast |
+| `wireOmikuji(view)` | Omikuji box shakes → slip modal (asks single/taken, then lift + flip to a fortune from `OMIKUJI`) → the wish: typed on the slip's back, kept by holding the 願 seal for `SEAL_HOLD_MS` (letting go early keeps nothing) → `saveKeptSlip()`; while a slip is kept the box reopens it (read-only; "ถอนคำขอ" takes two taps); Esc / ✕ / outside tap closes, focus returns to the box |
+| `readKeptSlip()` / `saveKeptSlip(slip or null)` | The kept slip in localStorage (`ryokan-kept-slip`) — this browser only, no server |
+| `readBentoLayout()` | At Bento Continue: each placed food as `{ image, x, y }` in % of the box (`BENTO_ART`) → `state.bentoSelected` |
+| `loadShot(r, artEl, shown)` → `paintShot(canvas, shot)` | Share picture, a 御朱印 page 1080×1920: loads every image + font first, then paints in one go (mockup units, `SHOT`); helpers `shotArt`, `loadShotImage`, `wrapShotLines`, `drawContain`, `reiwaDate`, `cssVar` |
+| `wireResultShare(view, r)` / `showToast(msg)` | The envelope opens the share sheet (`#share-modal`): the picture on a canvas, two toggles (`SHARE_KEEPS`: bento / dolls), the save fuda 保 (`navigator.share({ files })` where files can be shared, else a PNG download), and "คัดลอกลิงก์ชวนเพื่อน" (line + link → clipboard, toast) |
 | `wireResultAgain(view)` | Play again: first tap arms ("แตะอีกครั้ง ผลนี้จะหายไป" 3 s), second tap = `resetGame()` |
 | `wireResultTalk(view, r)` / `fitBubble(say, text)` | Talk bubble: greets once (`lines.greet`, `state.resultGreeted`); each tap = next of `TALK_ORDER` (poke1 → chat1 → chat2 → poke2 → mist[E5 house]) + soft bounce on the art; the line stays up with ▼ after it; left alone 15 s while on screen → a chat line by itself; `fitBubble` sets the box to the widest wrapped line |
 | `startDollBoil()` | Doll line boil on the result page: swaps the `#doll-boil` turbulence seed at 7 FPS (6-seed loop); off under reduced motion |
@@ -205,14 +220,16 @@ Full guide → `assets/README.md`.
 | `thaiBreakable(text, perGrapheme?)` | **Every Thai string goes on screen through this** — DocumentFragment of `.th-unit` spans + `<wbr>` from `thaiTokens()` (thai-break.js); `perGrapheme` wraps each grapheme in `.th-g` for the narration typewriter |
 | `showChapter(chapter, onDone)` / `finishChapter()` | Chapter intro (`QUESTIONS.chapters`) — 2800ms or tap; runs onDone, then the dark backdrop fades out under the next narration. Used by `confirmGender()` (CHAPTER 01) and after E5 in `confirmAnswer()` (CHAPTER 02) |
 | `initBento()` → `dismissBentoIntro()` → `showBentoQuestion()` | Bento: `initBento()` resets placed food/state on every entry, then intro → pop-up Q first; `dismissBentoIntro()` ignores a second tap (CHAPTER 02 + lead narration + the Bento scene `yokai[0].text` as its own page run in `confirmAnswer()` over E5, before `showView('bento')`; the pop-up shows only the prompt) |
-| `initItemShelf({ shelf, view, zone, layer, placedClass, onChange })` → `{ end, undo, clear, count, placed }` | Shared sideways shelf + drag controller (Bento food `bentoShelf`, Doll accessories `dollShelf`, both made once at load) — one finger at a time, drag starts after 6px, ghost lives in `view`, mouse wheel scrolls sideways; `end()` is the only drag cleanup; `clear()` on every view entry; `onChange(count)` drives Undo/Continue · placed copies (`.shelf-placed`) drag again from `layer`: drop inside = move to top, outside = remove · `placed()` = layer children bottom→top (Doll export order) |
+| `initItemShelf({ shelf, view, zone, layer, placedClass \| make, onChange, onPlace?, onTap? })` → `{ end, add, remove, undo, clear, count, placed }` | Shared sideways shelf + drag controller (Bento food `bentoShelf`, Doll accessories `dollShelf`, both made once at load) — one finger at a time, drag starts after 6px, ghost lives in `view`, mouse wheel scrolls sideways; `end()` is the only drag cleanup; `clear()` on every view entry; `onChange(count)` drives Undo/Continue · placed copies (`.shelf-placed`) drag again from `layer`: drop inside = move to top, outside = remove · `placed()` = layer children bottom→top (Doll export order) · Doll hooks: `make(shelfItem)` builds the placed element (not `.shelf-placed` → the doll moves it itself), `onPlace(el)` after a new copy lands, `onTap(shelfItem)` = press without drag · `add(shelfItem, x%, y%)` |
 | `showBentoQuestion()` → `sealBentoAnswer()` → `confirmBentoChoice()` | Bento sheet: same `.quiz-story` card, `.quiz-choices` list (`buildChoice`) and fuda (`setNext*`, `stampSeal`) as the quiz page |
 | `showBentoShelfHint()` / `markBentoShelfEnd()` | Bento shelf hints: swipe hand after Confirm (gone at first scroll/touch) · right-edge fade until scrolled to the end |
 | `updateBentoButtons(count)` | Bento Undo enabled when anything is placed · Continue only in arrange phase with ≥ 1 food |
 | `confirmBentoChoice()` / `onBentoContinue()` | Records Bento answer → arrange phase → afterArrange → quiz E6 |
 | `dollOrder(q)` | `'before'` / `'after'` / null — when view-doll runs around E7 for this house |
 | `startDoll(onDone)` / `finishDoll()` → `drawDollAccessories()` → `revealDoll()` | Opens view-doll (intro card first) · Done (dress step only) exports body + face + accessories to `state.dollImage`, plays the reveal, then continues the flow |
+| `startDollArrival()` | After the doll intro card: adds `#view-doll.doll-arriving` (CSS-timed: empty rainy window → doll drifts in → scene name → washi sheet rises + camera eases into the face); removed when the sheet's animation ends or on any tap |
 | `setDollStep('face' \| 'dress')` / `showDollDress()` / `showDollTab(i)` | Doll steps: face (zoomed head, draw) → Next → dress (accessory tabs from `DOLL_ACCESSORIES`, shelf `#doll-shelf`) |
+| `makeDollAcc(item)` / `toggleDollAcc(shelfItem)` / `markWornDollTiles()` / `selectDollAcc(el)` / `deselectDollAcc()` / `removeDollAcc()` / `setDollAccRotating(on)` / `setDollAccColor(i)` / `placeDollAccTools()` / `showDollColors()` / `wireDollAccEdit()` | Dress-up editing (`_dollAcc`): `DOLL_ACCESSORIES` items = `{ id, box: [x,y,w,h] on the 1000px canvas, colors: [file ids] }` (`DOLL_ITEMS` by id, `dollItem(id)` throws on unknown) · tap a grid tile = wear at its drawn spot / tap a worn tile (✓, `markWornDollTiles()`) = take it off (`toggleDollAcc`) · tap a placed `.doll-acc` = pick (outline, ↻ ✕ ✓ tools, colour chips) · drag = move, off the frame = remove · ↻ = top/bottom handles turn it (`--rot`) · tap bare doll = deselect · `drawDollAccessories()` (async) decodes then draws each with translate/rotate |
 | `resetSceneIntro` / `showSceneIntro` / `dismissSceneIntro(introId, mainId, e, onRevealed)` → `spawnRipple()` → `flashOutSceneIntro()` | Shared intro card (Bento + Doll) — tap ripple from the finger, white flash after 380ms, then main content + `onRevealed` (Bento: `showBentoQuestion`); ignores taps while `.dismissing` |
 | `fadeThrough(fn)` | Black curtain down → run fn → curtain up |
 | `blindsThrough(fn)` | Red sudare blinds close → run fn → hold 150ms → open (like `fadeThrough`) |
@@ -231,5 +248,5 @@ Full guide → `assets/README.md`.
 | 4 | Quiz view + question loader | ✅ เฟส 1 หน้าคำถามใหม่ (2026-11-03) · เฟส 2–5 รอ |
 | 5 | Bento mini-game | ⬜ |
 | 6 | Loading screen | ⬜ |
-| 7 | Result page | ✅ (2026-11-03 จาก lab V30) · เหลือ Share to Story |
+| 7 | Result page | ✅ (2026-11-03 จาก lab V30) · คำขอบนใบเซียมซี + รูปแชร์ (2026-11-17 จาก lab/ema-lab) |
 | 8 | BGM stub + polish | ⬜ |

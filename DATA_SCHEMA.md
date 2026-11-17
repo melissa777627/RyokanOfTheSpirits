@@ -31,8 +31,9 @@ let state = {
   // ── Progress ──────────────────────────────────────────
   stage:         1,        // 1 = house sorting, 2 = yokai selection
   currentQ:      0,        // index ภายใน stage ปัจจุบัน (0-based) · stage 2 index 0 = Bento
-  bentoSelected: [],       // food ที่ลากลงกล่อง — cosmetic only
+  bentoSelected: [],       // [{ image, x, y }] อาหารที่วางในกล่อง ล่างขึ้นบน · x/y = % ของตัวกล่อง (ไม่ใช่ drop zone) — เก็บตอนกด Continue (readBentoLayout) ใช้วาดรูปแชร์ · ไม่มีผลคะแนน
   dollImage:     '',       // PNG dataURL (ตัวตุ๊กตา + หน้าที่วาด + ของแต่ง) จาก view-doll ใน E7 — cosmetic only
+  goldfish:      null,     // หลัง E9: { count, rare } จาก view-goldfish · null = เดินผ่านไม่ตัก — cosmetic only
 
   resultGreeted: false,    // หน้า result: ภูตทัก (lines.greet) ไปแล้ว — สลับเพศ (renderResult ใหม่) ไม่ทักซ้ำ
   nearCleared:   false     // หน้า result: กระจกฝ้าคู่ที่เกือบได้ถูกเช็ดแล้ว — สลับเพศแล้วยังใส · ทั้งคู่รีเซ็ตตอนเล่นใหม่
@@ -199,6 +200,16 @@ const QUESTIONS = {
     // e9, e10
   ],
 
+  // ── มินิเกมตักปลาทอง (หลัง E9, ข้อที่มี minigame: 'goldfish') ──
+  goldfish: {
+    invite:  [[ 'line', '"คำชวน"', { branch: ['ไปตัก', 'เดินต่อ'] } ]],  // หน้าเดียว · branch ตัวสุดท้ายเท่านั้น
+    welcome: [[ { uncle: 'บทลุง' }, '"คำพูดภูต"' ]],                   // กล่อง VN เดิม · { uncle } = ป้าย "ลุงร้านปลา" + รูปลุง
+    howto:   { title, steps: [[bold, rest] ×3], fish: { small, big, black, rare }, warn, start },
+    say:     { start, catch: [..], small, big, black, rare, rareIn, flee, torn, next },  // บับเบิ้ลภูตระหว่างเล่น
+    hud:     { title, done, tear, lift, grip },
+    end:     { unit, rare, uncle: [{ min: 8, text }, { min: 5, text }, { min: 0, text }], next }  // min เรียงมาก→น้อย จบที่ 0
+  },
+
   // ── ข้อความหลังตอบ E10 → Loading ─────────────────────
   outro: ['Bridge line', 'Closing line']
 };
@@ -216,6 +227,7 @@ const QUESTIONS = {
 - `keyScene` (ข้อใดก็ได้): `{ art: path, kanji: text, fx: 'dawn' | 'fade' | 'lantern', boil?: true, lines?: [entries] }` · `lead` = หน้าบรรยายปกติก่อนเข้า VN · กล่อง VN = `lines` (string / `{ say, auto }` / `{ reply }` / `{ slow, breath }`) ตามด้วยย่อหน้าของ `q.text` · E9 ใช้ `lines` (ฉากเทศกาลโคม, `text: ''`) · E5/E10 ใช้ `q.text` → `lead` ยังเป็นหน้าบรรยายตามปกติ แล้วฉาก + ตัวเลือกเล่นใน `#view-key` แทนการ์ดคำถาม · กฎ (`validateKeyScene`): art/kanji เป็นข้อความไม่ว่าง · fx = dawn | fade · boil = true หรือไม่มี · ห้ามมี `doll` / `doors` / `intro` · lead เป็น string หรือ array ของ string เท่านั้น (ไม่มี slow/reply/say) · เครื่องหมาย " ต้องปิดครบ · บรรทัด = lead + ฉาก (Stage 1: ข้อความก่อน " — ", Stage 2: บรรทัดของ `q.text`) ส่วนในเครื่องหมายคำพูด = คำพูด · ตอนนี้ e5 (暁, dawn, boil) · e9 (満月, lantern, boil, ภาพร่วมกับ e10) · e10 (最後の灯, fade, boil) — คันจิเป็นตัวชั่วคราว
 - `weather` (ข้อใดก็ได้): `'rain'` เท่านั้น หรือไม่มี — ตอนนี้ e7 · หน้าคำถามโชว์ฝนหลังการ์ด
 - `intro` (ข้อใดก็ได้): `'crowd'` เท่านั้น หรือไม่มี — เล่นฉากหลังบทเชื่อม ก่อนการ์ดคำถาม · ตอนนี้ e2 (แขกภูตกรูเข้าเรียวกัง)
+- `minigame` (ข้อใดก็ได้): `'goldfish'` เท่านั้น หรือไม่มี — ตอนนี้ e9 · ถ้ามีข้อใดใช้ `QUESTIONS.goldfish` ต้องผ่าน `validateGoldfish()` (invite มี branch ตัวเดียวเป็นบรรทัดสุดท้าย · welcome ใช้ `{ uncle }` ได้ · howto/say/hud/end ครบ · end.uncle เรียง min มาก→น้อย จบที่ 0)
 - `image` (house question): มีครบทั้ง 4 ช้อยหรือไม่มีเลย (รูปเดียวจะดึงสายตา) · เป็น path · ห้ามใช้กับ `doors` — ตอนนี้ใช้ใน E1 (`bell` ม่วง · `omamori` ฟ้า · `pocketwatch` เหลือง · `notebook` เขียว)
 - ข้อความในเกมเป็น**ภาษาไทย** ตามต้นฉบับใน memory ของเจ้าของ (`project_questions_draft.md`) — คัดลอกลง `questions.js` ตรงตัว
 - ลำดับช้อยในไฟล์ไม่มีผล: UI สุ่มลำดับทุกครั้ง (`shuffled()`)
@@ -358,6 +370,16 @@ view-doll = intro card → วาดหน้า (ซูมหัว) → Next �
 เสร็จแล้ว → state.dollImage = PNG dataURL (ตัวตุ๊กตา + หน้า + ของแต่ง)
 ```
 
+### หลัง E9 · ตักปลาทอง (view-goldfish)
+```
+ตอบ E9 → กล่อง VN เดิมเล่น goldfish.invite → ตัวเลือก branch
+  'เดินต่อ'  → state.goldfish = null → E10
+  'ไปตัก'    → ภาพเปลี่ยนเป็นซุ้ม (bg.png) + ลุงโผล่ → goldfish.welcome → view-goldfish
+view-goldfish = วิธีเล่น → ตัก (กระชอน 2 อัน ไม่มีเวลา) → กระชอนขาดหมด / กด "พอแล้ว" → การ์ดจบ (จำนวน + บทลุงตามขั้น)
+  → state.goldfish = { count, rare } → ไปต่อ → E10
+ขั้นจำนวน: 0–4 · 5–7 · 8+ (ใช้ทั้งบทลุงและบทภูตหน้า result รอบ 2)
+```
+
 ---
 
 ## 7. บทเชื่อมฉาก (Narration)
@@ -425,6 +447,17 @@ function getNearMiss(mbti) { /* หาไม่เจอในบ้าน = thr
 //   แต่ละใบ { rank: '大吉'|'吉'|'中吉'|'小吉'|'末吉'|'凶', th: คำไทยของอันดับ, text: คำทำนาย } · สุ่ม 1 ใบ
 //   (แทน OMIKUJI_LIST ภาษาอังกฤษเดิม 2026-11-03 — ข้อความไทยแปลจากชุดเดิม)
 
+// คำขอบนใบเซียมซี (2026-11-17) — ไม่อยู่ใน state · เก็บใน localStorage ของเครื่องผู้เล่นเท่านั้น ไม่มีเซิร์ฟเวอร์
+//   key 'ryokan-kept-slip' = { wish: คำขอ (≤40 ตัว ตัดช่องว่างหัวท้าย), rank, th, text: ใบที่จับได้, at: เวลาที่ฝาก (ms) }
+//   readKeptSlip() → slip | null (อ่านไม่ได้/ข้อมูลไม่ครบ = console.error แล้วนับว่าไม่มี) · saveKeptSlip(slip | null) (null = ถอนคำขอ)
+//   อยู่ข้ามการเล่นใหม่ (resetGame ไม่ลบ) · มีใบที่ฝากไว้ = กระบอกเปิดใบเดิม ไม่จับใบใหม่จนกว่าจะถอน
+//   ข้อความผู้เล่นลงจอทาง textarea.value เท่านั้น (ไม่ผ่าน innerHTML)
+
+// รูปแชร์ (2026-11-17) — วาดลง <canvas> 1080×1920 ด้วย paintShot() ไม่ใช้ไลบรารี · loadShot() โหลดรูป+ฟอนต์ให้ครบก่อนวาด
+//   ข้อมูล: getResult() (name, kanji, title, mbti, house → HOUSE_ROLE, match.good, alike[0] → ALIKE_LABEL) + รูปภูตจาก .result-art บนหน้า
+//   เลือกใส่ได้ 2 อย่าง (SHARE_KEEPS): bento ← state.bentoSelected · doll ← state.dollImage + YOKAI_DATA[x].dollImage (ว่าง = ตุ๊กตาผู้เล่นตัวเดียว)
+//   ไม่ใส่คำขอ / เซียมซี / การ์ด 心 ลงรูป
+
 function toggleResultGender() {
   state.resultGenderShown =
     state.resultGenderShown === 'male' ? 'female' : 'male';
@@ -447,4 +480,8 @@ function toggleResultGender() {
 | ยังไม่มีอาร์ต Yokai | หน้า result โชว์ kanji (`YOKAI_DATA[x].kanji`) แทนรูป |
 | สลับเพศบนหน้า result | renderResult() ใหม่ทั้งหน้า · ไม่ทักซ้ำ (`resultGreeted`) · กระจกที่เช็ดแล้วยังใส (`nearCleared`) · timer ของหน้าเก่าถูกล้างก่อน |
 | ไม่มีใครเฉียด (`nearMiss` = null) | การ์ด 岐 เป็นประโยคเดียวเต็มการ์ด ไม่มีกระจก |
-| แชร์บนเครื่องที่ไม่มี share sheet | คัดลอก "ข้อความ + ลิงก์" ลงคลิปบอร์ด แล้วขึ้น toast · คัดลอกไม่ได้ = toast "แชร์ไม่สำเร็จ ลองอีกครั้งนะ" |
+| บันทึกรูปแชร์บนเครื่องที่แชร์ไฟล์ไม่ได้ (`navigator.canShare({files})` = false) | ปุ่มเขียนว่า "บันทึกรูป" แล้วดาวน์โหลด PNG · แชร์ได้ = "แชร์รูปนี้" เปิด share sheet · แชร์ล้ม = toast "แชร์ไม่สำเร็จ ลองอีกครั้งนะ" |
+| วาดรูปแชร์ไม่สำเร็จ (รูป/ฟอนต์โหลดไม่ได้) | console.error + toast "สร้างรูปไม่สำเร็จ ลองอีกครั้งนะ" · ปุ่มบันทึกยังกดไม่ได้ |
+| เข้าหน้า result โดย `bentoSelected` ว่าง | `wireResultShare()` throw |
+| เครื่องเก็บ localStorage ไม่ได้ ตอนกดตราฝากคำขอ | ไม่ประทับตรา · toast "เครื่องนี้เก็บคำขอไว้ไม่ได้" |
+| คัดลอกลิงก์ชวนเพื่อน | "ข้อความ + ลิงก์" ลงคลิปบอร์ด แล้วขึ้น toast · คัดลอกไม่ได้ = toast "แชร์ไม่สำเร็จ ลองอีกครั้งนะ" |

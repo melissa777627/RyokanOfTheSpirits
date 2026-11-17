@@ -43,6 +43,7 @@ function createInitialState() {
     currentQ:      0,
     bentoSelected: [],
     dollImage:     '',
+    goldfish:      null,    // after E9: { count, rare } if they played the goldfish scoop · null = walked on (cosmetic)
 
     resultGreeted: false,   // the yokai's greet line plays once per result (a gender swap doesn't greet again)
     nearCleared:   false    // the near-miss glass stays wiped across a gender swap
@@ -160,18 +161,51 @@ function validateChoiceSet(id, axis, choices) {
 }
 
 // Narration page = string, or array of strings / { reply: [2+ strings] } / { slow: [1+ phrases], breath? } / { say, auto }
-function validateNarration(where, pages) {
+// extraLine(line) → true = a form only that caller allows (goldfish VN: { uncle } / { branch })
+function validateNarration(where, pages, extraLine) {
   if (!Array.isArray(pages)) throw new Error(`[Ryokan] ${where}: narration must be an array of pages`);
   for (const page of pages) {
     if (typeof page === 'string') continue;
     if (!Array.isArray(page)) throw new Error(`[Ryokan] ${where}: page must be a string or an array`);
     for (const line of page) {
       if (typeof line === 'string') continue;
+      if (extraLine && extraLine(line)) continue;
       if (line && Array.isArray(line.reply) && line.reply.length >= 2) continue;
       if (line && Array.isArray(line.slow) && line.slow.length >= 1) continue;
       if (line && typeof line.say === 'string' && line.auto === true) continue;
       throw new Error(`[Ryokan] ${where}: line must be a string, { reply: [2+ options] } or { slow: [1+ phrases] } or { say, auto: true }`);
     }
+  }
+}
+
+// QUESTIONS.goldfish (DATA_SCHEMA §4): invite ends on one { branch: [play, skip] } · welcome may use { uncle } ·
+// end.uncle tiers run from most fish down to min 0 so every count has a line
+function validateGoldfish(g) {
+  if (!g) throw new Error('[Ryokan] QUESTIONS.goldfish missing (a question has minigame: goldfish)');
+  const isUncle  = line => typeof line.uncle === 'string';
+  const isBranch = line => Array.isArray(line.branch) && line.branch.length === 2 && line.branch.every(isText);
+  validateNarration('goldfish.invite', g.invite, isBranch);
+  validateNarration('goldfish.welcome', g.welcome, isUncle);
+  const invite = g.invite.flat();
+  if (!isBranch(invite[invite.length - 1]) || invite.filter(l => typeof l === 'object' && l.branch).length !== 1) {
+    throw new Error('[Ryokan] goldfish.invite: needs exactly one { branch: [play, skip] }, as its last line');
+  }
+  const h = g.howto;
+  if (!h || !isText(h.title) || !isText(h.warn) || !isText(h.start) || !Array.isArray(h.steps) || !h.steps.length ||
+      !h.steps.every(s => Array.isArray(s) && s.length === 2 && s.every(isText)) ||
+      !['small', 'big', 'black', 'rare'].every(k => h.fish && isText(h.fish[k]))) {
+    throw new Error('[Ryokan] goldfish.howto: needs title, steps [[bold, rest]], fish.small/big/black/rare, warn, start');
+  }
+  const s = g.say;
+  if (!s || !Array.isArray(s.catch) || !s.catch.length ||
+      !['start', 'small', 'big', 'black', 'rare', 'rareIn', 'flee', 'torn', 'next'].every(k => isText(s[k]))) {
+    throw new Error('[Ryokan] goldfish.say: a line is missing');
+  }
+  if (!g.hud || !['title', 'done', 'tear', 'lift', 'grip'].every(k => isText(g.hud[k]))) throw new Error('[Ryokan] goldfish.hud: a label is missing');
+  const e = g.end, tiers = e && e.uncle;
+  if (!e || !isText(e.unit) || !isText(e.rare) || !isText(e.next) || !Array.isArray(tiers) || !tiers.length ||
+      tiers[tiers.length - 1].min !== 0 || !tiers.every((t, i) => isText(t.text) && (i === 0 || t.min < tiers[i - 1].min))) {
+    throw new Error('[Ryokan] goldfish.end: needs unit, rare, next and uncle tiers (most fish first, last min 0)');
   }
 }
 
@@ -189,6 +223,8 @@ function validateQuestions() {
   [...house, ...yokai].forEach(q => { if (q.keyScene !== undefined) validateKeyScene(q); });
   validateNarration('outro', outro);
   validateNarration('bento.afterArrange', yokai[0].afterArrange);
+  [...house, ...yokai].forEach(q => { if (q.minigame !== undefined && q.minigame !== 'goldfish') throw new Error(`[Ryokan] ${q.id}: minigame must be 'goldfish' or absent`); });
+  if ([...house, ...yokai].some(q => q.minigame === 'goldfish')) validateGoldfish(QUESTIONS.goldfish);
   if (house.length !== 5) throw new Error('[Ryokan] QUESTIONS.house must have 5 questions');
   if (yokai.length !== 6) throw new Error('[Ryokan] QUESTIONS.yokai must have 6 questions');
   if (!outro.length)      throw new Error('[Ryokan] QUESTIONS.outro is empty');

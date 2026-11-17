@@ -188,6 +188,8 @@
     <div class="journey-thread key-thread" id="key-thread" aria-hidden="true"><!-- renderThread() --></div>
 
     <div class="key-stage">
+      <!-- goldfish stall only (showKeyStall): the uncle stands behind the box -->
+      <div class="key-sprite" id="key-sprite" aria-hidden="true"></div>
       <div class="key-dim" id="key-dim"></div>
       <!-- choice phase: #quiz-choices is borrowed in here and the Next fuda into #key-foot; endKeyScene() returns them -->
       <div class="key-menu" id="key-menu"></div>
@@ -334,15 +336,16 @@
     <!-- Main drawing content (hidden until intro dismissed) -->
     <div id="doll-main" class="doll-main">
 
-    <header class="view-header">
+    <!-- Two steps: face (zoomed on the head, draw) → dress (whole doll, accessories) — #view-doll.doll-dress -->
+    <header class="doll-head">
       <span class="bento-scene-kana">てるてる坊主</span>
+      <p class="doll-step doll-face-only">Draw its face</p>
+      <p class="doll-step doll-dress-only">Dress it up</p>
       <span class="event-badge">Event 7</span>
     </header>
 
-    <!-- Two steps: face (zoomed on the head, draw) → dress (whole doll, drag accessories) — #view-doll.doll-dress -->
-    <p class="bento-instruction doll-face-only">— Draw its face —</p>
-    <p class="bento-instruction doll-dress-only">— Dress it up —</p>
-
+    <!-- The doll takes all the room the sheet leaves (container for the stage size) -->
+    <div class="doll-stage-wrap">
     <div class="doll-stage">
       <!-- Rain-puddle ripples under the doll — src set in startDoll() so the 3.9MB file preloads while drawing -->
       <img class="doll-ripples" id="doll-ripples" alt="" aria-hidden="true">
@@ -354,7 +357,17 @@
         </div>
         <div class="doll-placed-items" id="doll-placed-items"></div>
       </div>
+      <!-- Floating tools over the picked accessory (placeDollAccTools) — ↻ rotate mode · ✕ take off · ✓ done -->
+      <div class="doll-acc-tools" id="doll-acc-tools" hidden>
+        <button class="doll-acc-btn doll-acc-btn--rotate" onclick="setDollAccRotating(true)" aria-label="Rotate">↻</button>
+        <button class="doll-acc-btn doll-acc-btn--remove" onclick="removeDollAcc()" aria-label="Take off">✕</button>
+        <button class="doll-acc-btn doll-acc-btn--done" onclick="deselectDollAcc()" aria-label="Done">✓</button>
+      </div>
     </div>
+    </div>
+
+    <!-- Washi bottom sheet (dress-up maker layout): drawing tools · or picture tabs → colours → item grid -->
+    <div class="doll-panel">
 
     <div class="doll-tools doll-face-only">
       <div class="doll-swatches" id="doll-swatches"><!-- Rendered by initDollCanvas() --></div>
@@ -367,20 +380,24 @@
 
     <div class="doll-dress-only">
       <div class="doll-tabs" id="doll-tabs" role="tablist"><!-- Rendered by initDollCanvas() --></div>
-      <div class="item-shelf" id="doll-shelf"><!-- Rendered by showDollTab() --></div>
+      <!-- Colours of the picked accessory, or a hint (showDollColors) — fixed height so the grid never jumps -->
+      <div class="doll-colors" id="doll-colors"></div>
+      <div class="doll-grid" id="doll-shelf"><!-- Rendered by showDollTab() --></div>
     </div>
 
-    <div class="bento-next-wrap doll-face-only">
-      <button id="btn-doll-next" class="btn-gender-next" onclick="showDollDress()" disabled>
-        Next &nbsp;→
+    <div class="doll-foot doll-face-only">
+      <button id="btn-doll-next" class="cta doll-cta" onclick="showDollDress()" disabled>
+        <span class="cta-kanji">次</span><span class="cta-label">Next</span><span class="cta-arrow">→</span>
       </button>
     </div>
-    <div class="bento-next-wrap bento-next-wrap--split doll-dress-only">
+    <div class="doll-foot doll-dress-only">
       <button id="btn-doll-undo" class="tool-btn" onclick="dollShelf.undo()" disabled>↶ Undo</button>
-      <button class="btn-gender-next" onclick="finishDoll()">
-        Done &nbsp;→
+      <button class="cta doll-cta" onclick="finishDoll()">
+        <span class="cta-kanji">完</span><span class="cta-label">Done</span><span class="cta-arrow">→</span>
       </button>
     </div>
+
+    </div><!-- /doll-panel -->
 
     </div><!-- /doll-main -->
 
@@ -394,6 +411,26 @@
 
   </div><!-- /view-doll -->
 
+
+  <!-- ════════════════════════════════════════
+       VIEW: GOLDFISH — scoop after E9 (startGoldfish) · cosmetic, no score
+       how-to card → scoop (press = poi under water, drag slowly, lift) → end card → E10
+       .gf-stage is a 9:16 container: every size inside is in cqw so the game scales with the phone
+  ════════════════════════════════════════ -->
+  <div id="view-goldfish" class="view">
+    <div class="gf-stage" id="gf-stage">
+      <div class="gf-tub" aria-hidden="true"></div>
+      <div class="gf-water" id="gf-water"><div class="gf-shimmer"></div></div>
+      <div class="gf-title"><small>金魚すくい</small><span id="gf-title"></span></div>
+      <p class="gf-say" aria-live="polite"><b>???</b><span id="gf-say"></span></p>
+      <div class="gf-bowl" id="gf-bowl" aria-hidden="true"><div class="gf-bowl-water" id="gf-bowl-water"></div><span class="gf-count" id="gf-count">0</span></div>
+      <div class="gf-spares" id="gf-spares" aria-hidden="true"></div>
+      <button type="button" class="gf-done" data-gf="done" id="gf-done"></button>
+      <div class="gf-poi" id="gf-poi" aria-hidden="true"></div>
+      <div class="gf-cover" id="gf-howto"></div>
+      <div class="gf-cover" id="gf-end"></div>
+    </div>
+  </div><!-- /view-goldfish -->
 
   <!-- ════════════════════════════════════════
        VIEW: LOADING — Step 6
@@ -519,6 +556,7 @@ function showView(id) {
   window.scrollTo({ top: 0, behavior: 'instant' });
   if (id === 'bento')   initBento();
   if (id === 'doll')    resetDoll();
+  if (id === 'goldfish') resetGoldfish();
   if (id === 'loading') initLoading();
   if (id === 'result')  renderResult();
   if (id === 'gender')  initGenderCinematic();
@@ -841,7 +879,22 @@ function confirmAnswer() {
     startDoll(() => { showView('quiz'); next(); });
     return;
   }
+  if (q.minigame === 'goldfish') { inviteGoldfish(next); return; }
   next();
+}
+
+// After E9 (a key scene): the same VN box asks if they go scoop goldfish · play → the street fades to the stall,
+// the uncle welcomes them → view-goldfish → next · walk on → next (E10). Cosmetic: state.goldfish only
+function inviteGoldfish(next) {
+  const g = QUESTIONS.goldfish;
+  continueKeyScene(g.invite, pick => {
+    if (pick !== 0) { state.goldfish = null; next(); return; }
+    showKeyStall();
+    continueKeyScene(g.welcome, () => {
+      endKeyScene();
+      startGoldfish(next);
+    });
+  });
 }
 
 // step 1–11: E1–E5 = 1–5 · Bento = 6 · E6–E10 = 7–11
@@ -1180,8 +1233,7 @@ const BLACKOUT = {
   darkMs: 500,                   // = .blackout-dark opacity transition
   swipe: 60, drag: 8, glideMs: 220,
   edgeTop: 36, edgeFoot: 56,     // px — scroll zones: flame near the top, finger near the bottom
-  lightsBackMs: 500,             // the page's lights switch back on, under the opening dark
-  liftMs: 2600                   // the dark opens from the lantern, then the layer goes
+  liftMs: 1600                   // = .blackout.lifted transitions — the dark fades out, then the layer goes
 };
 const BLACKOUT_TEXT = {
   boom:    'เปรี้ยง!',
@@ -1245,7 +1297,14 @@ function playStrike() {
   path.style.setProperty('--len', len);
   document.getElementById('strike-boom').replaceChildren(thaiBreakable(BLACKOUT_TEXT.boom));
   restartClass(layer, 'striking');
-  restartClass(document.getElementById('quiz-body'), 'strike-shake');
+  // the shake class lives only while it shakes — left on, the browser replays it each time #view-quiz is shown again (after bento / doll / key scenes)
+  const body = document.getElementById('quiz-body');
+  restartClass(body, 'strike-shake');
+  body.addEventListener('animationend', function done(e) {
+    if (e.animationName !== 'strikeShake') return;
+    body.removeEventListener('animationend', done);
+    body.classList.remove('strike-shake');
+  });
 }
 
 // The page's own lights flicker, die one part at a time top to bottom (noren → story → each lantern), then the dark comes down
@@ -1263,7 +1322,12 @@ function killLights(wrap) {
     blackoutLayer().classList.add('dark');
     document.getElementById('view-quiz').classList.add('blackout-hold');   // touch-action: none — the swipe and the drag own the finger
   }, darkAt);
-  boLater(() => { blackoutLayer().classList.add('guide'); blackoutHint(BLACKOUT_TEXT.strike); }, darkAt + BLACKOUT.darkMs);
+  // once the dark covers the page, the cards get their own colours back — the match shows them as normal, pickable cards
+  boLater(() => {
+    [...wrap.children].forEach(c => c.classList.remove('lights-out'));
+    blackoutLayer().classList.add('guide');
+    blackoutHint(BLACKOUT_TEXT.strike);
+  }, darkAt + BLACKOUT.darkMs);
 }
 
 // Point of an element / pointer in the layer's own box (the mobile column, fixed to the screen)
@@ -1381,28 +1445,28 @@ function flameReaches(btn) {
 function blackoutHolds(btn) {
   if (_bo.phase === 'off' || _bo.phase === 'lifted') return false;
   if (_bo.phase !== 'lit' || _bo.dragged) return true;   // no match yet, or the end of a drag
-  if (flameReaches(btn)) { liftBlackout(btn); return false; }
+  if (flameReaches(btn)) { liftBlackout(); return false; }
   const r = boRect(btn);
   glideFlameTo([r.left + Math.min(70, r.width / 3), r.top + Math.min(r.height / 2, 40)]);
   return true;
 }
 
-// The flame takes to the chosen lantern: the dark opens from its ○ and the page's lights come back
-function liftBlackout(btn) {
+// A lantern is chosen: the match's light widens from where it is and the dark fades while the page's lights ease back
+function liftBlackout() {
   _bo.phase = 'lifted';
   _bo.edge = 0;
   cancelAnimationFrame(_bo.glide);
-  const layer = blackoutLayer(), radio = boRect(btn.querySelector('.choice-radio'));
-  layer.style.setProperty('--mx', radio.left + radio.width / 2 + 'px');
-  layer.style.setProperty('--my', radio.top + radio.height / 2 + 'px');
+  const layer = blackoutLayer();
   layer.classList.remove('dark', 'lit');
   layer.classList.add('lifted');
   document.getElementById('view-quiz').classList.remove('blackout-hold');
   blackoutHint('');
-  const motion = motionOn();
-  // the lights come back while the dark is still opening, so the switch-on hides under it
-  boLater(() => document.querySelectorAll('#quiz-body .lights-out').forEach(el => el.classList.remove('lights-out')), motion ? BLACKOUT.lightsBackMs : 0);
-  boLater(() => { layer.hidden = true; }, motion ? BLACKOUT.liftMs : 0);
+  const unlit = document.querySelectorAll('#quiz-body .lights-out');
+  unlit.forEach(el => { el.classList.add('lights-back'); el.classList.remove('lights-out'); });
+  boLater(() => {
+    unlit.forEach(el => el.classList.remove('lights-back'));
+    layer.hidden = true;
+  }, motionOn() ? BLACKOUT.liftMs : 0);
 }
 
 function wireBlackout() {
@@ -1427,7 +1491,8 @@ const KEY_CARD_MS = KEY_ENTER_MS + 3200, KEY_CARD_REDUCED_MS = 1200, KEY_CARD_FA
 const KEY_ART_TODO = 'ภาพฉาก (รอวาด)';
 const _key = { q: null, set: null, prompt: '', lines: [], at: 0, phase: 'off', home: null, onEnd: null, growFx: true,
                finishLine: null, cardTimer: null, typeTimer: null, hintTimer: null, autoTimer: null };
-const KEY_WHO = { speech: '???', player: 'คุณ' };   // name tags (his name is lost in the mist)
+const KEY_WHO = { speech: '???', player: 'คุณ', uncle: 'ลุงร้านปลา' };   // name tags (his name is lost in the mist)
+const KEY_SPEAKERS = ['narr', 'speech', 'player', 'uncle'];
 
 // 'EVENT 05' — story numbering E1–E10 (Bento has no event number), same as the quiz noren
 function eventNumber() { return state.stage === 2 ? 5 + state.currentQ : state.currentQ + 1; }
@@ -1436,7 +1501,8 @@ function eventNumber() { return state.stage === 2 ? 5 + state.currentQ : state.c
 // A page is a string ('\n' = next line) or an array of entries; a quoted part is his speech and the quote marks
 // go (the box itself shows who is talking). Same entry forms as the narration engine:
 // { reply } = the player picks a line to answer with (no score) · { say, auto } = flows on by itself ·
-// { slow, breath } = the moved line: phrases soak in one by one (breath = each phrase on its own line)
+// { slow, breath } = the moved line: phrases soak in one by one (breath = each phrase on its own line) ·
+// goldfish only: { uncle } = the goldfish-stall uncle speaks · { branch: [play, skip] } = the scene ends on the pick
 function keyLines(pages) {
   const split = line => (line.match(/["“][^"”]*["”]|[^"“”]+/g) || [])
     .map(s => s.trim()).filter(Boolean)
@@ -1444,6 +1510,8 @@ function keyLines(pages) {
   return pages.flatMap(page => (Array.isArray(page) ? page : page.split('\n'))).flatMap(line => {
     if (typeof line === 'string') return split(line);
     if (Array.isArray(line.reply)) return [{ reply: line.reply }];
+    if (Array.isArray(line.branch)) return [{ branch: line.branch }];
+    if (typeof line.uncle === 'string') return [{ text: line.uncle, kind: 'uncle' }];
     if (typeof line.say === 'string') { const parts = split(line.say); parts[parts.length - 1].auto = line.auto === true; return parts; }
     if (Array.isArray(line.slow)) return [{ text: line.slow.join(line.breath ? '\n' : ' '), kind: 'narr', slow: true }];
     throw new Error(`[Ryokan] key scene: ${JSON.stringify(line)} has no VN form`);
@@ -1461,6 +1529,7 @@ function showKeyScene(q) {
 
   showView('key');
   setKeyArt(q.keyScene);
+  document.getElementById('key-sprite').classList.remove('on');   // the goldfish uncle only stands in his own stall
   const fx = document.getElementById('key-fx');
   fx.className = 'key-fx key-fx--' + q.keyScene.fx;
   fx.style.opacity = 0;
@@ -1518,11 +1587,13 @@ function startKeyLines() {
   showKeyLine();
 }
 
-// narration: no name tag, ink-brown · his line: "???" tag, red rule · the player's answer: "คุณ" tag, blue rule
+// narration: no name tag, ink-brown · his line: "???" tag, red rule · the player's answer: "คุณ" tag, blue rule ·
+// the goldfish uncle: his own tag + walnut rule, and his picture dims while someone else talks
 function setKeySpeaker(kind) {
   const box = document.getElementById('key-box');
-  ['narr', 'speech', 'player'].forEach(k => box.classList.toggle('key-box--' + k, k === kind));
+  KEY_SPEAKERS.forEach(k => box.classList.toggle('key-box--' + k, k === kind));
   if (KEY_WHO[kind]) box.querySelector('.key-name').textContent = KEY_WHO[kind];
+  document.getElementById('key-sprite').classList.toggle('quiet', kind !== 'uncle');
 }
 
 function showKeyLine() {
@@ -1532,7 +1603,9 @@ function showKeyLine() {
   document.getElementById('key-tap-hint').classList.remove('on');
   clearTimeout(_key.autoTimer);
   if (line.reply) { showKeyReplies(line.reply); return; }
+  if (line.branch) { showKeyBranch(line.branch); return; }
   setKeySpeaker(line.kind);
+  if (line.kind === 'uncle') bounceKeySprite();
   document.getElementById('key-fx').style.opacity = _key.growFx ? (_key.at + 1) / _key.lines.length : 1;
   const text = document.getElementById('key-text');
   if (line.slow) {   // the moved line soaks in phrase by phrase, like the story card's ink
@@ -1581,8 +1654,27 @@ function advanceKeyScene() {
 // { reply }: his last line stays in the box, the answers rise above it (dating-sim style). A pick replaces the
 // entry with the player's own line, which then types out under the "คุณ" tag — no score, the story goes on
 function showKeyReplies(options) {
+  showKeyOptions(options, text => {
+    _key.lines[_key.at] = { text, kind: 'player' };
+    _key.phase = 'read';
+    showKeyLine();
+  });
+}
+
+// { branch }: same rising answers, but the pick ends the scene — onEnd(index) decides where the story goes
+function showKeyBranch(options) {
+  showKeyOptions(options, (text, i) => {
+    const done = _key.onEnd;
+    if (!done) throw new Error('[Ryokan] key branch: no onEnd to take the pick');
+    _key.onEnd = null;
+    _key.phase = 'off';
+    done(i);
+  });
+}
+
+// The answer buttons above the box (dim behind) — shared by { reply } and { branch }
+function showKeyOptions(options, onPick) {
   _key.phase = 'reply';
-  const menu = document.getElementById('key-menu');
   const wrap = document.createElement('div');
   wrap.className = 'narration-replies key-replies';
   options.forEach((text, i) => {
@@ -1594,14 +1686,29 @@ function showKeyReplies(options) {
       e.stopPropagation();
       wrap.remove();
       document.getElementById('key-dim').classList.remove('on');
-      _key.lines[_key.at] = { text, kind: 'player' };
-      _key.phase = 'read';
-      showKeyLine();
+      onPick(text, i);
     });
     wrap.append(btn);
   });
-  menu.append(wrap);
+  document.getElementById('key-menu').append(wrap);
   document.getElementById('key-dim').classList.add('on');
+}
+
+// Goldfish: the festival street fades to the stall seen from above, and the uncle pops up in front of it
+const GOLDFISH_STALL = { art: 'assets/ui/goldfish/bg.png', fx: 'stall' };
+function showKeyStall() {
+  if (!_key.q) throw new Error('[Ryokan] showKeyStall: no key scene on screen');
+  setKeyArt(GOLDFISH_STALL);
+  const art = document.getElementById('key-art');
+  if (motionOn()) art.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 900, easing: 'ease-out' });
+  document.getElementById('key-fx').className = 'key-fx key-fx--' + GOLDFISH_STALL.fx;
+  document.getElementById('key-sprite').classList.add('on');
+}
+function bounceKeySprite() {
+  const sprite = document.getElementById('key-sprite');
+  sprite.classList.remove('hop');
+  void sprite.offsetWidth;
+  sprite.classList.add('hop');
 }
 
 // The question stays in the box (shrunk) · the quiz's own choice list rises into the stage above it
@@ -1642,7 +1749,7 @@ function hideKeyBox(e) {
 // Log keeps the split: narration as plain ink paragraphs, his lines tagged "???" with a red rule
 function openKeyLog(e) {
   e.stopPropagation();
-  const shown = (_key.phase === 'ask' ? _key.lines : _key.lines.slice(0, _key.at + 1)).filter(line => !line.reply);
+  const shown = (_key.phase === 'ask' ? _key.lines : _key.lines.slice(0, _key.at + 1)).filter(line => !line.reply && !line.branch);
   document.getElementById('key-log-lines').replaceChildren(...shown.map(line => {
     const p = document.createElement('p');
     p.className = 'key-log-' + line.kind;
@@ -1677,12 +1784,434 @@ function endKeyScene() {
     _key.home = null;
   }
   document.getElementById('view-key').classList.remove('key-hide-ui');
-  document.getElementById('key-box').classList.remove('key-box--asking', 'key-box--speech', 'key-box--narr', 'key-box--player');
+  document.getElementById('key-box').classList.remove('key-box--asking', ...KEY_SPEAKERS.map(k => 'key-box--' + k));
   document.getElementById('key-menu').querySelector('.key-replies')?.remove();
   document.getElementById('key-text').replaceChildren();
   document.getElementById('key-dim').classList.remove('on');
   document.getElementById('key-log').hidden = true;
 }
+
+// ── GOLDFISH SCOOP (after E9) ───────────────────────────────────
+// Cosmetic like the doll: how-to card → scoop → end card → onDone; the count goes to state.goldfish.
+// Press = the poi goes under water · drag slowly under a fish until the ring glows · lift = scoop.
+// The paper soaks while under water and tears; heavy fish cost more paper; rushing scares fish and tears it.
+// Sizes are cqw of .gf-stage (u = 1cqw in px) · fish art = body + tail on one 256px canvas, head to the right
+const GF_KINDS = {
+  red:   { art: 'red',   speed: 7,   scareSpeed: 38, scareR: 20, weight: 14 },
+  small: { art: 'red',   speed: 13,  scareSpeed: 24, scareR: 22, weight: 7  },
+  big:   { art: 'red',   speed: 3.2, scareSpeed: 50, scareR: 16, weight: 44 },
+  black: { art: 'black', speed: 5,   scareSpeed: 30, scareR: 20, weight: 24 },
+  rare:  { art: 'rare',  speed: 13,  scareSpeed: 18, scareR: 27, weight: 30 }
+};
+const GF = {
+  startFish: ['red', 'red', 'red', 'red', 'small', 'small', 'big', 'black'],
+  keepAtLeast: { red: 3, small: 2 },   // topped up as they get caught
+  pois: 2,
+  ringR: 10.5,      // poi ring radius
+  scoopR: 7.5,      // a fish this close to the ring centre is on the paper
+  soakPerS: 5,      // paper lost per second under water (a fresh poi = 100)
+  rushFree: 60,     // faster than this (cqw/s) under water tears extra
+  settleS: 0.35,    // under water this long before a lift can scoop
+  grip: { dx: -10.7, dy: -8.6 },   // the finger holds the handle: ring centre sits up-left of it (poi_frame.png grip ≈ 68% 66%)
+  rest: { x: 58, y: 118 },         // ring centre before the first touch
+  rareAtS: 6,
+  bowlMax: 9,       // fish drawn in the bowl
+  tearMs: 1100,
+  wearAt: [60, 35, 15]   // paper left → crack1 / crack2 / shiver
+};
+const GF_ART = 'assets/ui/goldfish/';
+const _gf = { onDone: null, gen: 0, playing: false, fish: [], poi: null, count: 0, rare: false, poisLeft: 0,
+              clock: 0, rareIn: false, lastT: 0, raf: 0, fleeSaid: false, liftTipShown: false, hint: false, pointerId: null, u: 0 };
+
+function gfEl(id) { return document.getElementById('gf-' + id); }
+function gfFishHTML(kind) {
+  const art = GF_ART + GF_KINDS[kind].art;
+  return `<span class="gf-shape"><img class="gf-tail" src="${art}_tail.png" alt=""><img src="${art}_body.png" alt=""></span>`;
+}
+function gfPoiHTML() {
+  return '<div class="gf-poi-art">' + ['paper', 'crack1', 'crack2', 'torn'].map(n =>
+    `<img class="gf-pp gf-pp-${n}" src="${GF_ART}poi_${n}.png" alt="">`).join('') +
+    `<img class="gf-frame" src="${GF_ART}poi_frame.png" alt=""><span class="gf-grip"><span class="gf-grip-label"></span></span></div>`;
+}
+function gfRand(a, b) { return a + Math.random() * (b - a); }
+function gfTurn(from, to, maxStep) {
+  const diff = Math.atan2(Math.sin(to - from), Math.cos(to - from));
+  return from + Math.max(-maxStep, Math.min(maxStep, diff));
+}
+
+function startGoldfish(onDone) {
+  _gf.onDone = onDone;
+  showView('goldfish');
+}
+
+// showView('goldfish'): fixed texts, a clean tub, then the how-to card
+function resetGoldfish() {
+  const g = QUESTIONS.goldfish;
+  gfEl('title').replaceChildren(thaiBreakable(g.hud.title));
+  gfEl('done').replaceChildren(thaiBreakable(g.hud.done));
+  gfEl('poi').innerHTML = gfPoiHTML();
+  gfEl('poi').querySelector('.gf-grip-label').append(thaiBreakable(g.hud.grip));
+  gfClear();
+  gfShowHowto();
+}
+
+function gfShowHowto() {
+  const h = QUESTIONS.goldfish.howto;
+  const card = gfEl('howto');
+  card.innerHTML = `<span class="gf-kanji">遊び方</span><h3 class="gf-h"></h3><div class="gf-card"><ol class="gf-steps"></ol><div class="gf-legend"></div></div>
+    <button type="button" class="gf-go" data-gf="play"></button>`;
+  card.querySelector('.gf-h').append(thaiBreakable(h.title));
+  const steps = card.querySelector('.gf-steps');
+  h.steps.forEach(([bold, rest], i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="gf-n">${i + 1}</span><span><b></b></span>`;
+    li.querySelector('b').append(thaiBreakable(bold));
+    li.lastElementChild.append(thaiBreakable(' ' + rest));
+    steps.append(li);
+  });
+  const legend = card.querySelector('.gf-legend');
+  for (const kind of ['small', 'big', 'black', 'rare']) {
+    const row = document.createElement('div');
+    row.innerHTML = `<span class="gf-ico gf-ico--${kind}">${gfFishHTML(kind)}</span>`;
+    row.append(thaiBreakable(h.fish[kind]));
+    legend.append(row);
+  }
+  const warn = document.createElement('p');
+  warn.className = 'gf-warn';
+  warn.append(thaiBreakable(h.warn));
+  legend.append(warn);
+  card.querySelector('.gf-go').append(thaiBreakable(h.start));
+  card.classList.add('on');
+}
+
+// A clean round: every old timer / flying fish checks _gf.gen and drops out
+function gfClear() {
+  _gf.gen++;
+  _gf.playing = false;
+  cancelAnimationFrame(_gf.raf);
+  _gf.pointerId = null;
+  const stage = gfEl('stage');
+  stage.classList.remove('playing', 'holding');
+  gfEl('water').querySelectorAll('.gf-fish, .gf-ripple').forEach(el => el.remove());
+  stage.querySelectorAll(':scope > .gf-fish, :scope > .gf-pop').forEach(el => el.remove());
+  gfEl('bowl-water').replaceChildren();
+  Object.assign(_gf, { fish: [], count: 0, rare: false, poisLeft: GF.pois, clock: 0, rareIn: false, fleeSaid: false, liftTipShown: false, hint: false });
+  gfEl('count').textContent = '0';
+  gfEl('spares').innerHTML = Array(GF.pois).fill(`<div class="gf-spare">${gfPoiHTML()}</div>`).join('');
+  gfEl('say').replaceChildren();
+  gfEl('howto').classList.remove('on');
+  gfEl('end').classList.remove('on');
+  _gf.u = stage.clientWidth / 100;
+  _gf.poi = null;
+  gfNewPoi();
+  gfEl('poi').classList.remove('show');
+}
+
+function gfNewPoi() {
+  const old = _gf.poi, u = _gf.u;
+  const x = old ? old.x : GF.rest.x * u, y = old ? old.y : GF.rest.y * u;
+  _gf.poi = { x, y, wx: 0, wy: 0, wet: false, wetTime: 0, dur: 100, torn: false, moved: 0, speed: 0, down: false };
+  const el = gfEl('poi');
+  el.className = 'gf-poi show' + (_gf.hint ? ' hint' : '');
+  el.style.setProperty('--wet', 0);
+  el.style.transform = `translate(${x}px, ${y}px)`;
+}
+
+function gfSay(text) {
+  const say = gfEl('say');
+  say.replaceChildren(thaiBreakable(text));
+  say.classList.remove('in');
+  void say.offsetWidth;
+  say.classList.add('in');
+}
+
+function gfSpawn(kind) {
+  const water = gfEl('water');
+  const el = document.createElement('div');
+  el.className = 'gf-fish gf-fish--' + kind;
+  el.innerHTML = gfFishHTML(kind);
+  water.append(el);
+  const w = water.clientWidth, a = gfRand(0, Math.PI * 2), r = gfRand(0, 0.32);
+  const f = { kind, el, x: w / 2 + Math.cos(a) * w * r, y: w / 2 + Math.sin(a) * w * r,
+              ang: gfRand(0, Math.PI * 2), want: gfRand(0, Math.PI * 2), turnT: gfRand(0.5, 2), burst: 0 };
+  el.style.transform = `translate(${f.x}px, ${f.y}px) rotate(${f.ang}rad)`;
+  _gf.fish.push(f);
+}
+
+function gfStartle(f, fromX, fromY) {
+  f.want = Math.atan2(f.y - fromY, f.x - fromX);
+  f.burst = 1;
+}
+
+function gfStepFish(f, dt) {
+  const k = GF_KINDS[f.kind], u = _gf.u, poi = _gf.poi;
+  const w = gfEl('water').clientWidth, c = w / 2;
+  f.turnT -= dt;
+  if (f.turnT <= 0) { f.want = f.ang + gfRand(-1.3, 1.3); f.turnT = gfRand(0.8, 2.6); }
+  if (Math.hypot(f.x - c, f.y - c) > c - 8 * u) f.want = Math.atan2(c - f.y, c - f.x) + gfRand(-0.4, 0.4);
+  else if (poi.wet && poi.speed > k.scareSpeed * u && Math.hypot(f.x - poi.wx, f.y - poi.wy) < k.scareR * u) {
+    gfStartle(f, poi.wx, poi.wy);
+    if (!_gf.fleeSaid) { _gf.fleeSaid = true; gfSay(QUESTIONS.goldfish.say.flee); }
+  }
+  f.ang = gfTurn(f.ang, f.want, (f.burst > 0.2 ? 9 : 2.4) * dt);
+  const sp = k.speed * u * (1 + f.burst * 3);
+  f.burst = Math.max(0, f.burst - dt * 1.1);
+  f.x = Math.max(2 * u, Math.min(w - 2 * u, f.x + Math.cos(f.ang) * sp * dt));
+  f.y = Math.max(2 * u, Math.min(w - 2 * u, f.y + Math.sin(f.ang) * sp * dt));
+  f.el.classList.toggle('fast', f.burst > 0.2);
+  f.el.style.transform = `translate(${f.x}px, ${f.y}px) rotate(${f.ang}rad)`;
+}
+
+function gfFishOnPaper() {
+  const poi = _gf.poi;
+  let best = null, bestD = GF.scoopR * _gf.u;
+  for (const f of _gf.fish) {
+    const d = Math.hypot(f.x - poi.wx, f.y - poi.wy);
+    if (d < bestD) { best = f; bestD = d; }
+  }
+  return best;
+}
+
+function gfRipple(x, y) {
+  const el = document.createElement('div');
+  el.className = 'gf-ripple';
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.addEventListener('animationend', () => el.remove());
+  gfEl('water').append(el);
+}
+
+function gfPop(text, x, y, kind) {
+  const el = document.createElement('div');
+  el.className = 'gf-pop' + (kind ? ' gf-pop--' + kind : '');
+  el.append(thaiBreakable(text));
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.addEventListener('animationend', () => el.remove());
+  gfEl('stage').append(el);
+}
+
+function gfInWater(wx, wy) {
+  const c = gfEl('water').clientWidth / 2;
+  return Math.hypot(wx - c, wy - c) < c - 2 * _gf.u;
+}
+
+function gfPlacePoi(e) {
+  const stage = gfEl('stage').getBoundingClientRect(), water = gfEl('water').getBoundingClientRect(), poi = _gf.poi, u = _gf.u;
+  const x = e.clientX - stage.left + GF.grip.dx * u, y = e.clientY - stage.top + GF.grip.dy * u;
+  poi.moved += Math.hypot(x - poi.x, y - poi.y);
+  poi.x = x;
+  poi.y = y;
+  poi.wx = x - (water.left - stage.left);
+  poi.wy = y - (water.top - stage.top);
+  const el = gfEl('poi');
+  el.style.transform = `translate(${x}px, ${y}px)`;
+  el.classList.add('show');
+}
+
+function gfPlunge() {
+  const poi = _gf.poi;
+  Object.assign(poi, { wet: true, wetTime: 0, moved: 0, speed: 0 });
+  gfEl('poi').classList.add('wet');
+  gfRipple(poi.wx, poi.wy);
+  for (const f of _gf.fish) if (Math.hypot(f.x - poi.wx, f.y - poi.wy) < GF.ringR * 1.25 * _gf.u) gfStartle(f, poi.wx, poi.wy);
+}
+
+function gfLift(scoop) {
+  const poi = _gf.poi;
+  if (!poi.wet) return;
+  const target = scoop && poi.wetTime >= GF.settleS ? gfFishOnPaper() : null;
+  poi.wet = false;
+  gfEl('poi').classList.remove('wet', 'ready');
+  gfRipple(poi.wx, poi.wy);
+  if (!target) return;
+  poi.dur -= GF_KINDS[target.kind].weight;
+  if (poi.dur <= 0) { gfStartle(target, poi.wx, poi.wy - _gf.u); gfTear(); return; }
+  gfShowWear();
+  gfCatch(target);
+}
+
+function gfShowWear() {
+  const dur = _gf.poi.dur, [a, b, c] = GF.wearAt, el = gfEl('poi');
+  el.style.setProperty('--wet', (1 - dur / 100).toFixed(2));
+  el.classList.toggle('d1', dur < a && dur >= b);
+  el.classList.toggle('d2', dur < b && dur >= c);
+  el.classList.toggle('d3', dur < c);
+}
+
+function gfTear() {
+  const gen = _gf.gen, poi = _gf.poi, el = gfEl('poi'), say = QUESTIONS.goldfish.say;
+  poi.torn = true;
+  poi.wet = false;
+  el.classList.remove('wet', 'ready', 'd1', 'd2', 'd3');
+  el.classList.add('torn');
+  gfPop(QUESTIONS.goldfish.hud.tear, poi.x, poi.y);
+  _gf.poisLeft--;
+  gfEl('spares').children[GF.pois - 1 - _gf.poisLeft].classList.add('used');
+  gfSay(say.torn);
+  setTimeout(() => {
+    if (gen !== _gf.gen || !_gf.playing) return;
+    if (_gf.poisLeft > 0) { gfNewPoi(); gfSay(say.next); } else gfEnd();
+  }, GF.tearMs);
+}
+
+// The fish flops on the paper, then jumps in an arc into the bowl
+function gfCatch(f) {
+  const gen = _gf.gen, poi = _gf.poi, u = _gf.u, say = QUESTIONS.goldfish.say;
+  _gf.fish.splice(_gf.fish.indexOf(f), 1);
+  const stage = gfEl('stage').getBoundingClientRect(), bowl = gfEl('bowl').getBoundingClientRect();
+  const ex = bowl.left - stage.left + bowl.width / 2, ey = bowl.top - stage.top + bowl.height / 2;
+  const sx = poi.x, sy = poi.y, mx = (sx + ex) / 2, my = Math.min(sy, ey) - 18 * u;
+  gfEl('stage').append(f.el);
+  f.el.classList.add('fly');
+  f.el.style.transform = '';
+  const at = (x, y, turn, scale, offset) => ({ transform: `translate(${x}px, ${y}px) rotate(${f.ang + turn}rad) scale(${scale})`, offset });
+  const fly = f.el.animate([
+    at(sx, sy, 0, 1.15, 0), at(sx, sy, 0.55, 1.2, 0.12), at(sx, sy, -0.55, 1.2, 0.24), at(sx, sy, 0.4, 1.2, 0.36),
+    at(mx, my, 2.5, 1.5, 0.7), at(ex, ey, 5, 0.5, 1)
+  ], { duration: motionOn() ? 950 : 1, easing: 'ease-in-out', fill: 'forwards' });
+  _gf.count++;
+  const shown = _gf.count;
+  fly.onfinish = () => { f.el.remove(); if (gen === _gf.gen) gfLand(f.kind, shown, ex, ey); };
+  if (f.kind === 'rare') _gf.rare = true;
+  gfSay(f.kind === 'red' ? say.catch[Math.floor(Math.random() * say.catch.length)] : say[f.kind]);
+}
+
+function gfLand(kind, shown, x, y) {
+  const bowl = gfEl('bowl');
+  gfEl('count').textContent = shown;
+  gfPop(kind === 'rare' ? '✦ +1' : '+1', x, y - 10 * _gf.u, kind === 'rare' ? 'rare' : '');
+  bowl.classList.remove('bump');
+  void bowl.offsetWidth;
+  bowl.classList.add('bump');
+  const water = gfEl('bowl-water');
+  if (water.children.length >= GF.bowlMax) return;
+  const mini = document.createElement('div');
+  mini.className = 'gf-fish gf-mini gf-fish--' + kind;
+  mini.innerHTML = gfFishHTML(kind);
+  mini.style.setProperty('--r', gfRand(2.5, 6.5).toFixed(1) + 'cqw');
+  mini.style.setProperty('--dur', gfRand(5, 9).toFixed(1) + 's');
+  mini.style.setProperty('--delay', (-gfRand(0, 9)).toFixed(1) + 's');
+  water.append(mini);
+}
+
+function gfFrame(t) {
+  if (!_gf.playing) return;
+  const dt = Math.min(0.05, (t - _gf.lastT) / 1000 || 0), poi = _gf.poi;
+  _gf.lastT = t;
+  _gf.clock += dt;
+  _gf.u = gfEl('stage').clientWidth / 100;
+  poi.speed = poi.speed * 0.8 + (dt ? poi.moved / dt : 0) * 0.2;
+  poi.moved = 0;
+  if (poi.wet) {
+    poi.wetTime += dt;
+    poi.dur -= (GF.soakPerS + Math.max(0, poi.speed / _gf.u - GF.rushFree) * 0.12) * dt;
+    if (poi.dur <= 0) gfTear();
+    else {
+      gfShowWear();
+      const ready = poi.wetTime >= GF.settleS && Boolean(gfFishOnPaper());
+      gfEl('poi').classList.toggle('ready', ready);
+      if (ready && !_gf.liftTipShown) { _gf.liftTipShown = true; gfPop(QUESTIONS.goldfish.hud.lift, poi.x, poi.y - 14 * _gf.u, 'tip'); }
+    }
+  }
+  _gf.fish.forEach(f => gfStepFish(f, dt));
+  if (!_gf.rareIn && _gf.clock > GF.rareAtS) { _gf.rareIn = true; gfSpawn('rare'); gfSay(QUESTIONS.goldfish.say.rareIn); }
+  for (const kind in GF.keepAtLeast) if (_gf.fish.filter(f => f.kind === kind).length < GF.keepAtLeast[kind]) gfSpawn(kind);
+  _gf.raf = requestAnimationFrame(gfFrame);
+}
+
+function gfPlay() {
+  gfClear();
+  GF.startFish.forEach(gfSpawn);
+  _gf.hint = true;
+  gfNewPoi();
+  gfSay(QUESTIONS.goldfish.say.start);
+  _gf.playing = true;
+  _gf.lastT = performance.now();
+  gfEl('stage').classList.add('playing');
+  _gf.raf = requestAnimationFrame(gfFrame);
+}
+
+function gfEnd() {
+  const e = QUESTIONS.goldfish.end;
+  _gf.playing = false;
+  cancelAnimationFrame(_gf.raf);
+  _gf.pointerId = null;
+  gfEl('stage').classList.remove('playing', 'holding');
+  gfEl('poi').classList.remove('show');
+  state.goldfish = { count: _gf.count, rare: _gf.rare };
+  const card = gfEl('end');
+  card.innerHTML = `<span class="gf-kanji">金魚すくい</span><div class="gf-total">${_gf.count}<small></small></div>
+    ${_gf.rare ? '<p class="gf-rare-got"></p>' : ''}
+    <div class="gf-uncle"><span class="gf-uncle-face" aria-hidden="true"></span><p class="gf-uncle-say"><b></b><span></span></p></div>
+    <button type="button" class="gf-go" data-gf="next"></button>`;
+  card.querySelector('.gf-total small').append(thaiBreakable(e.unit));
+  if (_gf.rare) card.querySelector('.gf-rare-got').append(thaiBreakable(e.rare));
+  card.querySelector('.gf-uncle-say b').textContent = KEY_WHO.uncle;
+  card.querySelector('.gf-uncle-say span').append(thaiBreakable(e.uncle.find(t => _gf.count >= t.min).text));
+  card.querySelector('.gf-go').append(thaiBreakable(e.next));
+  card.classList.add('on');
+}
+
+function gfFinish() {
+  if (!state.goldfish) throw new Error('[Ryokan] gfFinish: no goldfish result recorded');
+  const done = _gf.onDone;
+  if (!done) throw new Error('[Ryokan] gfFinish: no onDone');
+  _gf.onDone = null;
+  gfClear();
+  done();
+}
+
+// One finger holds the poi: press = under water (if over the tub), move = drag, lift = scoop.
+// A cancelled touch (call, edge swipe) only lifts the poi — it never scoops
+function wireGoldfish() {
+  const stage = gfEl('stage');
+  stage.addEventListener('pointerdown', e => {
+    const poi = _gf.poi;
+    if (!_gf.playing || poi.torn || _gf.pointerId !== null || e.target.closest('button')) return;
+    _gf.pointerId = e.pointerId;
+    stage.setPointerCapture(e.pointerId);
+    stage.classList.add('holding');
+    if (_gf.hint) { _gf.hint = false; gfEl('poi').classList.remove('hint'); }
+    poi.down = true;
+    gfPlacePoi(e);
+    poi.moved = 0;   // jumping to the finger is not a rush
+    poi.speed = 0;
+    if (gfInWater(poi.wx, poi.wy)) gfPlunge();
+  });
+  stage.addEventListener('pointermove', e => {
+    const poi = _gf.poi;
+    if (!_gf.playing || poi.torn) return;
+    if (e.pointerType !== 'mouse' && e.pointerId !== _gf.pointerId) return;   // touch / pen: only the holding finger
+    if (_gf.pointerId !== null && e.pointerId !== _gf.pointerId) return;
+    if (_gf.hint && !poi.down) return;   // a hovering mouse leaves the poi resting under its hint
+    gfPlacePoi(e);
+    if (!poi.down) return;
+    const inside = gfInWater(poi.wx, poi.wy);
+    if (inside && !poi.wet) gfPlunge();
+    else if (!inside && poi.wet) gfLift(false);
+  });
+  const release = (e, scoop) => {
+    if (e.pointerId !== _gf.pointerId) return;
+    _gf.pointerId = null;
+    stage.classList.remove('holding');
+    const poi = _gf.poi;
+    if (!_gf.playing || !poi.down) return;
+    poi.down = false;
+    if (!poi.torn) gfLift(scoop);
+  };
+  stage.addEventListener('pointerup', e => release(e, true));
+  stage.addEventListener('pointercancel', e => release(e, false));
+  stage.addEventListener('lostpointercapture', e => release(e, false));
+  stage.addEventListener('contextmenu', e => e.preventDefault());   // Android long-press menu
+  stage.addEventListener('click', e => {
+    const act = e.target.closest('[data-gf]')?.dataset.gf;
+    if (act === 'play') gfPlay();
+    else if (act === 'done' && _gf.playing) gfEnd();
+    else if (act === 'next') gfFinish();
+  });
+}
+wireGoldfish();
 
 // ── BENTO ─────────────────────────────────────────────────────
 // Flow (DATA_SCHEMA §6): lead narration → intro → pop-up Q → drag food → Continue → afterArrange → E6
@@ -1792,6 +2321,7 @@ document.getElementById('bento-palette').addEventListener('scroll', markBentoShe
 function onBentoContinue() {
   if (_bentoPhase !== 'arrange' || !bentoShelf.count()) return;
   bentoShelf.end();
+  state.bentoSelected = readBentoLayout();
   showNarration(QUESTIONS.yokai[0].afterArrange, () => fadeToView('quiz', loadQuestion));
 }
 
@@ -1828,9 +2358,12 @@ function sealBentoAnswer() {
 // The mouse wheel scrolls the shelf sideways (PC has no swipe). Placed copies are kept in order for undo().
 // A placed copy can be dragged again: dropped inside the zone it moves there (on top of the rest),
 // dropped outside it is taken off. Moving is not an undo step.
+// Optional hooks (Doll): make(shelfItem) builds the placed element itself — such elements are not
+// .shelf-placed, so the caller moves them · onPlace(el) after a new copy lands · onTap(shelfItem) = a press
+// that never became a drag.
 const SHELF_DRAG_START_PX = 6;
 
-// cfg: { shelf, view, zone, layer, placedClass, onChange } — ghost lives inside view, so it can never outlive it
+// cfg: { shelf, view, zone, layer, placedClass | make, onChange, onPlace?, onTap? } — ghost lives inside view, so it can never outlive it
 function initItemShelf(cfg) {
   // item = what dims while dragged · look = what the ghost copies · moving = the placed copy being moved (else null)
   // captor = the element holding the pointer (shelf or layer)
@@ -1882,6 +2415,29 @@ function initItemShelf(cfg) {
     cfg.onChange(placed.length);
   }
 
+  // Centre of el at (xPct, yPct) of the zone, on top of the rest — a moved copy replays its landing pop
+  function setSpot(el, xPct, yPct) {
+    el.style.left = xPct.toFixed(1) + '%';
+    el.style.top  = yPct.toFixed(1) + '%';
+    layer.appendChild(el);
+  }
+
+  // A new copy of a shelf item
+  function add(item, xPct, yPct) {
+    let el;
+    if (cfg.make) {
+      el = cfg.make(item);
+    } else {
+      el = document.createElement('div');
+      el.className = `${cfg.placedClass} shelf-placed`;
+      copyLook(item.querySelector('.shelf-item-img'), el);
+    }
+    placed.push(el);
+    setSpot(el, xPct, yPct);
+    cfg.onChange(placed.length);
+    if (cfg.onPlace) cfg.onPlace(el);
+  }
+
   function drop(x, y) {
     const dz = cfg.zone.getBoundingClientRect();
     const inside = x >= dz.left && x <= dz.right && y >= dz.top && y <= dz.bottom;
@@ -1889,15 +2445,10 @@ function initItemShelf(cfg) {
       if (drag.moving) remove(drag.moving);
       return;
     }
-    const el = drag.moving || document.createElement('div');
-    if (!drag.moving) {
-      el.className = `${cfg.placedClass} shelf-placed`;
-      copyLook(drag.ghost, el);
-      placed.push(el);
-    }
-    el.style.left = ((x - dz.left) / dz.width  * 100).toFixed(1) + '%';
-    el.style.top  = ((y - dz.top)  / dz.height * 100).toFixed(1) + '%';
-    layer.appendChild(el);   // on top of the rest — a moved copy replays its landing pop
+    const xPct = (x - dz.left) / dz.width  * 100;
+    const yPct = (y - dz.top)  / dz.height * 100;
+    if (!drag.moving) return add(drag.item, xPct, yPct);
+    setSpot(drag.moving, xPct, yPct);
     cfg.onChange(placed.length);
   }
 
@@ -1912,8 +2463,10 @@ function initItemShelf(cfg) {
 
   function onUp(e) {
     if (e.pointerId !== drag.pointerId) return;
+    const tapped = !drag.ghost && drag.captor === shelf ? drag.item : null;
     if (drag.ghost) drop(e.clientX, e.clientY);
     end();
+    if (tapped && cfg.onTap) cfg.onTap(tapped);
   }
 
   shelf.addEventListener('pointerdown', e => {
@@ -1932,12 +2485,15 @@ function initItemShelf(cfg) {
   });
   shelf.addEventListener('wheel', e => {
     if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;   // trackpad sideways swipe already scrolls
+    if (shelf.scrollWidth <= shelf.clientWidth) return;     // nothing sideways to scroll (Doll grid)
     e.preventDefault();
     shelf.scrollLeft += e.deltaY;
   }, { passive: false });
 
   return {
     end,
+    add,
+    remove,
     count: () => placed.length,
     placed: () => [...layer.children],   // bottom to top, as stacked on screen
     undo() {
@@ -1961,6 +2517,27 @@ const bentoShelf = initItemShelf({
   onChange:    updateBentoButtons
 });
 
+// Body.PNG is 801×1440 with the box at y 224–856 (the numbers .bento-art-img in style.css is laid out by);
+// foodW = a food's width as a share of the box's width (.bento-placed-food)
+const BENTO_ART = { w: 801, h: 1440, boxTop: 224, boxH: 632, foodW: 0.22 };
+
+// Where each food sits as % of the box itself (not of the drop zone), bottom to top — the share picture redraws the box from this
+function readBentoLayout() {
+  const art  = document.querySelector('.bento-art-img').getBoundingClientRect();
+  const top  = art.top + art.height * BENTO_ART.boxTop / BENTO_ART.h;
+  const boxH = art.height * BENTO_ART.boxH / BENTO_ART.h;
+  return bentoShelf.placed().map(el => {
+    const url = /^url\(["']?(.+?)["']?\)$/.exec(el.style.backgroundImage);
+    if (!url) throw new Error('[Ryokan] readBentoLayout: a placed food has no image');
+    const r = el.getBoundingClientRect();
+    return {
+      image: url[1],
+      x: (r.left + r.width / 2 - art.left) / art.width * 100,
+      y: (r.top + r.height / 2 - top) / boxH * 100
+    };
+  });
+}
+
 function updateBentoButtons(count) {
   document.getElementById('btn-bento-undo').disabled = !count;
   document.getElementById('btn-bento-next').disabled = _bentoPhase !== 'arrange' || !count;
@@ -1969,15 +2546,48 @@ function updateBentoButtons(count) {
 // ── DOLL — E7 teru teru bozu face drawing (cosmetic, DATA_SCHEMA §6) ──
 const DOLL_INKS  = ['--on-surface', '--primary', '--primary-container', '--secondary', '--ink-green', '--ink-gold'];
 const DOLL_SIZES = [10, 20, 34];   // brush width in 1000px canvas units
-// Face of teru_body.png: fill color + head circle (the gown shares the fill color, so both must match)
-const DOLL_FACE  = { r: 231, g: 231, b: 234, tolerance: 14, cx: 482, cy: 386, radius: 172 };
-// Dress step shelf, one tab per section — placeholder glyphs until the accessory art lands (assets/README.md)
+// Face of teru_body.png: head circle + the painted (shaded) cloth inside it — anything lighter than minLight
+// counts as face, the ink outline (dark) does not
+const DOLL_FACE  = { minLight: 110, cx: 482, cy: 386, radius: 172 };
+// Dress step shelf, one tab per section. Art was drawn in place on teru_body.png's 1000px canvas and cropped
+// to box [x, y, w, h] there — the same box for every colour of an item, so a colour swap keeps size and spot.
+// colors = file ids in assets/ui/doll/acc/{id}.webp; the first is the shelf picture (assets/README.md)
 const DOLL_ACCESSORIES = [
-  { label: 'Ribbon', icon: '🎀', items: ['🎀', '🎗️', '🪢'] },
-  { label: 'Hat',    icon: '👒', items: ['👒', '🎩', '👑'] },
-  { label: 'Flower', icon: '🌸', items: ['🌸', '🌺', '🌼', '🍁'] },
-  { label: 'Charm',  icon: '🔔', items: ['🔔', '🏮', '⭐', '🌙'] }
+  { label: 'Hat', kanji: '帽', items: [
+    { id: 'beret',       box: [268, 52, 325, 252],  colors: ['beret'] },
+    { id: 'crown',       box: [351, 9, 178, 179],   colors: ['crown'] },
+    { id: 'kabuto',      box: [256, 32, 496, 397],  colors: ['kabuto'] },
+    { id: 'shogun',      box: [335, 23, 359, 272],  colors: ['shogun'] },
+    { id: 'uniform_hat', box: [279, 4, 389, 257],   colors: ['uniform_hat'] }
+  ] },
+  { label: 'Head', kanji: '頭', items: [
+    { id: 'fox',         box: [260, 27, 439, 288],  colors: ['fox_white', 'fox_black'] },
+    { id: 'hachimaki',   box: [305, 124, 432, 191], colors: ['hachimaki'] },
+    { id: 'headband',    box: [294, 118, 478, 219], colors: ['headband'] },
+    { id: 'headscarf',   box: [238, 65, 531, 506],  colors: ['headscarf_pink', 'headscarf_orange'] },
+    { id: 'head_tie',    box: [303, 96, 270, 446],  colors: ['head_tie'] }
+  ] },
+  { label: 'Neck', kanji: '首', items: [
+    { id: 'bow',         box: [374, 368, 299, 167], colors: ['bow_pink', 'bow_yellow', 'bow_mint'] },
+    { id: 'rope',        box: [373, 415, 269, 248], colors: ['rope_red', 'rope_black', 'rope_blue', 'rope_green', 'rope_yellow'] },
+    { id: 'neckerchief', box: [360, 333, 367, 261], colors: ['neckerchief_red', 'neckerchief_pink', 'neckerchief_yellow', 'neckerchief_mint', 'neckerchief_blue'] },
+    { id: 'scarf',       box: [329, 373, 386, 333], colors: ['scarf_red', 'scarf_pink', 'scarf_green', 'scarf_brown', 'scarf_black', 'scarf_plainred', 'scarf_plainblack'] },
+    { id: 'tie',         box: [375, 416, 262, 262], colors: ['tie_red', 'tie_pink', 'tie_black'] }
+  ] },
+  { label: 'Charm', kanji: '飾', items: [
+    { id: 'beads',       box: [351, 406, 301, 122], colors: ['beads_red', 'beads_blue', 'beads_black'] },
+    { id: 'collar_bell', box: [360, 406, 290, 179], colors: ['collar_bell'] },
+    { id: 'flower',      box: [367, 370, 335, 262], colors: ['flower_purple', 'flower_blue'] }
+  ] }
 ];
+const DOLL_ITEMS = Object.fromEntries(DOLL_ACCESSORIES.flatMap(s => s.items).map(item => [item.id, item]));
+const dollAccSrc = colorId => `assets/ui/doll/acc/${colorId}.webp`;
+
+function dollItem(id) {
+  const item = DOLL_ITEMS[id];
+  if (!item) throw new Error(`Doll accessory "${id}" is not in DOLL_ACCESSORIES`);
+  return item;
+}
 
 const _doll = {
   strokes: [], color: '', size: DOLL_SIZES[1], drawing: null, onDone: null,
@@ -1990,9 +2600,191 @@ const dollShelf = initItemShelf({
   view:        document.getElementById('view-doll'),
   zone:        document.getElementById('doll-frame'),
   layer:       document.getElementById('doll-placed-items'),
-  placedClass: 'doll-placed-item',
-  onChange:    count => { document.getElementById('btn-doll-undo').disabled = !count; }
+  make:        shelfItem => makeDollAcc(dollItem(shelfItem.dataset.item)),
+  onPlace:     selectDollAcc,
+  onTap:       toggleDollAcc,
+  onChange:    count => {
+    document.getElementById('btn-doll-undo').disabled = !count;
+    if (_dollAcc.el && !_dollAcc.el.isConnected) deselectDollAcc();   // undo / clear took the picked one
+    markWornDollTiles();
+  }
 });
+
+// ── DOLL ACCESSORIES — pick · move · rotate · recolour (sketch from the owner, 2026-11-17) ──
+// Tap a placed accessory = pick it: dashed outline + floating ↻ ✕ ✓ + its colours in the panel.
+// Drag it = move (dropped off the doll = taken off). ↻ = rotate mode: handles on the top and bottom
+// edge both turn it around its centre; ✓ / a tap on bare doll ends it. Moves, turns, colours are not undo steps.
+const _dollAcc = { el: null, rotating: false, gesture: null };   // gesture: { pointerId, kind: 'move' | 'turn', … }
+
+// .doll-acc = the item's box on the 1000px canvas, in % of the frame; centre = left/top (set by the shelf)
+function makeDollAcc(item) {
+  const [, , w, h] = item.box;
+  const el = document.createElement('div');
+  el.className = 'doll-acc';
+  el.dataset.item  = item.id;
+  el.dataset.color = '0';
+  el.style.width  = (w / 10) + '%';
+  el.style.height = (h / 10) + '%';
+  el.style.setProperty('--rot', '0deg');
+  const img = document.createElement('img');
+  img.src = dollAccSrc(item.colors[0]);
+  img.alt = '';
+  img.draggable = false;
+  el.appendChild(img);
+  ['top', 'bottom'].forEach(side => {
+    const handle = document.createElement('span');
+    handle.className = `doll-acc-handle doll-acc-handle--${side}`;
+    el.appendChild(handle);
+  });
+  return el;
+}
+
+// A tap on a grid tile = put it on where it was drawn to sit · tap again (worn ✓) = take it off (the top copy)
+function toggleDollAcc(shelfItem) {
+  const id   = shelfItem.dataset.item;
+  const worn = dollShelf.placed().filter(el => el.dataset.item === id).pop();
+  if (worn) return dollShelf.remove(worn);
+  const [x, y, w, h] = dollItem(id).box;
+  dollShelf.add(shelfItem, (x + w / 2) / 10, (y + h / 2) / 10);
+}
+
+// Grid tiles of items on the doll get the ✓ mark
+function markWornDollTiles() {
+  const worn = new Set(dollShelf.placed().map(el => el.dataset.item));
+  document.querySelectorAll('#doll-shelf .shelf-item').forEach(tile => {
+    tile.classList.toggle('worn', worn.has(tile.dataset.item));
+  });
+}
+
+function selectDollAcc(el) {
+  if (_dollAcc.el !== el) {
+    if (_dollAcc.el) _dollAcc.el.classList.remove('picked', 'rotating');
+    _dollAcc.el = el;
+    _dollAcc.rotating = false;
+    el.classList.add('picked');
+  }
+  showDollColors();
+  placeDollAccTools();
+}
+
+function deselectDollAcc() {
+  if (_dollAcc.el) _dollAcc.el.classList.remove('picked', 'rotating');
+  Object.assign(_dollAcc, { el: null, rotating: false, gesture: null });
+  document.getElementById('doll-acc-tools').hidden = true;
+  showDollColors();
+}
+
+function removeDollAcc() {
+  if (_dollAcc.el) dollShelf.remove(_dollAcc.el);   // onChange deselects
+}
+
+function setDollAccRotating(on) {
+  if (!_dollAcc.el) return;
+  _dollAcc.rotating = on;
+  _dollAcc.el.classList.toggle('rotating', on);
+  placeDollAccTools();
+}
+
+// Floating tools sit above the picked item (below it when that would leave the screen); in rotate mode only ✓,
+// lifted clear of the top handle
+function placeDollAccTools() {
+  const tools = document.getElementById('doll-acc-tools');
+  tools.hidden = false;
+  tools.classList.toggle('rotating', _dollAcc.rotating);
+  const stage = tools.parentElement.getBoundingClientRect();
+  const item  = _dollAcc.el.getBoundingClientRect();
+  const gap   = _dollAcc.rotating ? 52 : 10;
+  let top = item.top - stage.top - tools.offsetHeight - gap;
+  if (stage.top + top < gap) top = item.bottom - stage.top + gap;
+  // the stage may be wider than the screen (the doll is tall and narrow) — keep the tools on screen
+  const view = document.getElementById('view-doll').getBoundingClientRect();
+  const half = tools.offsetWidth / 2 + 8;
+  const x    = Math.min(Math.max(item.left + item.width / 2, view.left + half), view.right - half);
+  tools.style.left = (x - stage.left) + 'px';
+  tools.style.top  = top + 'px';
+}
+
+const DOLL_COLOR_HINT = { none: 'Tap something on the doll to colour or turn it', single: 'This one comes in one colour' };
+
+// Colour chips of the picked item, or a hint line — the row keeps its height either way
+function showDollColors() {
+  const row = document.getElementById('doll-colors');
+  const el  = _dollAcc.el;
+  const colors = el ? dollItem(el.dataset.item).colors : [];
+  if (colors.length < 2) {
+    const hint = document.createElement('p');
+    hint.className = 'doll-colors-hint';
+    hint.textContent = el ? DOLL_COLOR_HINT.single : DOLL_COLOR_HINT.none;
+    return row.replaceChildren(hint);
+  }
+  row.replaceChildren(...colors.map((colorId, i) => {
+    const chip = document.createElement('button');
+    chip.className = 'doll-color' + (String(i) === el.dataset.color ? ' selected' : '');
+    chip.style.backgroundImage = `url('${dollAccSrc(colorId)}')`;
+    chip.setAttribute('aria-label', colorId.replace('_', ' '));
+    chip.addEventListener('click', () => setDollAccColor(i));
+    return chip;
+  }));
+}
+
+function setDollAccColor(index) {
+  const el = _dollAcc.el;
+  el.dataset.color = String(index);
+  el.querySelector('img').src = dollAccSrc(dollItem(el.dataset.item).colors[index]);
+  showDollColors();
+}
+
+function dollAccAngle(el, e) {
+  const r = el.getBoundingClientRect();   // the rotated box's bounds share its centre
+  return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI;
+}
+
+function wireDollAccEdit() {
+  const layer = document.getElementById('doll-placed-items');
+  const frame = document.getElementById('doll-frame');
+
+  layer.addEventListener('pointerdown', e => {
+    const el = e.target.closest('.doll-acc');
+    if (!el || _dollAcc.gesture) return;
+    selectDollAcc(el);
+    const turning = Boolean(e.target.closest('.doll-acc-handle')) && _dollAcc.rotating;
+    _dollAcc.gesture = turning
+      ? { pointerId: e.pointerId, kind: 'turn', from: dollAccAngle(el, e), rot: parseFloat(el.style.getPropertyValue('--rot')) }
+      : { pointerId: e.pointerId, kind: 'move', x: e.clientX, y: e.clientY,
+          left: parseFloat(el.style.left), top: parseFloat(el.style.top) };
+    layer.setPointerCapture(e.pointerId);
+  });
+
+  layer.addEventListener('pointermove', e => {
+    const g = _dollAcc.gesture, el = _dollAcc.el;
+    if (!g || e.pointerId !== g.pointerId) return;
+    if (g.kind === 'turn') {
+      el.style.setProperty('--rot', (g.rot + dollAccAngle(el, e) - g.from).toFixed(1) + 'deg');
+    } else {
+      const f = frame.getBoundingClientRect();
+      el.style.left = (g.left + (e.clientX - g.x) / f.width  * 100).toFixed(1) + '%';
+      el.style.top  = (g.top  + (e.clientY - g.y) / f.height * 100).toFixed(1) + '%';
+    }
+    placeDollAccTools();
+  });
+
+  const endGesture = e => {
+    const g = _dollAcc.gesture;
+    if (!g || e.pointerId !== g.pointerId) return;
+    _dollAcc.gesture = null;
+    if (layer.hasPointerCapture(e.pointerId)) layer.releasePointerCapture(e.pointerId);
+    if (g.kind !== 'move' || e.type !== 'pointerup') return;
+    const f = frame.getBoundingClientRect();
+    const off = e.clientX < f.left || e.clientX > f.right || e.clientY < f.top || e.clientY > f.bottom;
+    if (off) removeDollAcc();
+  };
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => layer.addEventListener(type, endGesture));
+
+  // A tap on the doll or the frame around it (not on an accessory) puts the picked one down
+  frame.addEventListener('pointerdown', e => {
+    if (!e.target.closest('.doll-acc')) deselectDollAcc();
+  });
+}
 
 // 'before' | 'after' | null — when view-doll runs for this question and house
 function dollOrder(q) {
@@ -2017,7 +2809,7 @@ function resetDoll() {
   setDollStep('face');
   dollShelf.clear();
   showDollTab(0);
-  document.getElementById('view-doll').classList.remove('doll-reveal');
+  document.getElementById('view-doll').classList.remove('doll-reveal', 'doll-arriving');
   closeDollWheel();
   resetSceneIntro('doll-intro', 'doll-main');
   showSceneIntro('doll-intro');
@@ -2025,7 +2817,24 @@ function resetDoll() {
 }
 
 function dismissDollIntro(e) {
-  dismissSceneIntro('doll-intro', 'doll-main', e);
+  dismissSceneIntro('doll-intro', 'doll-main', e, startDollArrival);
+}
+
+// After the intro card: the rainy window alone for a breath → the doll fades in → the scene name →
+// the washi sheet rises (CSS .doll-arriving, timings in style.css). Ends when the sheet has risen;
+// a tap while it plays skips to the end.
+function startDollArrival() {
+  const view = document.getElementById('view-doll');
+  const panel = view.querySelector('.doll-panel');
+  const onPanelEnd = e => { if (e.target === panel) end(); };   // children's own animations bubble here too
+  const end = () => {
+    view.classList.remove('doll-arriving');
+    view.removeEventListener('pointerdown', end);
+    panel.removeEventListener('animationend', onPanelEnd);
+  };
+  view.classList.add('doll-arriving');
+  panel.addEventListener('animationend', onPanelEnd);
+  view.addEventListener('pointerdown', end);
 }
 
 function setDollStep(step) {
@@ -2048,16 +2857,17 @@ function showDollTab(index) {
   });
   dollShelf.end();
   const shelf = document.getElementById('doll-shelf');
-  shelf.replaceChildren(...DOLL_ACCESSORIES[index].items.map(glyph => {
+  shelf.replaceChildren(...DOLL_ACCESSORIES[index].items.map(({ id, colors }) => {
     const item = document.createElement('div');
     item.className = 'shelf-item';
+    item.dataset.item = id;
     const img = document.createElement('div');
-    img.className = 'shelf-item-img shelf-item-glyph';
-    img.textContent = glyph;
+    img.className = 'shelf-item-img';
+    img.style.backgroundImage = `url('${dollAccSrc(colors[0])}')`;
     item.appendChild(img);
     return item;
   }));
-  shelf.scrollLeft = 0;
+  markWornDollTiles();
 }
 
 // Fade the curtain down, run fn behind it, lift the curtain
@@ -2084,31 +2894,35 @@ function revealDoll(after) {
   setTimeout(() => fadeThrough(after), 6000);
 }
 
-function finishDoll() {
+async function finishDoll() {
   if (_doll.step !== 'dress' || _doll.revealing) return;
   _doll.revealing = true;
   dollShelf.end();
+  deselectDollAcc();
   const out = document.createElement('canvas');
   out.width = out.height = 1000;
   const ctx = out.getContext('2d');
   ctx.drawImage(document.getElementById('doll-body'), 0, 0, 1000, 1000);
   ctx.drawImage(document.getElementById('doll-canvas'), 0, 0);
-  drawDollAccessories(ctx);
+  await drawDollAccessories(ctx);
   state.dollImage = out.toDataURL('image/png');
   const done = _doll.onDone;
   _doll.onDone = null;
   revealDoll(done);
 }
 
-// Placed glyphs → the 1000px export, at the same spot and size they show on screen (frame width = 1000)
-function drawDollAccessories(ctx) {
-  const frameW = document.getElementById('doll-frame').getBoundingClientRect().width;
-  ctx.textAlign    = 'center';
-  ctx.textBaseline = 'middle';
-  for (const el of dollShelf.placed()) {
-    const px = parseFloat(getComputedStyle(el).fontSize) / frameW * 1000;
-    ctx.font = `${px}px sans-serif`;
-    ctx.fillText(el.textContent, parseFloat(el.style.left) * 10, parseFloat(el.style.top) * 10);
+// Placed accessories → the 1000px export, bottom to top, at the spot, size and turn they show on screen
+// (frame = 1000px canvas). Waits for a just-swapped colour to finish loading; a broken image throws.
+async function drawDollAccessories(ctx) {
+  const placed = dollShelf.placed();
+  await Promise.all(placed.map(el => el.querySelector('img').decode()));
+  for (const el of placed) {
+    const w = parseFloat(el.style.width) * 10, h = parseFloat(el.style.height) * 10;
+    ctx.save();
+    ctx.translate(parseFloat(el.style.left) * 10, parseFloat(el.style.top) * 10);
+    ctx.rotate(parseFloat(el.style.getPropertyValue('--rot')) * Math.PI / 180);
+    ctx.drawImage(el.querySelector('img'), -w / 2, -h / 2, w, h);
+    ctx.restore();
   }
 }
 
@@ -2118,12 +2932,11 @@ function buildDollMask(img) {
   const ctx = c.getContext('2d');
   ctx.drawImage(img, 0, 0, 1000, 1000);
   const data = ctx.getImageData(0, 0, 1000, 1000);
-  const px = data.data, t = DOLL_FACE.tolerance;
+  const px = data.data;
   for (let i = 0; i < px.length; i += 4) {
     const x = (i / 4) % 1000, y = Math.floor(i / 4000);
     const inHead = Math.hypot(x - DOLL_FACE.cx, y - DOLL_FACE.cy) <= DOLL_FACE.radius;
-    const isFace = inHead && px[i + 3] > 200 &&
-      Math.abs(px[i] - DOLL_FACE.r) <= t && Math.abs(px[i + 1] - DOLL_FACE.g) <= t && Math.abs(px[i + 2] - DOLL_FACE.b) <= t;
+    const isFace = inHead && px[i + 3] > 200 && (px[i] + px[i + 1] + px[i + 2]) / 3 > DOLL_FACE.minLight;
     px[i + 3] = isFace ? 255 : 0;
   }
   ctx.putImageData(data, 0, 0);
@@ -2178,11 +2991,19 @@ function initDollCanvas() {
     const tab = document.createElement('button');
     tab.className = 'doll-tab';
     tab.setAttribute('role', 'tab');
-    tab.textContent = `${section.icon} ${section.label}`;
+    const pic = document.createElement('span');
+    pic.className = 'doll-tab-pic';
+    pic.style.backgroundImage = `url('${dollAccSrc(section.items[0].colors[0])}')`;
+    const name = document.createElement('span');
+    name.className = 'doll-tab-name';
+    name.innerHTML = `<span class="doll-tab-kanji">${section.kanji}</span>${section.label}`;
+    tab.append(pic, name);
+    tab.setAttribute('aria-label', section.label);
     tab.addEventListener('click', () => showDollTab(i));
     tabs.appendChild(tab);
   });
 
+  wireDollAccEdit();
   wireDollDrawing();
   wireDollWheel();
 }
@@ -2770,7 +3591,7 @@ function renderResult() {
             <div class="result-doll result-doll--yours"><img src="${state.dollImage}" alt=""></div>
           </div>
           <button class="result-kuji-box" aria-haspopup="dialog" aria-controls="kuji-modal">
-            <span class="result-kuji-stick" aria-hidden="true"></span><span class="result-kuji-can" aria-hidden="true"><span>御籤</span></span><span class="result-kuji-cap" data-th="omikuji"></span>
+            <span class="result-kuji-stick" aria-hidden="true"></span><span class="result-kuji-can" aria-hidden="true"><span>御籤</span></span><span class="result-kuji-cap"></span>
           </button>
         </div>
       </section>
@@ -2799,9 +3620,31 @@ function renderResult() {
               <p class="kuji-rank-th"></p>
               <span class="kuji-rule" aria-hidden="true"></span>
               <p class="kuji-text"></p>
+              <div class="kuji-wish">
+                <p class="kuji-wish-ask" data-th="wish-ask"></p>
+                <textarea rows="2" maxlength="${WISH_MAX}" placeholder="ขอให้…" aria-label="คำขอของคุณ"></textarea>
+                <p class="kuji-wish-left" aria-live="polite"></p>
+                <button class="kuji-seal" aria-label="กดค้างไว้เพื่อฝากคำขอ" disabled><b>願</b></button>
+                <p class="kuji-seal-hint" data-th="seal-hint"></p>
+                <button class="kuji-undo"></button>
+              </div>
             </div>
           </div>
-          <p class="kuji-label" data-th="kuji-label"></p>
+          <p class="kuji-label"></p>
+          <button class="kuji-close" aria-label="ปิด">✕</button>
+        </div>
+      </div>
+
+      <div id="share-modal" class="kuji-modal share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title">
+        <div class="share-stage">
+          <h3 class="share-title" id="share-title" data-th="share-title"></h3>
+          <canvas class="share-shot" width="${SHOT.pxW}" height="${SHOT.pxH}" role="img" aria-label="รูปแชร์ เนื้อคู่ของฉันคือ ${r.name}"></canvas>
+          <p class="share-pick-label" data-th="share-pick"></p>
+          <div class="share-picks">${SHARE_KEEPS.map(k => `
+            <button class="share-pick" data-keep="${k.id}" aria-pressed="true"><span class="share-pick-ic" aria-hidden="true"></span><span data-th="keep-${k.id}"></span></button>`).join('')}
+          </div>
+          <button class="cta share-save" disabled><span class="cta-kanji" aria-hidden="true">保</span><span class="cta-label" data-th="share-save"></span></button>
+          <button class="share-link" data-th="share-link"></button>
           <button class="kuji-close" aria-label="ปิด">✕</button>
         </div>
       </div>
@@ -2812,11 +3655,14 @@ function renderResult() {
     eyebrow: 'เนื้อคู่ของคุณคือ', title: r.title, role: HOUSE_ROLE[r.house],
     'alike-title': 'เหมือนกันตรงไหน', 'compat-title': 'ความเข้ากัน', 'match-good': 'เข้ากันดีเรื่อง', 'match-adjust-label': 'ต้องค่อยๆ ปรับ', 'match-adjust': r.match.adjust, 'near-title': 'คู่ที่เกือบได้',
     'near-none': `ใจคุณชัดเจนมาก มีแค่ ${r.name} คนเดียวที่ใช่`,
-    omikuji: 'เขย่าเซียมซี', share: 'แชร์ผลให้เพื่อน', again: 'เล่นอีกครั้ง',
+    share: 'แชร์ผลให้เพื่อน', again: 'เล่นอีกครั้ง',
     'kuji-q': 'ตอนนี้คุณโสดอยู่ไหม', 'kuji-single': 'โสดอยู่', 'kuji-taken': 'มีคนข้างกายแล้ว',
-    'kuji-label': 'ผูกไว้กับกิ่งสน ให้ลมพาสิ่งที่ถือไว้ไม่ได้ไป',
+    'wish-ask': WISH_TEXT.ask, 'seal-hint': WISH_TEXT.hint,
+    'share-title': 'รูปที่จะแชร์', 'share-pick': 'ใส่ลงไปในรูปด้วยไหม',
+    'share-save': canShareFiles() ? 'แชร์รูปนี้' : 'บันทึกรูป', 'share-link': 'คัดลอกลิงก์ชวนเพื่อน',
     ...deckTexts(cards)
   };
+  SHARE_KEEPS.forEach(k => { texts['keep-' + k.id] = k.label; });
   r.alike.forEach((a, i) => { texts['alike' + i] = ALIKE_LABEL[a.key]; texts[`alike${i}-n`] = ALIKE_LEVELS[a.count][0]; });
   r.match.good.forEach((g, i) => { texts['match-good' + i] = g; });
   if (near) {
@@ -3151,13 +3997,85 @@ const OMIKUJI = {
 };
 const KUJI_NUM = '一二三四五六七八九';
 
+// ── WISH — written on the back of the slip, kept by holding the 願 seal · the slip (fortune + wish) stays in this
+// browser only (localStorage), outliving a replay; the box then reopens that slip until the wish is withdrawn ──
+const KEPT_SLIP_KEY = 'ryokan-kept-slip';   // { wish, rank, th, text, at }
+const WISH_MAX = 40, WISH_WARN_FROM = 30;   // the count of what is left shows from WISH_WARN_FROM on
+const SEAL_HOLD_MS = 1600, SEAL_STILL_MS = 1200, LABEL_SWAP_MS = 300;   // hold the seal · nothing moves after it lands · the label changes
+const WISH_TEXT = {
+  ask:     'ฝากคำขอไว้หนึ่งเรื่อง',
+  hint:    'กดตราค้างไว้ อธิษฐานในใจ',
+  private: 'คำขอนี้เก็บไว้ให้คุณคนเดียว',
+  taken:   'เรียวกังรับคำขอไว้แล้ว',
+  undo:    'ถอนคำขอ',
+  undoArm: 'แตะอีกครั้ง คำขอจะหายไป',
+  boxIdle: 'เขย่าเซียมซี',
+  boxKept: 'คำขอที่ฝากไว้',
+  noStore: 'เครื่องนี้เก็บคำขอไว้ไม่ได้'
+};
+
+// null = nothing kept. Storage that cannot be read, or a slip that is not whole, is logged and counts as nothing kept
+function readKeptSlip() {
+  let kept;
+  try { kept = JSON.parse(localStorage.getItem(KEPT_SLIP_KEY)); }
+  catch (err) { console.error('[Ryokan] readKeptSlip: storage unreadable', err); return null; }
+  if (kept === null) return null;
+  if (!hasTexts(kept, ['wish', 'rank', 'th', 'text']) || typeof kept.at !== 'number') {
+    console.error('[Ryokan] readKeptSlip: kept slip is not whole', kept);
+    return null;
+  }
+  return kept;
+}
+// kept = null withdraws it · throws where storage is blocked (the caller tells the player)
+function saveKeptSlip(kept) {
+  if (kept) localStorage.setItem(KEPT_SLIP_KEY, JSON.stringify(kept));
+  else localStorage.removeItem(KEPT_SLIP_KEY);
+}
+const thaiDay = ms => new Date(ms).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+const setThai = (el, text) => el.replaceChildren(thaiBreakable(text));
+
 function wireOmikuji(view) {
-  const box   = view.querySelector('.result-kuji-box');
-  const modal = view.querySelector('.kuji-modal');
-  const close = () => { modal.classList.remove('open'); box.focus(); };
-  const open  = () => {
-    modal.querySelector('.kuji-front small').textContent = '第' + KUJI_NUM[Math.floor(Math.random() * KUJI_NUM.length)] + '番';
-    modal.classList.remove('flipped');
+  const $     = sel => view.querySelector(sel);
+  const box   = $('.result-kuji-box'), modal = $('#kuji-modal'), cap = $('.result-kuji-cap');
+  const input = $('.kuji-wish textarea'), left = $('.kuji-wish-left');
+  const seal  = $('.kuji-seal'), label = $('.kuji-label'), undo = $('.kuji-undo');
+  let drawn = null;      // the fortune now in hand
+  let holdTimer = 0;
+  modal.style.setProperty('--seal-hold', SEAL_HOLD_MS + 'ms');
+
+  const showBox = () => {
+    const kept = !!readKeptSlip();
+    box.classList.toggle('kept', kept);
+    setThai(cap, kept ? WISH_TEXT.boxKept : WISH_TEXT.boxIdle);
+  };
+  const showFortune = o => {
+    const rank = $('.kuji-rank');
+    rank.textContent = o.rank;
+    rank.classList.toggle('kuji-rank--bad', o.rank === '凶');
+    setThai($('.kuji-rank-th'), o.th);
+    setThai($('.kuji-text'), o.text);
+  };
+  const onType = () => {
+    const n = input.value.length;
+    seal.disabled = !input.value.trim();
+    left.textContent = n >= WISH_WARN_FROM ? `เหลือ ${WISH_MAX - n} ตัวอักษร` : '';
+  };
+  const holdCancel = () => {
+    if (!holdTimer) return;
+    clearTimeout(holdTimer);
+    holdTimer = 0;
+    modal.classList.remove('holding');   // the ink recedes
+  };
+  const close = () => { holdCancel(); modal.classList.remove('open'); box.focus(); };
+
+  // a fresh slip: slides in face up, asks, then turns over
+  const openFresh = () => {
+    $('.kuji-front small').textContent = '第' + KUJI_NUM[Math.floor(Math.random() * KUJI_NUM.length)] + '番';
+    input.value = '';
+    input.readOnly = false;
+    onType();
+    setThai(label, WISH_TEXT.private);
+    modal.classList.remove('flipped', 'kept', 'sealed', 'holding', 'pressed');
     void modal.offsetWidth;   // restart the slide-in each time the box is shaken
     modal.classList.add('open');
     modal.querySelector('.kuji-pick').focus();
@@ -3165,20 +4083,72 @@ function wireOmikuji(view) {
   const reveal = status => {
     const pool = OMIKUJI[status];
     if (!pool) throw new Error(`[Ryokan] wireOmikuji: no omikuji for "${status}"`);
-    const o = pool[Math.floor(Math.random() * pool.length)];
-    const rank = modal.querySelector('.kuji-rank');
-    rank.textContent = o.rank;
-    rank.classList.toggle('kuji-rank--bad', o.rank === '凶');
-    modal.querySelector('.kuji-rank-th').replaceChildren(thaiBreakable(o.th));
-    modal.querySelector('.kuji-text').replaceChildren(thaiBreakable(o.text));
+    drawn = pool[Math.floor(Math.random() * pool.length)];
+    showFortune(drawn);
     modal.classList.add('flipped');
-    modal.querySelector('.kuji-close').focus();
+    $('.kuji-close').focus();
+  };
+  // the kept slip: opens already on its back — the fortune, the wish in ink, the seal
+  const openKept = kept => {
+    showFortune(kept);
+    input.value = kept.wish;
+    input.readOnly = true;
+    left.textContent = '';
+    seal.disabled = true;
+    setThai(undo, WISH_TEXT.undo);
+    undo.classList.remove('armed');
+    setThai(label, `ฝากไว้เมื่อ ${thaiDay(kept.at)}`);
+    modal.classList.remove('holding', 'pressed');
+    modal.classList.add('open', 'flipped', 'kept', 'sealed');
+    $('.kuji-close').focus();
   };
 
+  // press and hold the seal: let go early and nothing is kept
+  const sealWish = () => {
+    holdTimer = 0;
+    try { saveKeptSlip({ wish: input.value.trim(), rank: drawn.rank, th: drawn.th, text: drawn.text, at: Date.now() }); }
+    catch (err) {
+      console.error('[Ryokan] wireOmikuji: the wish could not be kept', err);
+      modal.classList.remove('holding');
+      showToast(WISH_TEXT.noStore);
+      return;
+    }
+    input.readOnly = true;
+    seal.disabled = true;
+    modal.classList.add('sealed', 'pressed');
+    if (navigator.vibrate) navigator.vibrate(12);
+    showBox();
+    resultLater(() => {   // stillness, then one sentence
+      label.classList.add('swap');
+      resultLater(() => { setThai(label, WISH_TEXT.taken); label.classList.remove('swap'); modal.classList.remove('holding'); }, LABEL_SWAP_MS);
+    }, SEAL_STILL_MS);
+  };
+  const holdStart = () => {
+    if (seal.disabled || holdTimer || modal.classList.contains('sealed')) return;
+    input.blur();
+    modal.classList.add('holding');
+    holdTimer = setTimeout(sealWish, SEAL_HOLD_MS);
+  };
+  seal.addEventListener('pointerdown', ev => { ev.preventDefault(); holdStart(); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(type => seal.addEventListener(type, holdCancel));
+  seal.addEventListener('contextmenu', ev => ev.preventDefault());
+  seal.addEventListener('keydown', ev => { if ((ev.key === 'Enter' || ev.key === ' ') && !ev.repeat) { ev.preventDefault(); holdStart(); } });
+  seal.addEventListener('keyup', holdCancel);
+  input.addEventListener('input', onType);
+
+  // withdraw: the first tap warns, the second lets the wish go
+  undo.addEventListener('click', () => {
+    if (!undo.classList.contains('armed')) { undo.classList.add('armed'); setThai(undo, WISH_TEXT.undoArm); return; }
+    saveKeptSlip(null);
+    close();
+    showBox();
+  });
   box.addEventListener('click', () => {
+    const kept = readKeptSlip();
+    if (kept) { openKept(kept); return; }
     if (box.classList.contains('shaking')) return;
     box.classList.add('shaking');
-    resultLater(() => { box.classList.remove('shaking'); open(); }, prefersStill() ? 0 : KUJI_SHAKE_MS);
+    resultLater(() => { box.classList.remove('shaking'); openFresh(); }, prefersStill() ? 0 : KUJI_SHAKE_MS);
   });
   modal.addEventListener('click', ev => {
     const pick = ev.target.closest('.kuji-pick');
@@ -3186,19 +4156,324 @@ function wireOmikuji(view) {
     if (ev.target === modal || ev.target.closest('.kuji-close')) close();
   });
   modal.addEventListener('keydown', ev => { if (ev.key === 'Escape') close(); });
+  showBox();
 }
 
-// ── SHARE — the phone's share sheet; without one, the line + link go to the clipboard (Share to Story comes later) ──
+// ── SHARE PICTURE — a page from a shrine stamp book (御朱印), painted on a canvas so it can be saved as a file.
+// Paper and ink, read top to bottom, text flush left on one margin; red is only what a shrine would stamp.
+// paintShot() works in the mockup's units (a page SHOT.w wide); the canvas is SHOT.pxW × SHOT.pxH (9:16).
+// Four type sizes: 9 (vertical columns) · 10 (labels, captions) · 12.5 (facts, the question) · 40 (the name) ──
+const SHOT = { pxW: 1080, pxH: 1920, w: 300, h: 300 * 1920 / 1080, margin: 20, top: 16, bottom: 14 };
+const SHOT_LONG_NAME = 8;   // names this long drop one size so they fit the line
+const SHARE_KEEPS = [
+  { id: 'bento', label: 'เบนโตะที่ฉันทำให้เขา' },
+  { id: 'doll',  label: 'ตุ๊กตาไล่ฝนของเรา' }
+];
+const SHOT_TEXT = { lead: 'เนื้อคู่ของฉันคือ', good: 'เข้ากันดีเรื่อง', alike: 'เหมือนกันตรงที่', ask: 'แล้วภูตของเธอล่ะ?', game: 'Ryokan of The Spirits', inn: '妖怪の宿', visit: '奉拝' };
+
+const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const canShareFiles = () => !!navigator.canShare && navigator.canShare({ files: [new File([], 'ryokan.png', { type: 'image/png' })] });
+
+function kanjiNumber(n) {   // 1–99
+  const d = '〇一二三四五六七八九';
+  const tens = Math.floor(n / 10), ones = n % 10;
+  return (tens > 1 ? d[tens] : '') + (tens ? '十' : '') + (ones ? d[ones] : '');
+}
+function reiwaDate(date) {   // Reiwa 1 = 2019
+  return `令和${kanjiNumber(date.getFullYear() - 2018)}年${kanjiNumber(date.getMonth() + 1)}月${kanjiNumber(date.getDate())}日`;
+}
+
+const _shotImages = new Map();   // src → Promise<img>
+function loadShotImage(src) {
+  if (!_shotImages.has(src)) _shotImages.set(src, new Promise((ok, fail) => {
+    const img = new Image();
+    img.onload  = () => ok(img);
+    img.onerror = () => { _shotImages.delete(src); fail(new Error(`[Ryokan] share picture: cannot load ${src.slice(0, 80)}`)); };
+    img.src = src;
+  }));
+  return _shotImages.get(src);
+}
+// The yokai's art as the result page shows it: its <img>, its <video> (the frame on screen), or null while the art is missing
+async function shotArt(artEl) {
+  if (artEl.tagName === 'IMG') { await artEl.decode(); return { el: artEl, w: artEl.naturalWidth, h: artEl.naturalHeight }; }
+  if (artEl.tagName !== 'VIDEO') return null;
+  if (artEl.readyState < 2) await new Promise((ok, fail) => {
+    artEl.addEventListener('loadeddata', ok, { once: true });
+    artEl.addEventListener('error', () => fail(new Error('[Ryokan] share picture: the yokai video did not load')), { once: true });
+  });
+  return { el: artEl, w: artEl.videoWidth, h: artEl.videoHeight };
+}
+
+// Everything the picture needs, loaded before a single stroke — paintShot() itself never waits
+async function loadShot(r, artEl, shown) {
+  const theirs = YOKAI_DATA[state.winningYokai].dollImage;
+  const shot = {
+    name: r.name, kanji: r.kanji, title: r.title, role: HOUSE_ROLE[r.house], mbti: r.mbti,
+    date: reiwaDate(new Date()),
+    facts: [[SHOT_TEXT.good, r.match.good.join(' และ')], [SHOT_TEXT.alike, ALIKE_LABEL[r.alike[0].key]]],
+    art: await shotArt(artEl),
+    bento: null, dolls: null
+  };
+  if (shown.has('bento')) shot.bento = {
+    box:   await loadShotImage('assets/ui/food/bento/Body.PNG'),
+    foods: await Promise.all(state.bentoSelected.map(async f => ({ img: await loadShotImage(f.image), x: f.x, y: f.y })))
+  };
+  if (shown.has('doll')) shot.dolls = {
+    yours:  await loadShotImage(state.dollImage),
+    theirs: theirs ? await loadShotImage(theirs) : null
+  };
+  const fonts = ['--font-kanji', '--font-display', '--font-body'].flatMap(v => [`400 20px ${cssVar(v)}`, `700 20px ${cssVar(v)}`]);
+  const words = Object.values(SHOT_TEXT).join('') + SHARE_KEEPS.map(k => k.label).join('') + shot.name + shot.kanji + shot.title + shot.role + shot.mbti + shot.date + shot.facts.flat().join('') + '宿';
+  await Promise.all(fonts.map(font => document.fonts.load(font, words)));
+  return shot;
+}
+
+function drawContain(ctx, img, x, y, w, h) {   // like object-fit: contain
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  const k = Math.min(w / iw, h / ih);
+  ctx.drawImage(img, x + (w - iw * k) / 2, y + (h - ih * k) / 2, iw * k, ih * k);
+}
+// Greedy lines no wider than maxW, broken only where thaiTokens() allows · ctx.font must be set
+function wrapShotLines(ctx, text, maxW) {
+  const lines = [''];
+  for (const tok of thaiTokens(text)) {
+    const line = lines[lines.length - 1];
+    if (line && tok !== ' ' && ctx.measureText(line + tok).width > maxW) lines.push(tok);
+    else lines[lines.length - 1] = line + tok;
+  }
+  return lines.map(line => line.trim());
+}
+
+function paintShot(canvas, shot) {
+  const ctx = canvas.getContext('2d');
+  const { w: W, h: H, margin: M } = SHOT;
+  const inner = W - M * 2;
+  const ink = cssVar('--on-surface'), brown = cssVar('--ink-brown'), red = cssVar('--primary'), paper = cssVar('--bg');
+  const face = { kanji: cssVar('--font-kanji'), display: cssVar('--font-display'), body: cssVar('--font-body') };
+  const font = (weight, size, family) => { ctx.font = `${weight} ${size}px ${face[family]}`; };
+  // one line of text, centred on the height midY
+  const write = (text, x, midY, color, align = 'left') => {
+    ctx.fillStyle = color;
+    ctx.textAlign = align;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, midY);
+  };
+  // a column written top to bottom, one character under the other · returns where it ends
+  const writeDown = (text, midX, y, size, gap, color) => {
+    for (const ch of text) { write(ch, midX, y + size / 2, color, 'center'); y += size + gap; }
+    return y - gap;
+  };
+
+  ctx.setTransform(SHOT.pxW / W, 0, 0, SHOT.pxW / W, 0, 0);
+
+  // paper: lighter at the top, a faint vertical grain (the same grain as --washi-grain)
+  const wash = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+  wash.addColorStop(0, paper);
+  wash.addColorStop(1, `color-mix(in srgb, ${cssVar('--surface-low')} 70%, ${paper})`);
+  ctx.save();
+  ctx.translate(W / 2, 0);
+  ctx.scale(W * 1.3, H * 0.6);
+  ctx.fillStyle = wash;
+  ctx.fillRect(-1, 0, 2, 2);
+  ctx.restore();
+  ctx.fillStyle = `color-mix(in srgb, ${brown} 3%, transparent)`;
+  for (let x = 3; x < W; x += 4) ctx.fillRect(x, 0, 1, H);
+
+  // measure the lower half first: the art takes whatever height is left above it
+  font(400, 10, 'body');
+  const labelW = Math.max(...shot.facts.map(([label]) => ctx.measureText(label).width));
+  const factX = M + labelW + 10, factLine = 17.5, factGap = 6;
+  font(700, 12.5, 'kanji');
+  const facts = shot.facts.map(([label, text]) => ({ label, lines: wrapShotLines(ctx, text, inner - labelW - 10) }));
+  const factsH = facts.reduce((sum, f) => sum + f.lines.length * factLine, 0) + factGap * (facts.length - 1);
+  const keeps = [shot.bento && 'bento', shot.dolls && 'doll'].filter(Boolean);
+  const keepPicH = 78, keepsH = keeps.length ? 18 + keepPicH + 4 + 13 : 0;
+  const footH = 30;
+  const lowerH = 16 + 13 + 2 + 40 + 7 + 17 + 18 + factsH + keepsH + 14 + footH;
+  const topH = H - SHOT.top - SHOT.bottom - lowerH;
+
+  // the red sun, the spirit standing in it
+  const midX = M + inner * 0.44, sunR = inner * 0.34;
+  ctx.globalAlpha = 0.92;
+  ctx.fillStyle = red;
+  ctx.beginPath();
+  ctx.arc(midX, SHOT.top + topH * 0.54, sunR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  if (shot.art) {
+    // the art has empty margins: fitted to the space, then grown upward — feet stay on the floor
+    // (never wider than the space left of the kanji column, never past the top edge of the page)
+    const grow = 1.18, fit = Math.min(inner * 0.8 / grow / shot.art.w, topH / shot.art.h);
+    const floor = SHOT.top + topH - (topH - shot.art.h * fit) / 2 * grow;
+    const size = Math.min(fit * grow, (floor - 6) / shot.art.h);
+    const aw = shot.art.w * size, ah = shot.art.h * size;
+    ctx.drawImage(shot.art.el, midX - aw / 2, floor - ah, aw, ah);
+  } else {
+    // no art yet: the kanji stands in the sun (and leaves the right-hand column)
+    font(700, Math.min(96, sunR * 1.7 / shot.kanji.length), 'kanji');
+    write(shot.kanji, midX, SHOT.top + topH * 0.54, paper, 'center');
+  }
+
+  // the two columns a stamp page is written in: the date of the visit, the name of the place
+  font(400, 9, 'kanji');
+  writeDown(`${SHOT_TEXT.visit}　${shot.date}`, M + 4.5, SHOT.top, 9, 9 * 0.34, brown);
+  const colX = W - M - 22;
+  const innEnd = writeDown(SHOT_TEXT.inn, colX, SHOT.top, 9, 9 * 0.34, brown);
+  if (shot.art) {
+    const size = Math.min(44, (SHOT.top + topH - innEnd - 8) / shot.kanji.length);
+    font(700, size, 'kanji');
+    writeDown(shot.kanji, colX, innEnd + 8, size, 0, ink);
+  }
+
+  // who
+  let y = SHOT.top + topH + 16;
+  font(400, 10, 'kanji');
+  write(SHOT_TEXT.lead, M, y + 6.5, brown);
+  y += 13 + 2;
+  font(700, shot.name.length >= SHOT_LONG_NAME ? 36 : 40, 'display');
+  write(shot.name, M, y + 20, ink);
+  y += 40 + 7;
+  // one line: the spirit's Thai name, the house role, the type as a small red stamp
+  let x = M;
+  font(700, 12.5, 'kanji');
+  write(shot.title, x, y + 8.5, ink);
+  x += ctx.measureText(shot.title).width + 8;
+  font(400, 12.5, 'kanji');
+  write(shot.role, x, y + 8.5, brown);
+  x += ctx.measureText(shot.role).width + 8;
+  font(700, 11, 'body');
+  const letters = [...shot.mbti], letterGap = 1.1;
+  const lettersW = letters.reduce((sum, ch) => sum + ctx.measureText(ch).width + letterGap, 0);
+  ctx.fillStyle = red;
+  ctx.beginPath();
+  ctx.roundRect(x, y, 7 + lettersW + 6, 17, 4);
+  ctx.fill();
+  x += 7;
+  for (const ch of letters) { write(ch, x, y + 8.5 + 0.5, paper); x += ctx.measureText(ch).width + letterGap; }
+  y += 17 + 18;
+
+  // what you share — label, then fact
+  for (const f of facts) {
+    font(400, 10, 'body');
+    write(f.label, M, y + factLine / 2, brown);
+    font(700, 12.5, 'kanji');
+    f.lines.forEach((line, i) => write(line, factX, y + factLine * (i + 0.5), ink));
+    y += f.lines.length * factLine + factGap;
+  }
+  y -= factGap;
+
+  // keepsakes sit straight on the paper — no frames
+  if (keeps.length) {
+    y += 18;
+    const bentoW = keepPicH * BENTO_ART.w / BENTO_ART.boxH;
+    const dollW = 66, dollLap = 14, dollPad = 8;
+    const dollsW = shot.dolls ? dollPad * 2 + dollW + (shot.dolls.theirs ? dollW - dollLap : 0) : 0;
+    const widths = { bento: bentoW, doll: dollsW };
+    const room = (inner - keeps.reduce((sum, id) => sum + widths[id], 0)) / (keeps.length * 2);   // space-around
+    let kx = M;
+    for (const id of keeps) {
+      kx += room;
+      if (id === 'bento') {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(kx, y, bentoW, keepPicH);
+        ctx.clip();
+        ctx.drawImage(shot.bento.box, 0, BENTO_ART.boxTop, BENTO_ART.w, BENTO_ART.boxH, kx, y, bentoW, keepPicH);
+        const foodW = bentoW * BENTO_ART.foodW;
+        for (const f of shot.bento.foods) drawContain(ctx, f.img, kx + bentoW * f.x / 100 - foodW / 2, y + keepPicH * f.y / 100 - foodW / 2, foodW, foodW);
+        ctx.restore();
+      } else {
+        // shoulder to shoulder on a short red thread, yours in front and a little lower — as on the result page
+        ctx.fillStyle = red;
+        ctx.fillRect(kx, y + 3, dollsW, 1);
+        if (shot.dolls.theirs) drawContain(ctx, shot.dolls.theirs, kx + dollPad + dollW - dollLap, y + 5, dollW, dollW);
+        drawContain(ctx, shot.dolls.yours, kx + dollPad, y + 5 + 6, dollW, dollW);
+      }
+      font(400, 10, 'kanji');
+      write(SHARE_KEEPS.find(k => k.id === id).label, kx + widths[id] / 2, y + keepPicH + 4 + 6.5, brown, 'center');
+      kx += widths[id] + room;
+    }
+  }
+
+  // the question for whoever sees it, and the inn's seal
+  y = H - SHOT.bottom - footH;
+  font(700, 12.5, 'kanji');
+  write(SHOT_TEXT.ask, M, y + 8, ink);
+  font(700, 10, 'display');
+  write(SHOT_TEXT.game, M, y + 24, brown);
+  ctx.save();
+  ctx.translate(W - M - 14, y + footH / 2);
+  ctx.rotate(-5 * Math.PI / 180);
+  ctx.fillStyle = red;
+  ctx.beginPath();
+  ctx.roundRect(-14, -14, 28, 28, 6);
+  ctx.fill();
+  font(700, 16, 'kanji');
+  write('宿', 0, 1, paper, 'center');
+  ctx.restore();
+}
+
+// ── SHARE — the envelope opens a sheet: the picture, two keepsakes to add or leave out, save.
+// Where the phone can share a file the fuda opens its share sheet; elsewhere it downloads the PNG.
+// The link to the game goes to the clipboard from its own small button ──
 function wireResultShare(view, r) {
-  const text = `ภูตเนื้อคู่ของฉันคือ ${r.name} แล้วของเธอล่ะ`;
+  if (!state.bentoSelected.length) throw new Error('[Ryokan] wireResultShare: state.bentoSelected is empty (bento not arranged)');
+  const opener = view.querySelector('.result-share'), modal = view.querySelector('#share-modal');
+  const canvas = modal.querySelector('.share-shot'), save = modal.querySelector('.share-save');
+  const shown = new Set(SHARE_KEEPS.map(k => k.id));
+  const line = `ภูตเนื้อคู่ของฉันคือ ${r.name} แล้วของเธอล่ะ`;
   const failed = () => showToast('แชร์ไม่สำเร็จ ลองอีกครั้งนะ');
-  view.querySelector('.result-share').addEventListener('click', () => {
-    if (navigator.share) {
-      navigator.share({ title: 'Ryokan of The Spirits', text, url: location.href })
-        .catch(err => { if (err.name !== 'AbortError') failed(); });
+  let file = null;   // the PNG of what the canvas shows — made ahead, so the save tap can act at once
+  let turn = 0;      // a newer redraw makes an older one give up
+
+  async function redraw() {
+    const mine = ++turn;
+    file = null;
+    save.disabled = true;
+    const shot = await loadShot(r, view.querySelector('.result-art'), shown);
+    if (mine !== turn) return;
+    paintShot(canvas, shot);
+    const blob = await new Promise(ok => canvas.toBlob(ok, 'image/png'));
+    if (mine !== turn) return;
+    if (!blob) throw new Error('[Ryokan] share picture: the canvas gave no image');
+    file = new File([blob], `ryokan-${r.name.toLowerCase()}.png`, { type: 'image/png' });
+    save.disabled = false;
+  }
+  const draw = () => redraw().catch(err => { console.error(err); showToast('สร้างรูปไม่สำเร็จ ลองอีกครั้งนะ'); });
+  const close = () => { modal.classList.remove('open'); opener.focus(); };
+
+  opener.addEventListener('click', () => {
+    modal.classList.add('open');
+    modal.scrollTop = 0;
+    modal.querySelector('.kuji-close').focus();
+    draw();
+  });
+  modal.addEventListener('click', ev => {
+    const pick = ev.target.closest('.share-pick');
+    if (pick) {
+      const id = pick.dataset.keep;
+      shown.has(id) ? shown.delete(id) : shown.add(id);
+      pick.setAttribute('aria-pressed', shown.has(id));
+      draw();
       return;
     }
-    navigator.clipboard.writeText(`${text} ${location.href}`).then(() => showToast('คัดลอกข้อความกับลิงก์แล้ว'), failed);
+    if (ev.target === modal || ev.target.closest('.kuji-close')) close();
+  });
+  modal.addEventListener('keydown', ev => { if (ev.key === 'Escape') close(); });
+  save.addEventListener('click', () => {
+    if (canShareFiles()) {
+      navigator.share({ files: [file] }).catch(err => { if (err.name !== 'AbortError') failed(); });
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(file);
+    link.download = file.name;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    showToast('บันทึกรูปแล้ว');
+  });
+  modal.querySelector('.share-link').addEventListener('click', () => {
+    navigator.clipboard.writeText(`${line} ${location.href}`).then(() => showToast('คัดลอกข้อความกับลิงก์แล้ว'), failed);
   });
 }
 
@@ -3689,6 +4964,10 @@ function devRandomResult() {
   for (const q of QUESTIONS.yokai) pickYokaiAnswer(q, any(getStage2Set(q).choices));
   calcYokai();
   state.dollImage = 'assets/ui/doll/teru_body.png';   // stands in for the drawn doll
+  state.bentoSelected = [   // stands in for the arranged bento
+    { image: 'assets/ui/food/Onigiri.PNG', x: 24, y: 36 }, { image: 'assets/ui/food/Tamako.PNG', x: 37, y: 58 }, { image: 'assets/ui/food/Shake.PNG', x: 23, y: 66 },
+    { image: 'assets/ui/food/Ebi%20tempura.PNG', x: 60, y: 32 }, { image: 'assets/ui/food/Tako%20wiener.PNG', x: 75, y: 33 }, { image: 'assets/ui/food/Sakuramochi.PNG', x: 61, y: 65 }
+  ];
   fadeToView('result');
 }
 

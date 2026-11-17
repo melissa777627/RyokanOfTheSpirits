@@ -1,7 +1,7 @@
 // serve.js — static server + live reload via SSE
 // Usage: node serve.js                → http://localhost:3000
 //        PORT=8000 node serve.js      → http://localhost:8000
-//        LIVERELOAD=0 node serve.js   → static only, no auto-refresh
+//        LIVERELOAD=1 node serve.js   → also auto-refresh the page on every file change (off by default — owner, 2026-11-17)
 
 const http = require('http');
 const fs   = require('fs');
@@ -9,7 +9,7 @@ const path = require('path');
 
 const PORT = Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
-const LIVE = process.env.LIVERELOAD !== '0';
+const LIVE = process.env.LIVERELOAD === '1';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
